@@ -1,0 +1,65 @@
+/* Sample from CSS reset (http://meyerweb.com/eric/tools/css/reset) */
+html, body, div, span, p,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+table, caption, tbody, tfoot, thead, tr, th, td {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  vertical-align: baseline;
+}
+body, h1, h2, h3, h4, h5, h6 {
+  margin: 0;
+  padding: 0;
+}
+ol, ul {
+  list-style: none;
+}
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+#calendar {
+  margin-left: 220px;
+  margin-right: 20px;
+}
+
+body {
+  font-family: Georgia, "Times New Roman", serif;
+  color: #555;
+}
+#calendar h2 {
+  display: inline;
+  background-color: orange;
+  padding: 0 15px;
+}
+#calendar ol.matches {
+  border-top: 1px solid black;
+}
+#calendar ol.matches > li {
+  background-color: WhiteSmoke;
+  margin: 10px 0;
+  padding: 10px 0;
+}
+#calendar ol.days > li + li {
+  margin-top: 15px;
+}
+#calendar div.time {
+  padding: 0 15px;
+  font-weight: bold;
+  float: left;
+}
+#calendar div.summary {
+  margin-left: 80px;
+}
+#calendar a.league {
+  display: block;
+}
+#calendar div.casts > span {
+  float: left;
+}
+#calendar div.casts > ul {
+  margin-left: 57px;
+}
+

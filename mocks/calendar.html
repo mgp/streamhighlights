@@ -1,6 +1,7 @@
 <html>
   <head>
     <title>Calendar</title>
+    <link rel="stylesheet" type="text/css" href="style.css" />
   </head>
   <body>
     <!--
@@ -41,19 +42,20 @@
     -->
 
     <div id="calendar">
-      <ol>
+      <ol class="days">
         <li>
-          <h2>Today</h2>
-          <ol>
+          <h2><span>Today</span></h2>
+          <ol class="matches">
             <li>
               <div class="time">7 PM</div>
               <div class="summary">
-                <div class="teams">The Experiment vs Some Other Team</div>
-                <div class="league">ESEA Invite S10</div>
-                <div class="casts">Cast by
+                <h3 class="teams"><a href="">The Experiment</a> vs <a href="">Some Other Team</a></h3>
+                <a href="" class="league">ESEA Invite S10</a>
+                <div class="casts">
+                  <span>Cast by</span>
                   <ul>
-                    <li>My Gaming Edge</li>
-                    <li>eXtelevision</li>
+                    <li><a href="">My Gaming Edge</a></li>
+                    <li><a href="">eXtelevision</a></li>
                   </ul>
                 </div>
               </div>
@@ -61,23 +63,24 @@
             <li>
               <div class="time">10 PM</div>
               <div class="summary">
-                <div class="teams">Some Team vs Some Other Team</div>
-                <div class="league">ESEA Intermediate S10</div>
+                <h3 class="teams"><a href="">Some Team</a> vs <a href="">Some Other Team</a></h3>
+                <a href="" class="league">ESEA Intermediate S10</a>
               </div>
             </li>
           </ol>
         </li>
         <li>
           <h2>Tomorrow</h2>
-          <ol>
+          <ol class="matches">
             <li>
               <div class="time">9 PM</div>
               <div class="summary">
-                <div class="teams">Some Team vs Some Other Team</div>
-                <div class="league">ESEA Intermediate S10</div>
-                <div class="casts">Cast by
+                <h3 class="teams"><a href="">Some Team</a> vs <a href="">Some Other Team</a></h3>
+                <a href="" class="league">ESEA Intermediate S10</a>
+                <div class="casts">
+                  <span>Cast by</span>
                   <ul>
-                    <li>eXtelevision</li>
+                    <li><a href="">eXtelevision</a></li>
                   </ul>
                 </div>
               </div>
@@ -86,16 +89,17 @@
         </li>
         <li>
           <h2>Tuesday, November 8</h2>
-          <ol>
+          <ol class="matches">
             <li>
               <div class="time">10 PM</div>
               <div class="summary">
-                <div class="teams">Some Team vs Some Other Team</div>
-                <div class="league">ESEA Invite S10</div>
-                <div class="casts">Cast by
+                <h3 class="teams"><a href="">Some Team</a> vs <a href="">Some Other Team</a></h3>
+                <div class="league"><a href="">ESEA Invite S10</a></div>
+                <div class="casts">
+                  <span>Cast by</span>
                   <ul>
-                    <li>My Gaming Edge</li>
-                    <li>eXtelevision</li>
+                    <li><a href="">My Gaming Edge</a></li>
+                    <li><a href="">eXtelevision</a></li>
                   </ul>
                 </div>
               </div>
@@ -104,12 +108,12 @@
         </li>
         <li>
           <h2>Friday, November 11</h2>
-          <ol>
+          <ol class="matches">
             <li>
               <div class="time">9 PM</div>
               <div class="summary">
-                <div class="teams">Some Team vs Some Other Team</div>
-                <div class="league">ESEA Intermediate S10</div>
+                <h3 class="teams"><a href="">Some Team vs Some Other Team</a></h3>
+                <div class="league"><a href="">ESEA Intermediate S10</a></div>
               </div>
             </li>
           </ol>
