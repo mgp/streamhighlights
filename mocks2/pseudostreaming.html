@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+		<script type="text/javascript" src="http://releases.flowplayer.org/js/flowplayer-3.2.11.min.js"></script>
+		<title>Flowplayer demo</title>
+	</head>
+
+	<body>
+		<div>
+			<a  
+				href="http://media20.justin.tv/archives/2012-7-9/highlight_324177583.flv"
+				style="display:block;width:640px;height:406px"
+				id="player"> 
+			</a> 
+	
+			<script>
+				flowplayer("player", "http://releases.flowplayer.org/swf/flowplayer-3.2.15.swf", {
+					plugins: {
+						pseudo: {
+							url: "http://releases.flowplayer.org/swf/flowplayer.pseudostreaming-3.2.11.swf"
+						}
+					},
+					clip: {
+						// make this clip use pseudostreaming plugin
+						provider: 'pseudo',
+					}
+				});
+			</script>
+		</div>
+	</body>
+</html>
+
