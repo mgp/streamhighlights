@@ -1,3 +1,4 @@
+from datetime import datetime
 import sqlalchemy as sa
 
 def get_engine(testing=True):
@@ -83,7 +84,8 @@ class Playlist(_Base):
 	num_thumbs_up = sa.Column(sa.Integer, nullable=False)
 	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
 
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id')
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	votes = sa.orm.relationship('PlaylistVote', backref='playlist')
 
 	def __init__(self, visibility, name, now=None):
 		if now is None:
@@ -95,14 +97,42 @@ class Playlist(_Base):
 		self.num_thumbs_down = 0
 	
 	def __repr__(self):
-		return 'Playlist(id=%r, created=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, user=%r)' % (
+		return 'Playlist(id=%r, created=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, user=%r, votes=%r)' % (
 				self.id,
 				self.created,
 				self.visbility,
 				self.name,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
-				self.user)
+				self.user,
+				self.votes)
+
+
+"""A vote by a user for a playlist.
+"""
+class PlaylistVote(_Base):
+	__tablename__ = 'PlaylistVotes'
+
+	created = sa.Column(sa.DateTime, nullable=False)
+	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	playlist_id = sa.Column(sa.Integer, sa.ForeignKey('Playlists.id'))
+
+	# TODO: make user_id and playlist_id the primary key?
+
+	def __init__(self, vote, now=None):
+		if now is None:
+			now = datetime.utcnow()
+		self.created = now
+		self.vote = vote
+	
+	def __repr__(self):
+		return 'PlaylistVote(created=%r, vote=%r, user=%r, playlist=%r)' % (
+				self.created,
+				self.vote,
+				self.user,
+				self.playlist)
 
 
 """A video on Twitch.
@@ -132,7 +162,8 @@ class Bookmark(_Base):
 	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
 
 	video_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id')
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	votes = sa.orm.relationship('BookmarkVote', backref='bookmark')
 
 	def __init__(self, comment, time, now=None):
 		self.comment = comment
@@ -142,7 +173,7 @@ class Bookmark(_Base):
 		self.num_thumbs_down = 0
 
 	def __repr__(self):
-		return 'Bookmark(id=%r, comment=%r, time=%r, created=%r, num_thumbs_up=%r, num_thumbs_down=%r, video=%r, user=%r)' % (
+		return 'Bookmark(id=%r, comment=%r, time=%r, created=%r, num_thumbs_up=%r, num_thumbs_down=%r, video=%r, user=%r, votes=%r)' % (
 				self.id,
 				self.comment,
 				self.time,
@@ -150,5 +181,33 @@ class Bookmark(_Base):
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.video,
-				self.user)
+				self.user,
+				self.votes)
+
+
+"""A vote by a user for a bookmark.
+"""
+class BookmarkVote(_Base):
+	__tablename__ = 'BookmarkVotes'
+
+	created = sa.Column(sa.DateTime, nullable=False)
+	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	bookmark_id = sa.Column(sa.Integer, sa.ForeignKey('Bookmarks.id'))
+
+	# TODO: make user_id and bookmark_id the primary key?
+
+	def __init__(self, vote, now=None):
+		if now is None:
+			now = datetime.utcnow()
+		self.created = now
+		self.vote = vote
+	
+	def __repr__(self):
+		return 'PlaylistVote(created=%r, vote=%r, user=%r, bookmark=%r)' % (
+				self.created,
+				self.vote,
+				self.user,
+				self.bookmark)
 
