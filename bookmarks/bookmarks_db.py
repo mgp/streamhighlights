@@ -234,7 +234,7 @@ class DisplayedBookmark:
 		self.playlist_ids = playlist_ids
 
 	def __repr__(self):
-		return 'BookmarkData(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+		return 'DisplayedBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
@@ -251,16 +251,16 @@ class DisplayedVideo:
 		self.length = length
 		# A mapping from playlist identifiers to their names.
 		self.playlist_map = playlist_map
-		# The BookmarkData objects for each bookmark.
+		# The DisplayedBookmark objects for each bookmark.
 		self.bookmarks = bookmarks
 	
 	def __repr__(self):
-		return 'VideoData(length=%s, playlist_map=%s, bookmarks=%s)' % (
+		return 'DisplayedVideo(length=%s, playlist_map=%s, bookmarks=%s)' % (
 				self.length,
 				self.playlist_map,
 				self.bookmarks)
 
-def get_video_data(user_id, video_id):
+def get_displayed_video(user_id, video_id):
 	# TODO
 	pass
 
@@ -277,4 +277,12 @@ def remove_vote(user_id, bookmark_id):
 	pass
 
 # TODO: creating and deleting bookmarks
+
+class DisplayedUser:
+	# TODO
+	pass
+
+class DisplayedPlaylist:
+	# TODO
+	pass
 
