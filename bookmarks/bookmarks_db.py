@@ -141,11 +141,13 @@ class Video(_Base):
 	__tablename__ = 'Videos'
 
 	id = sa.Column(sa.Integer, primary_key=True)
+	length = sa.Column(sa.Integer, nullable=False)
 	bookmarks = sa.orm.relationship("Bookmark", backref='video')
 
 	def __repr__(self):
-		return 'Video(id=%r, bookmarks=%r)' % (
+		return 'Video(id=%r, length=%r, bookmarks=%r)' % (
 				self.id,
+				self.length,
 				self.bookmarks)
 
 
@@ -210,4 +212,69 @@ class BookmarkVote(_Base):
 				self.vote,
 				self.user,
 				self.bookmark)
+
+
+"""Data for displaying a bookmark.
+"""
+class DisplayedBookmark:
+	_THUMB_UP_VOTE = 'thumb_up'
+	_THUMB_DOWN_VOTE = 'thumb_down'
+
+	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, comment,
+			author_name, author_id, playlist_ids):
+		self.num_thumbs_up = num_thumbs_up
+		self.num_thumbs_down = num_thumbs_down
+		self.user_vote = user_vote
+		self.comment = comment
+		# The author's name, used for display.
+		self.author_name = author_name
+		# The author's unique identifier, used for linking.
+		self.author_id = author_id
+		# The identifiers of the user's playlists that this bookmark is part of.
+		self.playlist_ids = playlist_ids
+
+	def __repr__(self):
+		return 'BookmarkData(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+				self.num_thumbs_up,
+				self.num_thumbs_down,
+				self.user_vote,
+				self.comment,
+				self.author_name,
+				self.author_id,
+				self.playlist_ids)
+
+
+"""Data for displaying a video.
+"""
+class DisplayedVideo:
+	def __init__(self, length, playlist_map, bookmarks):
+		self.length = length
+		# A mapping from playlist identifiers to their names.
+		self.playlist_map = playlist_map
+		# The BookmarkData objects for each bookmark.
+		self.bookmarks = bookmarks
+	
+	def __repr__(self):
+		return 'VideoData(length=%s, playlist_map=%s, bookmarks=%s)' % (
+				self.length,
+				self.playlist_map,
+				self.bookmarks)
+
+def get_video_data(user_id, video_id):
+	# TODO
+	pass
+
+def vote_bookmark_thumb_up(user_id, bookmark_id):
+	# TODO
+	pass
+
+def vote_bookmark_thumb_down(user_id, bookmark_id):
+	# TODO
+	pass
+
+def remove_vote(user_id, bookmark_id):
+	# TODO
+	pass
+
+# TODO: creating and deleting bookmarks
 
