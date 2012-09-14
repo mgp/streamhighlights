@@ -258,6 +258,21 @@ class DisplayedUserPlaylist:
 				self.num_bookmarks)
 
 
+def get_displayed_user(user_id):
+	# TODO
+	pass
+
+def create_playlist(user_id, name, now=None):
+	if now is None:
+		now = datetime.utcnow()
+	# TODO: return playlist_id
+	pass
+
+def delete_playlist(user_id, playlist_id):
+	# TODO
+	pass
+
+
 """Data for displaying a playlist.
 """
 class DisplayedPlaylist:
@@ -292,7 +307,8 @@ class DisplayedPlaylist:
 """Data for displaying a bookmark on a playlist page.
 """
 class DisplayedPlaylistBookmark:
-	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id, playlist_ids):
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id, playlist_ids):
+		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
@@ -305,7 +321,8 @@ class DisplayedPlaylistBookmark:
 		self.playlist_ids = playlist_ids
 	
 	def __repr__(self):
-		return 'DisplayedPlaylistBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, video_name=%s, comment=%s, time_added=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_name=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r, playlist_ids=%r)' % (
+				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
@@ -315,6 +332,33 @@ class DisplayedPlaylistBookmark:
 				self.author_name,
 				self.author_id,
 				self.playlist_ids)
+
+
+def get_displayed_playlist(playlist_id):
+	# TODO
+	pass
+
+def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+	if now is None:
+		now = datetime.utcnow()
+	# TODO
+	pass
+
+def remove_playlist_bookmark(user_id, playlist_id, bookmark_id):
+	# TODO
+	pass
+
+def vote_playlist_thumb_up(user_id, playlist_id):
+	# TODO
+	pass
+
+def vote_playlist_thumb_down(user_id, playlist_id):
+	# TODO
+	pass
+
+def remove_playlist_vote(user_id, playlist_id):
+	# TODO
+	pass
 
 
 """Data for displaying a video.
@@ -339,12 +383,16 @@ class DisplayedVideo:
 """Data for displaying a bookmark on a video page.
 """
 class DisplayedVideoBookmark:
-	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, comment, time_created,
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, comment, time, time_created,
 			author_name, author_id, playlist_ids):
+		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
 		self.comment = comment
+		# The bookmarked time.
+		self.time = time
+		# The time to bookmark was created.
 		self.time_created = time_created
 		# The author's name, used for display.
 		self.author_name = author_name
@@ -354,18 +402,30 @@ class DisplayedVideoBookmark:
 		self.playlist_ids = playlist_ids
 
 	def __repr__(self):
-		return 'DisplayedBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, time_created=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_id=%r, playlist_ids=%r)' % (
+				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
 				self.comment,
+				self.time,
 				self.time_created,
 				self.author_name,
 				self.author_id,
 				self.playlist_ids)
 
 
-def get_displayed_video(user_id, video_id):
+def get_displayed_video(video_id):
+	# TODO
+	pass
+
+def add_video_bookmark(user_id, video_id, comment, time, now=None):
+	if now is None:
+		now = datetime.utcnow()
+	# TODO: return bookmark_id
+	pass
+
+def remove_video_bookmark(user_id, bookmark_id):
 	# TODO
 	pass
 
@@ -377,9 +437,7 @@ def vote_bookmark_thumb_down(user_id, bookmark_id):
 	# TODO
 	pass
 
-def remove_vote(user_id, bookmark_id):
+def remove_bookmark_vote(user_id, bookmark_id):
 	# TODO
 	pass
-
-# TODO: creating and deleting bookmarks
 
