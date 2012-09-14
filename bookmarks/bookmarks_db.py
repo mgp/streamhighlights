@@ -214,31 +214,104 @@ class BookmarkVote(_Base):
 				self.bookmark)
 
 
-"""Data for displaying a bookmark.
-"""
-class DisplayedBookmark:
-	_THUMB_UP_VOTE = 'thumb_up'
-	_THUMB_DOWN_VOTE = 'thumb_down'
+"""Enums for thumbs up and thumbs down votes by the user."""
+_THUMB_UP_VOTE = 'thumb_up'
+_THUMB_DOWN_VOTE = 'thumb_down'
 
-	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, comment,
-			author_name, author_id, playlist_ids):
+
+"""Data for displaying a user.
+"""
+class DisplayedUser:
+	def __init__(self, id, name, playlists):
+		self.id = id
+		self.name = name
+		# The DisplayedUserPlaylist objects for each playlist.
+		self.playlists = playlists
+	
+	def __repr__(self):
+		return 'DisplayedUser(id=%r, name=%r, playlists=%r)' % (
+				self.id,
+				self.name,
+				self.playlists)
+
+
+"""Data for displaying a playlist on a user page.
+"""
+class DisplayedUserPlaylist:
+	def __init__(self, id, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, num_bookmarks):
+		self.id = id
+		self.time_created = time_updated
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
-		self.comment = comment
-		# The author's name, used for display.
-		self.author_name = author_name
-		# The author's unique identifier, used for linking.
-		self.author_id = author_id
-		# The identifiers of the user's playlists that this bookmark is part of.
-		self.playlist_ids = playlist_ids
-
+		self.name = name
+		self.num_bookmarks = num_bookmarks
+	
 	def __repr__(self):
-		return 'DisplayedBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+		return 'DisplayedUserPlaylist(id=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, num_bookmarks=%r)' % (
+				self.id,
+				self.time_updated,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
+				self.name,
+				self.num_bookmarks)
+
+
+"""Data for displaying a playlist.
+"""
+class DisplayedPlaylist:
+	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, playlist_map, bookmarks):
+		self.author_id = author_id
+		self.author_name = author_name
+		self.time_created = time_created
+		self.time_updated = time_updated
+		self.num_thumbs_up = num_thumbs_up
+		self.num_thumbs_down = num_thumbs_down
+		self.user_vote = user_vote
+		self.name = name
+		# A mapping from playlist identifiers to their names.
+		self.playlist_map = playlist_map
+		# The DisplayedPlaylistBookmark objects for each bookmark.
+		self.bookmarks = bookmarks
+
+	def __repr__(self):
+		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, bookmarks=%r, playlist_map=%r)' % (
+				self.author_id,
+				self.author_name,
+				self.time_created,
+				self.time_updated,
+				self.num_thumbs_up,
+				self.num_thumbs_down,
+				self.user_vote,
+				self.name,
+				self.bookmarks,
+				self.playlist_map)
+
+
+"""Data for displaying a bookmark on a playlist page.
+"""
+class DisplayedPlaylistBookmark:
+	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id, playlist_ids):
+		self.num_thumbs_up = num_thumbs_up
+		self.num_thumbs_down = num_thumbs_down
+		self.user_vote = user_vote
+		self.video_name = video_name
+		self.comment = comment
+		self.time_added = time_added
+		self.author_name = author_name
+		self.author_id = author_id
+		# The identifiers of the user's playlists that this bookmark is part of.
+		self.playlist_ids = playlist_ids
+	
+	def __repr__(self):
+		return 'DisplayedPlaylistBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, video_name=%s, comment=%s, time_added=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+				self.num_thumbs_up,
+				self.num_thumbs_down,
+				self.user_vote,
+				self.video_name,
 				self.comment,
+				self.time_added,
 				self.author_name,
 				self.author_id,
 				self.playlist_ids)
@@ -247,7 +320,8 @@ class DisplayedBookmark:
 """Data for displaying a video.
 """
 class DisplayedVideo:
-	def __init__(self, length, playlist_map, bookmarks):
+	def __init__(self, name, length, playlist_map, bookmarks):
+		self.name = name
 		self.length = length
 		# A mapping from playlist identifiers to their names.
 		self.playlist_map = playlist_map
@@ -255,10 +329,41 @@ class DisplayedVideo:
 		self.bookmarks = bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedVideo(length=%s, playlist_map=%s, bookmarks=%s)' % (
+		return 'DisplayedVideo(name=%r, length=%r, playlist_map=%r, bookmarks=%r)' % (
+				self.name,
 				self.length,
 				self.playlist_map,
 				self.bookmarks)
+
+
+"""Data for displaying a bookmark on a video page.
+"""
+class DisplayedVideoBookmark:
+	def __init__(self, num_thumbs_up, num_thumbs_down, user_vote, comment, time_created,
+			author_name, author_id, playlist_ids):
+		self.num_thumbs_up = num_thumbs_up
+		self.num_thumbs_down = num_thumbs_down
+		self.user_vote = user_vote
+		self.comment = comment
+		self.time_created = time_created
+		# The author's name, used for display.
+		self.author_name = author_name
+		# The author's unique identifier, used for linking.
+		self.author_id = author_id
+		# The identifiers of the user's playlists that this bookmark is part of.
+		self.playlist_ids = playlist_ids
+
+	def __repr__(self):
+		return 'DisplayedBookmark(num_thumbs_up=%s, num_thumbs_down=%s, user_vote=%s, comment=%s, time_created=%s, author_name=%s, author_id=%s, playlist_ids=%s)' % (
+				self.num_thumbs_up,
+				self.num_thumbs_down,
+				self.user_vote,
+				self.comment,
+				self.time_created,
+				self.author_name,
+				self.author_id,
+				self.playlist_ids)
+
 
 def get_displayed_video(user_id, video_id):
 	# TODO
@@ -277,12 +382,4 @@ def remove_vote(user_id, bookmark_id):
 	pass
 
 # TODO: creating and deleting bookmarks
-
-class DisplayedUser:
-	# TODO
-	pass
-
-class DisplayedPlaylist:
-	# TODO
-	pass
 
