@@ -10,9 +10,12 @@ def get_engine(testing=True):
 		# TODO
 		return None
 
+_engine = get_engine()
+_Session = sa_orm.sessionmaker(bind=_engine)
+session = _Session()
+
 
 _Base = sa_ext_declarative.declarative_base()
-
 
 """A user of the site.
 """
@@ -20,6 +23,7 @@ class User(_Base):
 	__tablename__ = 'Users'
 
 	id = sa.Column(sa.Integer, primary_key=True)
+	name = sa.Column(sa.String, nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
 	last_seen = sa.Column(sa.DateTime)
 
@@ -28,14 +32,16 @@ class User(_Base):
 	playlists = sa_orm.relationship('Playlist', backref='user')
 	bookmarks = sa_orm.relationship('Bookmark', backref='user')
 
-	def __init__(self, now=None):
+	def __init__(self, name, now=None):
 		if now is None:
 			now = datetime.utcnow()
+		self.name = name
 		self.created = now
 	
 	def __repr__(self):
-		return 'User(id=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
+		return 'User(id=%r, name=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
 				self.id,
+				self.name,
 				self.created.isoformat(),
 				self.last_seen.isoformat(),
 				self.steam_user,
@@ -214,6 +220,12 @@ class BookmarkVote(_Base):
 				self.vote,
 				self.user,
 				self.bookmark)
+
+def create_all():
+	_Base.metadata.create_all(_engine)
+
+def drop_all():
+	_Base.metadata.drop_all(_engine)
 
 
 """Enums for thumbs up and thumbs down votes by the user."""
