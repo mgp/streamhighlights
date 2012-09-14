@@ -1,5 +1,7 @@
 from datetime import datetime
 import sqlalchemy as sa
+import sqlalchemy.ext.declarative as sa_ext_declarative
+import sqlalchemy.orm as sa_orm
 
 def get_engine(testing=True):
 	if testing:
@@ -9,7 +11,7 @@ def get_engine(testing=True):
 		return None
 
 
-_Base = sa.declarative_base()
+_Base = sa_ext_declarative.declarative_base()
 
 
 """A user of the site.
@@ -21,10 +23,10 @@ class User(_Base):
 	created = sa.Column(sa.DateTime, nullable=False)
 	last_seen = sa.Column(sa.DateTime)
 
-	steam_user = sa.orm.relationship('SteamUser', uselist=False, backref='user')
-	twitch_user = sa.orm.relationship('TwitchUser', uselist=False, backref='user')
-	playlists = sa.orm.relationship('Playlist', backref='user')
-	bookmarks = sa.orm.relationship('Bookmark', backref='user')
+	steam_user = sa_orm.relationship('SteamUser', uselist=False, backref='user')
+	twitch_user = sa_orm.relationship('TwitchUser', uselist=False, backref='user')
+	playlists = sa_orm.relationship('Playlist', backref='user')
+	bookmarks = sa_orm.relationship('Bookmark', backref='user')
 
 	def __init__(self, now=None):
 		if now is None:
@@ -47,12 +49,12 @@ class User(_Base):
 class SteamUser(_Base):
 	__tablename__ = 'SteamUsers'
 
-	# TODO: pick primary key
-
+	# TODO: make (id, user_id) primary key? or user_id primary key and foreign key?
+	id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 
 	def __repr__(self):
-		return 'SteamUser(id=%r, user=%r') % (
+		return 'SteamUser(id=%r, user=%r)' % (
 				self.id,
 				self.user)
 
@@ -62,12 +64,12 @@ class SteamUser(_Base):
 class TwitchUser(_Base):
 	__tablename__ = 'TwitchUsers'
 
-	# TODO: pick primary key
-
+	# TODO: make (id, user_id) primary key? or user_id primary key and foreign key?
+	id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 
 	def __repr__(self):
-		return 'TwitchUser(id=%r, user=%r') % (
+		return 'TwitchUser(id=%r, user=%r)' % (
 				self.id,
 				self.user)
 
@@ -85,7 +87,7 @@ class Playlist(_Base):
 	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-	votes = sa.orm.relationship('PlaylistVote', backref='playlist')
+	votes = sa_orm.relationship('PlaylistVote', backref='playlist')
 
 	def __init__(self, visibility, name, now=None):
 		if now is None:
@@ -113,13 +115,13 @@ class Playlist(_Base):
 class PlaylistVote(_Base):
 	__tablename__ = 'PlaylistVotes'
 
+	# TODO: make (user_id, playlist_id) primary key?
+	id = sa.Column(sa.Integer, primary_key=True)
 	created = sa.Column(sa.DateTime, nullable=False)
 	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	playlist_id = sa.Column(sa.Integer, sa.ForeignKey('Playlists.id'))
-
-	# TODO: make user_id and playlist_id the primary key?
 
 	def __init__(self, vote, now=None):
 		if now is None:
@@ -142,7 +144,7 @@ class Video(_Base):
 
 	id = sa.Column(sa.Integer, primary_key=True)
 	length = sa.Column(sa.Integer, nullable=False)
-	bookmarks = sa.orm.relationship("Bookmark", backref='video')
+	bookmarks = sa_orm.relationship("Bookmark", backref='video')
 
 	def __repr__(self):
 		return 'Video(id=%r, length=%r, bookmarks=%r)' % (
@@ -165,7 +167,7 @@ class Bookmark(_Base):
 
 	video_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-	votes = sa.orm.relationship('BookmarkVote', backref='bookmark')
+	votes = sa_orm.relationship('BookmarkVote', backref='bookmark')
 
 	def __init__(self, comment, time, now=None):
 		self.comment = comment
@@ -192,13 +194,13 @@ class Bookmark(_Base):
 class BookmarkVote(_Base):
 	__tablename__ = 'BookmarkVotes'
 
+	# TODO: make (user_id, bookmark_id) primary key?
+	id = sa.Column(sa.Integer, primary_key=True)
 	created = sa.Column(sa.DateTime, nullable=False)
 	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	bookmark_id = sa.Column(sa.Integer, sa.ForeignKey('Bookmarks.id'))
-
-	# TODO: make user_id and bookmark_id the primary key?
 
 	def __init__(self, vote, now=None):
 		if now is None:
