@@ -5,7 +5,7 @@ import sqlalchemy.orm as sa_orm
 
 def get_engine(testing=True):
 	if testing:
-		return sa.create_engine('sqlite:///:memory:', echo=True)
+		return sa.create_engine('sqlite:///:memory:')
 	else:
 		# TODO
 		return None
