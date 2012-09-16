@@ -15,6 +15,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# TODO
 		pass
 
+	"""Utility method for creating a bookmark."""
+	def _create_bookmark(self):
+		# TODO
+		pass
+
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
@@ -25,19 +30,66 @@ class TestBookmarksDb(unittest.TestCase):
 		unittest.TestCase.tearDown(self)
 		bookmarks_db.drop_all()
 	
-	def _assert_displayed_playlist(displayed_playlist, playlist_id, name, time_created,
+	"""Utility method to assert the fields in a DisplayedUserPlaylist.
+	"""
+	def _assert_displayed_user_playlist(self,
+			displayed_user_playlist, playlist_id, name, time_created,
 			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None, num_bookmarks=0):
 		if time_updated is None:
 			time_updated = time_created
 
-		self.assertEqual(playlist_id, displayed_playlist.id)
+		# Begin required arguments.
+		self.assertEqual(playlist_id, displayed_user_playlist.id)
+		self.assertEqual(time_created, displayed_user_playlist.time_created)
+		self.assertEqual(time_updated, displayed_user_playlist.time_updated)
+		# Begin optional arguments.
+		self.assertEqual(num_thumbs_up, displayed_user_playlist.num_thumbs_up)
+		self.assertEqual(num_thumbs_down, displayed_user_playlist.num_thumbs_down)
+		self.assertEqual(user_vote, displayed_user_playlist.user_vote)
+		self.assertEqual(name, displayed_user_playlist.name)
+		self.assertEqual(num_bookmarks, displayed_user_playlist.num_bookmarks)
+
+	"""Utility method to assert the fields in a DisplayedPlaylist.
+	"""
+	def _assert_displayed_playlist(self,
+			displayed_playlist, author_id, author_name, time_created, name,
+			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
+			playlist_map={}, num_bookmarks=0):
+		if time_updated is None:
+			time_updated = time_created
+
+		# Begin required arguments.
+		self.assertEqual(author_id, displayed_playlist.author_id)
+		self.assertEqual(author_name, displayed_playlist.author_name)
 		self.assertEqual(time_created, displayed_playlist.time_created)
+		self.assertEqual(name, displayed_playlist.name)
+		# Begin optional arguments.
 		self.assertEqual(time_updated, displayed_playlist.time_updated)
 		self.assertEqual(num_thumbs_up, displayed_playlist.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_playlist.user_vote)
-		self.assertEqual(name, displayed_playlist.name)
-		self.assertEqual(num_bookmarks, displayed_playlist.num_bookmarks)
+		self.assertDictEqual(playlist_map, displayed_playlist.playlist_map)
+		self.assertEqual(num_bookmarks, len(displayed_playlist.bookmarks))
+
+	"""Utility method to assert the fields in a DisplayedPlaylistBookmark.
+	"""
+	def _assert_displayed_playlist_bookmark(self,
+			displayed_playlist_bookmark, bookmark_id, video_name, comment,
+			time_added, author_name, author_id,
+			num_thumbs_up=0, num_thumbs_down=0, user_vote=None, playlist_ids=[]):
+		# Begin required arguments.
+		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
+		self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
+		self.assertEqual(comment, displayed_playlist_bookmark.comment)
+		self.assertEqual(time_added, displayed_playlist_bookmark.time_added)
+		self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
+		self.assertEqual(author_id, displayed_playlist_bookmark.author_id)
+		# Begin optional arguments.
+		self.assertEqual(num_thumbs_up, displayed_playlist_bookmark.num_thumbs_up)
+		self.assertEqual(num_thumbs_down, displayed_playlist_bookmark.num_thumbs_down)
+		self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
+		self.assertSequenceEqual(
+				sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
 
 	#
 	# Begin tests for users.
@@ -57,7 +109,7 @@ class TestBookmarksDb(unittest.TestCase):
 		missing_user_id = 'missing_user_id'
 		playlist_name = 'playlist1'
 		with self.assertRaises(ValueError):
-			bookmarks_db.create_playlist(missing_user_id, playlist_name)
+			bookmarks_db.create_playlist(missing_user_id, playlist_name, now=self.now)
 
 	"""Test that successfully creates and deletes a bookmark.
 	"""
@@ -143,37 +195,136 @@ class TestBookmarksDb(unittest.TestCase):
 	is unknown.
 	"""
 	def test_get_displayed_playlist_unknown_playlist(self):
-		# TODO
-		pass
+		missing_playlist_id = 'missing_playlist_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.get_displayed_playlist(missing_playlist_id)
 
 	"""Test that fails to add a bookmark to a playlist because the user identifier
 	is unknown.
 	"""
 	def test_add_playlist_bookmark_unknown_user(self):
-		# TODO
-		pass
-	
+		# Create a user with a playlist.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
+		# Create a video with a bookmark by another user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+
+		# Assert that adding the bookmark by a missing user fails.
+		missing_user_id = 'missing_user_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_playlist_bookmark(
+					missing_user_id, playlist_id, bookmark_id, now=self.now)
+
 	"""Test that fails to add a bookmark to a playlist because the playlist identifier
 	is unknown.
 	"""
 	def test_add_playlist_bookmark_unknown_playlist(self):
-		# TODO
-		pass
+		# Create a user without playlists.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		# Create a video with a bookmark by another user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+
+		# Assert that adding the bookmark to a missing playlist fails.
+		missing_playlist_id = 'missing_playlist_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_playlist_bookmark(
+					user_id1, missing_playlist_id, bookmark_id, now=self.now)
 	
 	"""Test that fails to add a bookmark to a playlist becuase the bookmark identifier
 	is unknown.
 	"""
 	def test_add_playlist_bookmark_unknown_bookmark(self):
-		# TODO
-		pass
+		# Create a user with a playlist.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
+
+		# Assert that adding a missing bookmark to a playlist fails.
+		missing_bookmark_id = 'missing_bookmark_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_playlist_bookmark(
+					user_id1, playlist_id, missing_bookmark_id, now=self.now)
 	
 	"""Test that successfully adds a bookmark to and removes a bookmark from a
 	playlist.
 	"""
 	def test_add_remove_playlist_bookmark(self):
-		# TODO: test adding twice, removing twice
-		pass
-	
+		# Create a user with a playlist.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
+		# Create a video with a bookmark by another user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+
+		# Add the bookmark to the playlist.
+		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id, now=self.now)
+		# Assert that the playlist has a bookmark.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name, num_bookmarks=1)
+		# Assert that the bookmark is correct.
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
+
+		# Add the bookmark to the playlist again.
+		update_time = self.now + timedelta(minutes=10)
+		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
+				now=update_again_time)
+		# Assert that this has no effect.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
+
+		# Remove the bookmark from the playlist.
+		remove_time = self.now + timedelta(minutes=20)
+		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
+				now=update_time)
+		# Assert that the playlist has no bookmarks.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name,
+				time_updated=update_time, num_bookmarks=0)
+
+		# Remove the bookmark from the playlist again.
+		update_time = self.now + timedelta(minutes=30)
+		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
+				now=update_time)
+		# Assert that this has no effect.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name,
+				time_updated=update_time, num_bookmarks=0)
+
 	"""Test that fails to add a bookmark to a playlist because the user identifier is
 	not the playlist creator.
 	"""
