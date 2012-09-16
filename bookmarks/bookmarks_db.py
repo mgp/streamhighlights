@@ -3,6 +3,7 @@ import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_ext_declarative
 import sqlalchemy.orm as sa_orm
 
+
 def get_engine(testing=True):
 	if testing:
 		return sa.create_engine('sqlite:///:memory:')
@@ -252,9 +253,10 @@ class DisplayedUser:
 """Data for displaying a playlist on a user page.
 """
 class DisplayedUserPlaylist:
-	def __init__(self, id, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, num_bookmarks):
+	def __init__(self, id, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, num_bookmarks):
 		self.id = id
-		self.time_created = time_updated
+		self.time_created = time_created
+		self.time_updated = time_updated
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
@@ -262,8 +264,9 @@ class DisplayedUserPlaylist:
 		self.num_bookmarks = num_bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedUserPlaylist(id=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, num_bookmarks=%r)' % (
+		return 'DisplayedUserPlaylist(id=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, num_bookmarks=%r)' % (
 				self.id,
+				self.time_created,
 				self.time_updated,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -272,16 +275,22 @@ class DisplayedUserPlaylist:
 				self.num_bookmarks)
 
 
+"""Returns the DisplayedUser with the given identifier.
+"""
 def get_displayed_user(user_id):
 	# TODO
 	pass
 
+"""Creates a playlist by the given user.
+"""
 def create_playlist(user_id, name, now=None):
 	if now is None:
 		now = datetime.utcnow()
 	# TODO: return playlist_id
 	pass
 
+"""Deletes the playlist with the given identifier.
+"""
 def delete_playlist(user_id, playlist_id):
 	# TODO
 	pass
@@ -348,28 +357,40 @@ class DisplayedPlaylistBookmark:
 				self.playlist_ids)
 
 
+"""Returns the DisplayedPlaylist with the given identifier.
+"""
 def get_displayed_playlist(playlist_id):
 	# TODO
 	pass
 
+"""Adds the bookmark with the given identifier to the given playlist.
+"""
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 	if now is None:
 		now = datetime.utcnow()
 	# TODO
 	pass
 
+"""Removes the bookmark with the given identifier from the given playlist.
+"""
 def remove_playlist_bookmark(user_id, playlist_id, bookmark_id):
 	# TODO
 	pass
 
+"""Votes up the playlist with the given identifier.
+"""
 def vote_playlist_thumb_up(user_id, playlist_id):
 	# TODO
 	pass
 
+"""Votes down the playlist with the given identifier.
+"""
 def vote_playlist_thumb_down(user_id, playlist_id):
 	# TODO
 	pass
 
+"""Removes the vote for the playlist with the given identifier.
+"""
 def remove_playlist_vote(user_id, playlist_id):
 	# TODO
 	pass
@@ -429,28 +450,40 @@ class DisplayedVideoBookmark:
 				self.playlist_ids)
 
 
+"""Returns the DisplayedVideo with the given identifier.
+"""
 def get_displayed_video(video_id):
 	# TODO
 	pass
 
+"""Adds a bookmark by the given user for the given video.
+"""
 def add_video_bookmark(user_id, video_id, comment, time, now=None):
 	if now is None:
 		now = datetime.utcnow()
 	# TODO: return bookmark_id
 	pass
 
+"""Removes the bookmark with the given identifier for the given video.
+"""
 def remove_video_bookmark(user_id, bookmark_id):
 	# TODO
 	pass
 
+"""Votes up the bookmark with the given identifier.
+"""
 def vote_bookmark_thumb_up(user_id, bookmark_id):
 	# TODO
 	pass
 
+"""Votes down the bookmark with the given identifier.
+"""
 def vote_bookmark_thumb_down(user_id, bookmark_id):
 	# TODO
 	pass
 
+"""Removes the vote for the bookmark with the given identifier.
+"""
 def remove_bookmark_vote(user_id, bookmark_id):
 	# TODO
 	pass
