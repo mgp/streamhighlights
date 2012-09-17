@@ -228,6 +228,10 @@ def create_all():
 def drop_all():
 	_Base.metadata.drop_all(_engine)
 
+def _get_now(now):
+	if now is None:
+		return datetime.utcnow()
+	return now
 
 """Enums for thumbs up and thumbs down votes by the user."""
 _THUMB_UP_VOTE = 'thumb_up'
@@ -284,14 +288,14 @@ def get_displayed_user(user_id):
 """Creates a playlist by the given user.
 """
 def create_playlist(user_id, name, now=None):
-	if now is None:
-		now = datetime.utcnow()
+	now = _get_now(now)
 	# TODO: return playlist_id
 	pass
 
 """Deletes the playlist with the given identifier.
 """
-def delete_playlist(user_id, playlist_id):
+def delete_playlist(user_id, playlist_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
@@ -366,32 +370,35 @@ def get_displayed_playlist(playlist_id):
 """Adds the bookmark with the given identifier to the given playlist.
 """
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
-	if now is None:
-		now = datetime.utcnow()
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Removes the bookmark with the given identifier from the given playlist.
 """
-def remove_playlist_bookmark(user_id, playlist_id, bookmark_id):
+def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Votes up the playlist with the given identifier.
 """
-def vote_playlist_thumb_up(user_id, playlist_id):
+def vote_playlist_thumb_up(user_id, playlist_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Votes down the playlist with the given identifier.
 """
-def vote_playlist_thumb_down(user_id, playlist_id):
+def vote_playlist_thumb_down(user_id, playlist_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Removes the vote for the playlist with the given identifier.
 """
-def remove_playlist_vote(user_id, playlist_id):
+def remove_playlist_vote(user_id, playlist_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
@@ -459,32 +466,35 @@ def get_displayed_video(video_id):
 """Adds a bookmark by the given user for the given video.
 """
 def add_video_bookmark(user_id, video_id, comment, time, now=None):
-	if now is None:
-		now = datetime.utcnow()
+	now = _get_now(now)
 	# TODO: return bookmark_id
 	pass
 
 """Removes the bookmark with the given identifier for the given video.
 """
-def remove_video_bookmark(user_id, bookmark_id):
+def remove_video_bookmark(user_id, bookmark_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Votes up the bookmark with the given identifier.
 """
-def vote_bookmark_thumb_up(user_id, bookmark_id):
+def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Votes down the bookmark with the given identifier.
 """
-def vote_bookmark_thumb_down(user_id, bookmark_id):
+def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
 """Removes the vote for the bookmark with the given identifier.
 """
-def remove_bookmark_vote(user_id, bookmark_id):
+def remove_bookmark_vote(user_id, bookmark_id, now=None):
+	now = _get_now(now)
 	# TODO
 	pass
 
