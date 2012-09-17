@@ -94,6 +94,38 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertSequenceEqual(
 				sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
 
+	"""Utility method to assert the fields in a DisplayedVideo.
+	"""
+	def _assert_displayed_video(self,
+			displayed_video, name, length, playlist_map={}, num_bookmarks=0):
+		# Begin required arguments.
+		self.assertIsNotNone(displayed_video)
+		self.assertEqual(name, displayed_video.name)
+		self.assertEqual(length, displayed_video.length)
+		# Begin optional arguments.
+		self.assertDictEqual(playlist_map, displayed_video.playlist_map)
+		self.assertEqual(num_bookmarks, len(displayed_video.bookmarks))
+
+	"""Utility method to assert the fields in a DisplayedVideoBookmark.
+	"""
+	def _assert_displayed_video_bookmark(self,
+			displayed_video_bookmark, bookmark_id, comment, time, time_created, author_name, author_id, 
+			num_thumbs_up=0, num_thumbs_down=0, user_vote=None, playlist_ids=[]):
+		# Begin required arguments.
+		self.assertIsNotNone(displayed_video_bookmark)
+		self.assertEqual(bookmark_id, displayed_video_bookmark.id)
+		self.assertEqual(comment, displayed_video_bookmark.comment)
+		self.assertEqual(time, displayed_video_bookmark.time)
+		self.assertEqual(time_created, displayed_video_bookmark.time_created)
+		self.assertEqual(author_name, displayed_video_bookmark.author_name)
+		self.assertEqual(author_id, displayed_video_bookmark.author_id)
+		# Begin optional arguments.
+		self.assertEqual(num_thumbs_up, displayed_video_bookmark.num_thumbs_up)
+		self.assertEqual(num_thumbs_down, displayed_video_bookmark.num_thumbs_down)
+		self.assertEqual(user_vote, displayed_video_bookmark.user_vote)
+		self.assertSequenceEqual(
+				sorted(playlist_ids), sorted(displayed_video_bookmark.playlist_ids))
+
 	#
 	# Begin tests for users.
 	# 
@@ -223,9 +255,14 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Assert that adding the bookmark by a missing user fails.
 		missing_user_id = 'missing_user_id'
+		add_bookmark_time = self.now + timedelta(minutes=10)
 		with self.assertRaises(ValueError):
 			bookmarks_db.add_playlist_bookmark(
-					missing_user_id, playlist_id, bookmark_id, now=self.now)
+					missing_user_id, playlist_id, bookmark_id, now=add_bookmark_time)
+		# Assert that this had no effect.
+		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name)
 
 	"""Test that fails to add a bookmark to a playlist because the playlist identifier
 	is unknown.
@@ -262,9 +299,14 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Assert that adding a missing bookmark to a playlist fails.
 		missing_bookmark_id = 'missing_bookmark_id'
+		add_bookmark_time = self.now + timedelta(minutes=10)
 		with self.assertRaises(ValueError):
 			bookmarks_db.add_playlist_bookmark(
-					user_id1, playlist_id, missing_bookmark_id, now=self.now)
+					user_id1, playlist_id, missing_bookmark_id, now=add_bookmark_time)
+		# Assert that this had no effect.
+		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name)
 	
 	"""Test that successfully adds a bookmark to and removes a bookmark from a
 	playlist.
@@ -303,7 +345,7 @@ class TestBookmarksDb(unittest.TestCase):
 		add_bookmark_again_time = self.now + timedelta(minutes=10)
 		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
 				now=add_bookmark_again_time)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name,
@@ -326,7 +368,7 @@ class TestBookmarksDb(unittest.TestCase):
 		remove_bookmark_again_time = self.now + timedelta(minutes=30)
 		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
 				now=remove_bookmark_again_time)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name,
@@ -358,7 +400,7 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			bookmarks_db.add_playlist_bookmark(user_id3, playlist_id, bookmark_id,
 					now=add_bookmark_time)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name)
@@ -394,7 +436,7 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			bookmarks_db.remove_playlist_bookmark(user_id3, playlist_id, bookmark_id,
 					now=remove_bookmark_time)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name,
@@ -418,7 +460,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that voting up the playlist with a missing user fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.vote_playlist_thumb_up(missing_user_id, playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_name)
@@ -426,7 +468,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that voting down the playlist with a missing user fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.vote_playlist_thumb_down(missing_user_id, playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_name)
@@ -434,7 +476,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that removing the playlist vote with a missing user fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.remove_playlist_vote(missing_user_id, playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_name)
@@ -452,21 +494,21 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that voting up a missing playlist fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.vote_playlist_thumb_up(user_id, missing_playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		with self.assertRaises(ValueError):
 			bookmarks_db.get_displayed_playlist(missing_playlist_id)
 
 		# Assert that voting down a missing playlist fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.vote_playlist_thumb_down(user_id, missing_playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		with self.assertRaises(ValueError):
 			bookmarks_db.get_displayed_playlist(missing_playlist_id)
 
 		# Assert that removing the vote for a missing playlist fails.
 		with self.assertRaises(ValueError):
 			bookmarks_db.remove_playlist_vote(user_id, missing_playlist_id)
-		# Assert that this has no effect.
+		# Assert that this had no effect.
 		with self.assertRaises(ValueError):
 			bookmarks_db.get_displayed_playlist(missing_playlist_id)
 
@@ -598,20 +640,42 @@ class TestBookmarksDb(unittest.TestCase):
 	unknown.
 	"""
 	def test_get_displayed_video_unknown_video(self):
-		# TODO
+		# TODO: actually, this should implicitly create the video
 		pass
 
 	"""Test that fails to create a bookmark because the user identifier is unknown.
 	"""
 	def test_create_bookmark_unknown_user(self):
-		# TODO
-		pass
+		# Create a video.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+
+		# Assert that creating a bookmark by a missing user fails.
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		missing_user_id = 'missing_user_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_bookmark(missing_user_id, video_id,
+					bookmark_comment, bookmark_time, now=self.now)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video, video_name, video_length)
 	
 	"""Test that fails to create a bookmark because the video identifier is unknown.
 	"""
 	def test_create_bookmark_unknown_video(self):
-		# TODO
-		pass
+		# Create a user.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+
+		# Assert that creating a bookmark for a missing video fails.
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		missing_video_id = 'missing_video_id'
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_bookmark(user_id, missing_video_id,
+					bookmark_comment, bookmark_time, now=self.now)
 
 	"""Test that successfully creates and deletes a bookmark.
 	"""
