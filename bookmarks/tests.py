@@ -283,61 +283,121 @@ class TestBookmarksDb(unittest.TestCase):
 		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
 
 		# Add the bookmark to the playlist.
-		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id, now=self.now)
+		add_bookmark_time = self.now + timedelta(minutes=10)
+		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
+				now=add_bookmark_time)
 		# Assert that the playlist has a bookmark.
 		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_bookmarks=1)
+				user_id1, user_name1, self.now, playlist_name,
+				time_updated=add_bookmark_time, num_bookmarks=1)
 		# Assert that the bookmark is correct.
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
 
 		# Add the bookmark to the playlist again.
-		update_time = self.now + timedelta(minutes=10)
+		add_bookmark_again_time = self.now + timedelta(minutes=10)
 		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
-				now=update_again_time)
+				now=add_bookmark_again_time)
 		# Assert that this has no effect.
 		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_bookmarks=1)
+				user_id1, user_name1, self.now, playlist_name,
+				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
 
 		# Remove the bookmark from the playlist.
-		remove_time = self.now + timedelta(minutes=20)
+		remove_bookmark_time = self.now + timedelta(minutes=20)
 		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
-				now=update_time)
+				now=remove_bookmark_time)
 		# Assert that the playlist has no bookmarks.
 		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name,
-				time_updated=update_time, num_bookmarks=0)
+				time_updated=remove_bookmark_time, num_bookmarks=0)
 
 		# Remove the bookmark from the playlist again.
-		update_time = self.now + timedelta(minutes=30)
+		remove_bookmark_again_time = self.now + timedelta(minutes=30)
 		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
-				now=update_time)
+				now=remove_bookmark_again_time)
 		# Assert that this has no effect.
 		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name,
-				time_updated=update_time, num_bookmarks=0)
+				time_updated=remove_bookmark_time, num_bookmarks=0)
 
 	"""Test that fails to add a bookmark to a playlist because the user identifier is
 	not the playlist creator.
 	"""
 	def test_add_playlist_bookmark_wrong_user(self):
-		# TODO
-		pass
+		# Create a user with a playlist.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
+		# Create a video with a bookmark by another user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+
+		# Assert that adding the bookmark by a user not the playlist creator fails.
+		user_name3 = 'user_name3'
+		user_id3 = self._create_user(user_name3)
+		add_bookmark_time = self.now + timedelta(minutes=10)
+		with self.assertRaises(ValueError):
+			bookmarks_db.add_playlist_bookmark(user_id3, playlist_id, bookmark_id,
+					now=add_bookmark_time)
+		# Assert that this has no effect.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name, num_bookmarks=0)
 
 	"""Test that fails to remove a bookmark from a playlist because the user identifier
 	is not the playlist creator.
 	"""
 	def test_remove_playlist_bookmark_wrong_user(self):
-		# TODO
-		pass
+		# Create a user with a playlist.
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
+		# Create a video with a bookmark by another user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+
+		add_bookmark_time = self.now + timedelta(minutes=10)
+		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
+				now=add_bookmark_time)
+
+		# Assert that removing the bookmark by a user not the playlist creator fails.
+		user_name3 = 'user_name3'
+		user_id3 = self._create_user(user_name3)
+		remove_bookmark_time = self.now + timedelta(minutes=20)
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_playlist_bookmark(user_id3, playlist_id, bookmark_id,
+					now=remove_bookmark_time)
+		# Assert that this has no effect.
+		displayed_playlist = playlist_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id1, user_name1, self.now, playlist_name,
+				time_updated=add_bookmark_time, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
