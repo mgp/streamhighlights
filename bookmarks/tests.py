@@ -30,6 +30,15 @@ class TestBookmarksDb(unittest.TestCase):
 		unittest.TestCase.tearDown(self)
 		bookmarks_db.drop_all()
 	
+	"""Utility method to assert the fields in a DisplayedUser.
+	"""
+	def _assert_displayed_user(self, displayed_user, user_id, name, num_playlists=0):
+		# Begin required arguments.
+		self.assertIsNotNone(displayed_user)
+		self.assertEqual(user_id, displayed_user.id)
+		self.assertEqual(name, displayed_user.name)
+		self.assertEqual(len(playlists), len(displayed_user.playlists))
+
 	"""Utility method to assert the fields in a DisplayedUserPlaylist.
 	"""
 	def _assert_displayed_user_playlist(self,
@@ -157,41 +166,32 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Get the displayed user.
 		displayed_user = bookmarks_db.get_displayed_user(user_id)
-		self.assertIsNotNone(displayed_user)
-		self.assertEqual(user_id, displayed_user.id)
-		self.assertEqual(user_name, displayed_user.name)
+		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
 		# Assert that the created playlist was returned.
-		self.assertEqual(1, len(displayed_user.playlists))
-		displayed_playlist = displayed_user.playlists[0]
-		self._assert_displayed_playlist(displayed_playlist,
+		displayed_user_playlist = displayed_user.playlists[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_name, self.now)
 
 		# Delete the playlist.
 		bookmarks_db.delete_playlist(user_id, playlist_id)
 
-		# Get the displayed user.
+		# Assert that the playlist is no longer returned.
 		displayed_user = bookmarks_db.get_displayed_user(user_id)
-		self.assertIsNotNone(displayed_user)
-		self.assertEqual(user_id, displayed_user.id)
-		self.assertEqual(user_name, displayed_user.name)
-		# Assert that the playlist is not returned.
-		self.assertEqual(0, len(displayed_user.playlists))
+		self._assert_displayed_user(displayed_user, user_id, user_name)
 
 	"""Test that fails to delete a playlist that does not exist.
 	"""
 	def test_delete_missing_playlist(self):
-		# Assert that deleting a missing playlist has no effect.
+		# Create a user.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
+		# Delete a missing playlist.
 		missing_playlist_id = 'missing_playlist_id'
 		bookmarks_db.delete_playlist(user_id, missing_playlist_id)
 
-		# Get the displayed user.
+		# Assert that this had no effect.
 		displayed_user = bookmarks_db.get_displayed_user(user_id)
-		self.assertIsNotNone(displayed_user)
-		self.assertEqual(user_id, displayed_user.id)
-		self.assertEqual(user_name, displayed_user.name)
-		self.assertEqual(0, len(displayed_user.playlists))
+		self._assert_displayed_user(displayed_user, user_id, user_name)
 
 	"""Test that fails to delete a playlist because the user identifier is not the
 	creator.
@@ -210,15 +210,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			bookmarks_db.delete_playlist(user_id2, playlist_id)
 
-		# Get the user with the playlist.
+		# Assert that this had no effect.
 		displayed_user = bookmarks_db.get_displayed_user(user_id1)
-		self.assertIsNotNone(displayed_user)
-		self.assertEqual(user_id1, displayed_user.id)
-		self.assertEqual(user_name, displayed_user.name)
-		# Assert that the created playlist still exists.
-		self.assertEqual(1, len(displayed_user.playlists))
-		displayed_playlist = displayed_user.playlists[0]
-		self._assert_displayed_playlist(displayed_playlist,
+		self._assert_displayed_user(displayed_user, user_id1, user_name1, num_bookmarks=1)
+		displayed_user_playlist = displayed_user.bookmarks[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_name, self.now)
 
 
@@ -342,7 +338,7 @@ class TestBookmarksDb(unittest.TestCase):
 				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
 
 		# Add the bookmark to the playlist again.
-		add_bookmark_again_time = self.now + timedelta(minutes=10)
+		add_bookmark_again_time = self.now + timedelta(minutes=20)
 		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
 				now=add_bookmark_again_time)
 		# Assert that this had no effect.
@@ -355,7 +351,7 @@ class TestBookmarksDb(unittest.TestCase):
 				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
 
 		# Remove the bookmark from the playlist.
-		remove_bookmark_time = self.now + timedelta(minutes=20)
+		remove_bookmark_time = self.now + timedelta(minutes=30)
 		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
 				now=remove_bookmark_time)
 		# Assert that the playlist has no bookmarks.
@@ -365,7 +361,7 @@ class TestBookmarksDb(unittest.TestCase):
 				time_updated=remove_bookmark_time, num_bookmarks=0)
 
 		# Remove the bookmark from the playlist again.
-		remove_bookmark_again_time = self.now + timedelta(minutes=30)
+		remove_bookmark_again_time = self.now + timedelta(minutes=40)
 		bookmarks_db.remove_playlist_bookmark(user_id1, playlist_id, bookmark_id,
 				now=remove_bookmark_again_time)
 		# Assert that this had no effect.
@@ -680,35 +676,167 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Test that successfully creates and deletes a bookmark.
 	"""
 	def test_create_delete_bookmark(self):
-		# TODO
-		pass
+		# Create a user.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		# Create a video.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+
+		# Add the bookmark to the video.
+		add_bookmark_time = self.now + timedelta(minutes=10)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = bookmarks_db.add_video_bookmark(
+				user_id, video_id, bookmark_comment, bookmark_time, now=add_bookmark_time)
+		# Assert that the video has a bookmark.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		# Assert that the bookmark is correct.
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, add_bookmark_time,
+				user_name, user_id)
+
+		# Remove the bookmark from the video.
+		remove_bookmark_time = self.now + timedelta(minutes=20)
+		bookmarks_db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
+		# Assert that the playlist has no bookmarks.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video, video_name, video_length)
+
+		# Remove the bookmark from the video again.
+		remove_bookmark_again_time = self.now + timedelta(minutes=30)
+		bookmarks_db.remove_video_bookmark(
+				user_id, bookmark_id, now=remove_bookmark_again_time)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video, video_name, video_length)
 	
 	"""Test that fails to delete a bookmark that does not exist.
 	"""
 	def test_delete_missing_bookmark(self):
-		# TODO: return success
-		pass
+		# Create a user.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		# Create a video.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		# Delete a missing bookmark.
+		remove_bookmark_time = self.now + timedelta(minutes=10)
+		bookmarks_db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
+
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video, video_name, video_length)
 
 	"""Test that fails to delete a bookmark because the user identifier is not
 	the creator.
 	"""
 	def test_delete_bookmark_wrong_user(self):
-		# TODO
-		pass
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+
+		# Assert that a user removing the bookmark who is not the creator fails.
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+		remove_bookmark_time = self.now + timedelta(minutes=10)
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_video_bookmark(
+					user_id2, bookmark_id, now=remove_bookmark_time)
+
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name1, user_id1)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
 	"""
 	def test_vote_bookmark_unknown_user(self):
-		# TODO: test vote up, vote down, remove vote
-		pass
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id, video_id, bookmark_comment, bookmark_time)
+
+		missing_user_id = 'missing_user_id'
+
+		# Assert that voting up the bookmark with a missing user fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_up(missing_user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Assert that voting up the bookmark with a missing user fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_down(missing_user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Assert that removing the bookmark vote with a missing user fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_playlist_vote(missing_user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
 	
 	"""Test that fails to vote a bookmark up or down because the bookmark identifier is
 	unknown.
 	"""
 	def test_vote_bookmark_unknown_bookmark(self):
-		# TODO: test vote up, vote down, remove vote
-		pass
+		# Create a user.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+
+		missing_bookmark_id = 'missing_bookmark_id'
+
+		# Assert that voting up a missing bookmark fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_up(user_id, missing_bookmark_id)
+
+		# Assert that voting down a missing bookmark fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_down(user_id, missing_bookmark_id)
+
+		# Assert that removing the vote for a missing bookmark fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_bookmark_vote(user_id, missing_bookmark_id)
 
 	"""Test that successfully votes up a bookmark.
 	"""
@@ -730,7 +858,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# test vote up, then down, then up, then remove
 		# TODO
 		pass
-	
+
 
 if __name__ == '__main__':
 	unittest.main()
