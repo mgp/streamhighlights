@@ -596,7 +596,7 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		playlist_name = 'playlist1'
 		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
-		# Create another user to vote down the playlist.
+		# Create another user to vote on the playlist.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 
@@ -652,7 +652,7 @@ class TestBookmarksDb(unittest.TestCase):
 		bookmark_time = 33
 		missing_user_id = 'missing_user_id'
 		with self.assertRaises(ValueError):
-			bookmarks_db.add_bookmark(missing_user_id, video_id,
+			bookmarks_db.add_video_bookmark(missing_user_id, video_id,
 					bookmark_comment, bookmark_time, now=self.now)
 		# Assert that this had no effect.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)
@@ -670,7 +670,7 @@ class TestBookmarksDb(unittest.TestCase):
 		bookmark_time = 33
 		missing_video_id = 'missing_video_id'
 		with self.assertRaises(ValueError):
-			bookmarks_db.add_bookmark(user_id, missing_video_id,
+			bookmarks_db.add_video_bookmark(user_id, missing_video_id,
 					bookmark_comment, bookmark_time, now=self.now)
 
 	"""Test that successfully creates and deletes a bookmark.
@@ -703,7 +703,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Remove the bookmark from the video.
 		remove_bookmark_time = self.now + timedelta(minutes=20)
 		bookmarks_db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
-		# Assert that the playlist has no bookmarks.
+		# Assert that the video has no bookmarks.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)
 		self._assert_displayed_video(displayed_video, video_name, video_length)
 
@@ -727,7 +727,9 @@ class TestBookmarksDb(unittest.TestCase):
 		video_id = self._create_video(video_name, video_length)
 		# Delete a missing bookmark.
 		remove_bookmark_time = self.now + timedelta(minutes=10)
-		bookmarks_db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
+		missing_bookmark_id = 'missing_bookmark_id'
+		bookmarks_db.remove_video_bookmark(
+				user_id, missing_bookmark_id, now=remove_bookmark_time)
 
 		# Assert that this had no effect.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)
@@ -806,7 +808,7 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Assert that removing the bookmark vote with a missing user fails.
 		with self.assertRaises(ValueError):
-			bookmarks_db.remove_playlist_vote(missing_user_id, bookmark_id)
+			bookmarks_db.remove_bookmark_vote(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)
 		self._assert_displayed_video(displayed_video,
@@ -841,23 +843,182 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Test that successfully votes up a bookmark.
 	"""
 	def test_up_vote_bookmark(self):
-		# test vote up, then vote up again, then remove
-		# TODO
-		pass
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		# Create another user to vote up the bookmark.
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+
+		# Vote up the bookmark.
+		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
+		# Assert that the bookmark has been voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_up=1)
+
+		# Vote up the bookmark again.
+		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_up=1)
+
+		# Remove the vote for the bookmark.
+		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
+		# Assert that the bookmark is no longer voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Remove the vote for the bookmark again.
+		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
 
 	"""Test that successfully votes down a bookmark.
 	"""
 	def test_down_vote_bookmark(self):
-		# test vote down, then vote down again, then remove
-		# TODO
-		pass
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		# Create another user to vote down the bookmark.
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+
+		# Vote down the bookmark.
+		bookmarks_db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
+		# Assert that the bookmark has been voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_down=1)
+
+		# Vote down the bookmark again.
+		bookmarks_db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_down=1)
+
+		# Remove the vote for the bookmark.
+		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
+		# Assert that the bookmark is no longer voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Remove the vote for the bookmark again.
+		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
 
 	"""Test that successfully changes the vote of a bookmark.
 	"""
 	def test_change_vote_bookmark(self):
-		# test vote up, then down, then up, then remove
-		# TODO
-		pass
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name1 = 'user_name1'
+		user_id1 = self._create_user(user_name1)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		# Create another user to vote on the bookmark.
+		user_name2 = 'user_name2'
+		user_id2 = self._create_user(user_name2)
+
+		# Vote up the bookmark.
+		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
+		# Assert that the bookmark has been voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_up=1)
+
+		# Vote down the bookmark.
+		bookmarks_db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
+		# Assert that the bookmark has been voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_down=1)
+
+		# Vote up the bookmark again.
+		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
+		# Assert that the bookmark has been voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_up=1)
+
+		# Remove the vote for the bookmark.
+		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
+		# Assert that the bookmark is no longer voted on.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
 
 
 if __name__ == '__main__':
