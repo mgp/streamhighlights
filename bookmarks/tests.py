@@ -5,20 +5,25 @@ import unittest
 class TestBookmarksDb(unittest.TestCase):
 	"""Utility method for creating a user."""
 	def _create_user(self, name):
-		user = bookmarks_db.User(name, now=self.now)
+		user = bookmarks_db.User(name, self.now)
 		self.session.add(user)
 		self.session.commit()
 		return user.id
 
 	"""Utility method for creating a video."""
-	def _create_video(self, video_name, video_length):
-		# TODO
-		pass
+	def _create_video(self, name, length):
+		video = bookmarks_db.Video(name, length)
+		self.session.add(video)
+		self.session.commit()
+		return video.id
 
 	"""Utility method for creating a bookmark."""
-	def _create_bookmark(self, user_id, video_id, bookmark_comment, bookmark_time):
-		# TODO
-		pass
+	def _create_bookmark(self, user_id, video_id, comment, time):
+		bookmark = bookmarks_db.Bookmark(
+				comment, time, self.now, user_id=user_id, video_id=video_id)
+		self.session.add(bookmark)
+		self.session.commit()
+		return bookmark.id
 
 	def setUp(self):
 		unittest.TestCase.setUp(self)
