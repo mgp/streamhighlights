@@ -477,6 +477,40 @@ class TestBookmarksDb(unittest.TestCase):
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_name)
 
+	"""Test that fails to vote a bookmark up or down because the user identifier is
+	the creator.
+	"""
+	def test_vote_playlist_by_creator(self):
+		# Create a user with a playlist.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		playlist_name = 'playlist1'
+		playlist_id = bookmarks_db.create_playlist(user_id, playlist_name, now=self.now)
+			
+		# Assert that the creator voting up the playlist fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_playlist_thumb_up(user_id, playlist_id)
+		# Assert that this had no effect.
+		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_name)
+
+		# Assert that the creator voting down the playlist fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_playlist_thumb_down(user_id, playlist_id)
+		# Assert that this had no effect.
+		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_name)
+
+		# Assert that the creator removing the playlist vote fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_playlist_vote(user_id, playlist_id)
+		# Assert that this had no effect.
+		displayed_playlist = bookmarks_db.get_displayed_playlist(playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_name)
+
 	"""Test that fails to vote a playlist up or down because the playlist identifier
 	is unknown.
 	"""
@@ -818,6 +852,56 @@ class TestBookmarksDb(unittest.TestCase):
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
 	
+	"""Test that fails to vote a bookmark up or down because the user identifier is
+	the creator.
+	"""
+	def test_vote_bookmark_by_creator(self):
+		# Create a video with a bookmark by a user.
+		video_name = 'video1'
+		video_length = 61
+		video_id = self._create_video(video_name, video_length)
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = self._create_bookmark(user_id, video_id, bookmark_comment, bookmark_time)
+
+		# Assert that the creator voting up the bookmark fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_up(user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Assert that the creator voting up the bookmark fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.vote_bookmark_thumb_down(user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
+		# Assert that the creator removing the bookmark vote fails.
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_bookmark_vote(user_id, bookmark_id)
+		# Assert that this had no effect.
+		displayed_video = bookmarks_db.get_displayed_video(video_id)
+		self._assert_displayed_video(displayed_video,
+				video_name, video_length, num_bookmarks=1)
+		displayed_video_bookmark = displayed_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id)
+
 	"""Test that fails to vote a bookmark up or down because the bookmark identifier is
 	unknown.
 	"""
