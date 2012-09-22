@@ -2,6 +2,7 @@ from datetime import datetime
 import sqlalchemy as sa
 import sqlalchemy.ext.declarative as sa_ext_declarative
 import sqlalchemy.orm as sa_orm
+import sqlalchemy.schema as sa_schema
 
 
 def get_engine(testing=True):
@@ -89,6 +90,11 @@ class TwitchUser(_Base):
 				self.user)
 
 
+association_table = sa_schema.Table('PlaylistBookmarks', _Base.metadata,
+	sa.Column('playlist_id', sa.Integer, sa.ForeignKey('Playlists.id')),
+	sa.Column('bookmark_id', sa.Integer, sa.ForeignKey('Bookmarks.id'))
+)
+
 """A playlist of videos by a user.
 """
 class Playlist(_Base):
@@ -103,6 +109,8 @@ class Playlist(_Base):
 	created = sa.Column(sa.DateTime, nullable=False)
 
 	votes = sa_orm.relationship('PlaylistVote', backref='playlist')
+	bookmarks = sa_orm.relationship('Bookmark',
+			secondary=association_table)
 
 	def __init__(self, visibility, name, now, user_id=None):
 		if user_id:
@@ -115,7 +123,7 @@ class Playlist(_Base):
 	
 	def __repr__(self):
 		# Has backref: user.
-		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, votes=%r, user=%r)' % (
+		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, votes=%r, bookmarks=%r, user=%r)' % (
 				self.id,
 				self.visbility,
 				self.name,
@@ -123,6 +131,7 @@ class Playlist(_Base):
 				self.num_thumbs_down,
 				self.created,
 				self.votes,
+				self.bookmarks,
 				self.user)
 
 
