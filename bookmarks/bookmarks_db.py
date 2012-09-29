@@ -139,6 +139,10 @@ class Playlist(_Base):
 				self.user)
 
 
+"""Enums for thumbs up and thumbs down votes by the user."""
+_THUMB_UP_VOTE = 'thumb_up'
+_THUMB_DOWN_VOTE = 'thumb_down'
+
 """A vote by a user for a playlist.
 """
 class PlaylistVote(_Base):
@@ -148,7 +152,7 @@ class PlaylistVote(_Base):
 	id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	playlist_id = sa.Column(sa.Integer, sa.ForeignKey('Playlists.id'))
-	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
+	vote = sa.Column(sa.Enum(_THUMB_UP_VOTE, _THUMB_DOWN_VOTE), nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
 
 	user = sa_orm.relationship('User')
@@ -244,7 +248,7 @@ class BookmarkVote(_Base):
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	bookmark_id = sa.Column(sa.Integer, sa.ForeignKey('Bookmarks.id'))
 	created = sa.Column(sa.DateTime, nullable=False)
-	vote = sa.Column(sa.Enum('thumb_up', 'thumb_down'), nullable=False)
+	vote = sa.Column(sa.Enum(_THUMB_UP_VOTE, _THUMB_DOWN_VOTE), nullable=False)
 
 	user = sa_orm.relationship('User')
 
@@ -314,10 +318,6 @@ def _get_now(now):
 	if now is None:
 		return datetime.utcnow()
 	return now
-
-"""Enums for thumbs up and thumbs down votes by the user."""
-_THUMB_UP_VOTE = 'thumb_up'
-_THUMB_DOWN_VOTE = 'thumb_down'
 
 
 """Data for displaying a user.
@@ -408,7 +408,7 @@ def delete_playlist(user_id, playlist_id, now=None):
 	now = _get_now(now)
 	result = session.execute(
 			Playlists.delete().where(
-				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)))
+				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)))
 	session.commit()
 
 
@@ -520,7 +520,7 @@ def get_displayed_playlist(playlist_id):
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 	try:
 		playlist = session.query(Playlist).filter(
-				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)).one()
+				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
 	except sa_orm.exc.NoResultFound:
 		raise ValueError
 	
@@ -533,7 +533,7 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 	try:
 		playlist = session.query(Playlist).filter(
-				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)).one()
+				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
 	except sa_orm.exc.NoResultFound:
 		raise ValueError
 
@@ -544,24 +544,97 @@ def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 """Votes up the playlist with the given identifier.
 """
 def vote_playlist_thumb_up(user_id, playlist_id, now=None):
+	try:
+		vote = session.query(PlaylistVote).filter(
+				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+	except sa_orm.exc.NoResultFound:
+		vote = None
+
+	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
-	# TODO
-	pass
+	if vote is None:
+		# Create the vote by the user.
+		vote = PlaylistVote(
+				vote=_THUMB_UP_VOTE, now=now, user_id=user_id, playlist_id=playlist_id)
+		# Update the count of thumbs up for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_up: Playlist.num_thumbs_up + 1}))
+	elif vote.vote == _THUMB_DOWN_VOTE:
+		# Change the vote by the user.
+		vote.vote = _THUMB_UP_VOTE
+		vote.created = now
+		# Update the counts of thumbs up and thumbs down for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_up: Playlist.num_thumbs_up + 1,
+					Playlist.num_thumbs_down: Playlist.num_thumbs_down - 1}))
+	else:
+		session.rollback()
+		return
+
+	session.add(vote)
+	session.commit()
 
 """Votes down the playlist with the given identifier.
 """
 def vote_playlist_thumb_down(user_id, playlist_id, now=None):
+	try:
+		vote = session.query(PlaylistVote).filter(
+				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+	except sa_orm.exc.NoResultFound:
+		vote = None
+
+	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
-	# TODO
-	pass
+	if vote is None:
+		# Create the vote by the user.
+		vote = PlaylistVote(
+				vote=_THUMB_DOWN_VOTE, now=now, user_id=user_id, playlist_id=playlist_id)
+		# Update the count of thumbs down for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_down: Playlist.num_thumbs_down + 1}))
+	elif vote.vote == _THUMB_UP_VOTE:
+		# Change the vote by the user.
+		vote.vote = _THUMB_DOWN_VOTE
+		vote.created = now
+		# Update the counts of thumbs up and thumbs down for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_down: Playlist.num_thumbs_down + 1,
+					Playlist.num_thumbs_up: Playlist.num_thumbs_up - 1}))
+	else:
+		session.rollback()
+		return
+
+	session.add(vote)
+	session.commit()
+
 
 """Removes the vote for the playlist with the given identifier.
 """
 def remove_playlist_vote(user_id, playlist_id, now=None):
-	now = _get_now(now)
-	# TODO
-	pass
+	try:
+		vote = session.query(PlaylistVote).filter(
+				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+	except sa_orm.exc.NoResultFound:
+		session.flush()
+		return
 
+	if vote.vote == _THUMB_UP_VOTE:
+		# Update the count of thumbs up for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_up: Playlist.num_thumbs_up - 1}))
+	elif vote.vote == _THUMB_DOWN_VOTE:
+		# Update the count of thumbs down for the playlist.
+		session.execute(Playlists.update()
+				.where(Playlist.id == playlist_id)
+				.values({Playlist.num_thumbs_down: Playlist.num_thumbs_down - 1}))
+
+	session.delete(vote)
+	session.commit()
 
 """Data for displaying a video.
 """
