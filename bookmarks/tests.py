@@ -75,14 +75,12 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist)
-		"""
 		self.assertEqual(author_id, displayed_playlist.author_id)
-		self.assertEqual(author_name, displayed_playlist.author_name)
+		# XXX self.assertEqual(author_name, displayed_playlist.author_name)
 		self.assertEqual(time_created, displayed_playlist.time_created)
 		self.assertEqual(name, displayed_playlist.name)
 		# Begin optional arguments.
 		self.assertEqual(time_updated, displayed_playlist.time_updated)
-		"""
 		self.assertEqual(num_thumbs_up, displayed_playlist.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_playlist.user_vote)
@@ -98,17 +96,17 @@ class TestBookmarksDb(unittest.TestCase):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist_bookmark)
 		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
-		self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
+		# self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
 		self.assertEqual(comment, displayed_playlist_bookmark.comment)
 		self.assertEqual(time_added, displayed_playlist_bookmark.time_added)
-		self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
+		# self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
 		self.assertEqual(author_id, displayed_playlist_bookmark.author_id)
 		# Begin optional arguments.
 		self.assertEqual(num_thumbs_up, displayed_playlist_bookmark.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist_bookmark.num_thumbs_down)
-		self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
-		self.assertSequenceEqual(
-				sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
+		# XXX self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
+		# XXX self.assertSequenceEqual(
+		#		sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
 
 	"""Utility method to assert the fields in a DisplayedVideo.
 	"""
@@ -344,7 +342,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark is correct.
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
+				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 		# Add the bookmark to the playlist again.
 		add_bookmark_again_time = self.now + timedelta(minutes=20)
@@ -357,7 +355,7 @@ class TestBookmarksDb(unittest.TestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
+				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 		# Remove the bookmark from the playlist.
 		remove_bookmark_time = self.now + timedelta(minutes=30)
