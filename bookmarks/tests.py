@@ -42,7 +42,7 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertIsNotNone(displayed_user)
 		self.assertEqual(user_id, displayed_user.id)
 		self.assertEqual(name, displayed_user.name)
-		self.assertEqual(len(playlists), len(displayed_user.playlists))
+		self.assertEqual(num_playlists, len(displayed_user.playlists))
 
 	"""Utility method to assert the fields in a DisplayedUserPlaylist.
 	"""

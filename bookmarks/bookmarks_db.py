@@ -107,6 +107,7 @@ class Playlist(_Base):
 	num_thumbs_up = sa.Column(sa.Integer, nullable=False)
 	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
+	updated = sa.Column(sa.DateTime, nullable=False)
 
 	votes = sa_orm.relationship('PlaylistVote', backref='playlist')
 	bookmarks = sa_orm.relationship('Bookmark',
@@ -120,16 +121,18 @@ class Playlist(_Base):
 		self.num_thumbs_up = 0
 		self.num_thumbs_down = 0
 		self.created = now
+		self.updated = now
 	
 	def __repr__(self):
 		# Has backref: user.
-		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, votes=%r, bookmarks=%r, user=%r)' % (
+		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, votes=%r, bookmarks=%r, user=%r)' % (
 				self.id,
 				self.visbility,
 				self.name,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.created,
+				self.updated,
 				self.votes,
 				self.bookmarks,
 				self.user)
@@ -261,10 +264,49 @@ class BookmarkVote(_Base):
 				self.user,
 				self.bookmark)
 
+
 def create_all():
+	global Users
+	global SteamUsers
+	global TwitchUsers
+	global Playlists
+	global PlaylistVotes
+	global Videos
+	global Bookmarks
+	global BookmarkVotes
+
 	_Base.metadata.create_all(_engine)
 
+	# Create aliases for each table.
+	Users = User.__table__
+	SteamUsers = SteamUser.__table__
+	TwitchUsers = TwitchUser.__table__
+	Playlists = Playlist.__table__
+	PlaylistVotes = PlaylistVote.__table__
+	Videos = Video.__table__
+	Bookmarks = Bookmark.__table__
+	BookmarkVotes = BookmarkVote.__table__
+
 def drop_all():
+	global Users
+	global SteamUsers
+	global TwitchUsers
+	global Playlists
+	global PlaylistVotes
+	global Videos
+	global Bookmarks
+	global BookmarkVotes
+
+	# Clear aliases for each table.
+	Users = None
+	SteamUsers = None
+	TwitchUsers = None
+	Playlists = None
+	PlaylistVotes = None
+	Videos = None
+	Bookmarks = None
+	BookmarkVotes = None
+
 	_Base.metadata.drop_all(_engine)
 
 def _get_now(now):
@@ -321,14 +363,40 @@ class DisplayedUserPlaylist:
 """Returns the DisplayedUser with the given identifier.
 """
 def get_displayed_user(user_id):
-	# TODO
-	pass
+	try:
+		# Get the user and his playlists.
+		user = session.query(User).options(
+				sa_orm.joinedload(User.playlists)).filter(User.id == user_id).one()
+	except sa_orm.exc.NoResultFound:
+		raise ValueError
+	finally:
+		# TODO: what should I do after a query?
+		session.flush()
+
+	displayed_user_playlists = [
+			# TODO: set user_vote, num_bookmarks
+			DisplayedUserPlaylist(
+				id=playlist.id,
+				time_created=playlist.created,
+				time_updated=playlist.updated,
+				num_thumbs_up=playlist.num_thumbs_up,
+				num_thumbs_down=playlist.num_thumbs_down,
+				user_vote=None,
+				name=playlist.name,
+				num_bookmarks=0) for playlist in user.playlists]
+	displayed_user = DisplayedUser(user.id, user.name, displayed_user_playlists)
+	return displayed_user
+	
 
 """Creates a playlist by the given user.
 """
 def create_playlist(user_id, name, now=None):
 	now = _get_now(now)
-	playlist = Playlist('public', name, now)
+	if session.query(User).filter(User.id == user_id).count() == 0:
+		session.rollback()
+		raise ValueError
+
+	playlist = Playlist('public', name, now, user_id=user_id)
 	session.add(playlist)
 	session.commit()
 	return playlist.id
@@ -337,8 +405,10 @@ def create_playlist(user_id, name, now=None):
 """
 def delete_playlist(user_id, playlist_id, now=None):
 	now = _get_now(now)
-	# TODO
-	pass
+	result = session.execute(
+			Playlists.delete().where(
+				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)))
+	session.commit()
 
 
 """Data for displaying a playlist.
