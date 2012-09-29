@@ -90,6 +90,7 @@ class TwitchUser(_Base):
 				self.user)
 
 
+# TODO: add time_added data, or when the bookmark was added to the playlist
 association_table = sa_schema.Table('PlaylistBookmarks', _Base.metadata,
 	sa.Column('playlist_id', sa.Integer, sa.ForeignKey('Playlists.id')),
 	sa.Column('bookmark_id', sa.Integer, sa.ForeignKey('Bookmarks.id'))
@@ -475,12 +476,54 @@ class DisplayedPlaylistBookmark:
 """Returns the DisplayedPlaylist with the given identifier.
 """
 def get_displayed_playlist(playlist_id):
-	# TODO
-	pass
+	try:
+		# Get the playlist and its bookmarks.
+		playlist = session.query(Playlist).options(
+				sa_orm.joinedload(Playlist.bookmarks)).filter(Playlist.id == playlist_id).one()
+	except sa_orm.exc.NoResultFound:
+		raise ValueError
+	finally:
+		# TODO: what should I do after a query?
+		session.flush()
 
+	displayed_playlist_bookmarks = [
+			# TODO: set user_vote, video_name, time_added, author_name,
+			DisplayedPlaylistBookmark(
+				id=bookmark.id,
+				num_thumbs_up=bookmark.num_thumbs_up,
+				num_thumbs_down=bookmark.num_thumbs_down,
+				user_vote=None,
+				video_name=None,
+				comment=bookmark.comment,
+				time_added=None,
+				author_name=None,
+				author_id=playlist.user_id,
+				) for bookmark in playlist.bookmarks]
+	# TODO: set user_name, author_name, playlist_map
+	displayed_playlist = DisplayedPlaylist(
+			author_id=playlist.user_id,
+			author_name=None,
+			time_created=playlist.created,
+			time_updated=playlist.updated,
+			num_thumbs_up=playlist.num_thumbs_up,
+			num_thumbs_down=playlist.num_thumbs_down,
+			user_vote=None,
+			name=playlist.name,
+			playlist_map={},
+			bookmarks=displayed_playlist_bookmarks)
+	return displayed_playlist
+
+	# TODO
+	
 """Adds the bookmark with the given identifier to the given playlist.
 """
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+	try:
+		playlist = session.query(Playlist).filter(
+				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)).one()
+	except sa_orm.exc.NoResultFound:
+		raise ValueError
+	
 	now = _get_now(now)
 	# TODO
 	pass
@@ -488,6 +531,12 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 """Removes the bookmark with the given identifier from the given playlist.
 """
 def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+	try:
+		playlist = session.query(Playlist).filter(
+				sa.and_(Playlists.c.id == playlist_id, Playlists.c.user_id == user_id)).one()
+	except sa_orm.exc.NoResultFound:
+		raise ValueError
+
 	now = _get_now(now)
 	# TODO
 	pass
