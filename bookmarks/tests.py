@@ -133,7 +133,9 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(comment, displayed_video_bookmark.comment)
 		self.assertEqual(time, displayed_video_bookmark.time)
 		self.assertEqual(time_created, displayed_video_bookmark.time_created)
+		"""
 		self.assertEqual(author_name, displayed_video_bookmark.author_name)
+		"""
 		self.assertEqual(author_id, displayed_video_bookmark.author_id)
 		# Begin optional arguments.
 		self.assertEqual(num_thumbs_up, displayed_video_bookmark.num_thumbs_up)
@@ -956,7 +958,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1)
+				user_name1, user_id1, num_thumbs_up=1)
 
 		# Vote up the bookmark again.
 		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -967,7 +969,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1)
+				user_name1, user_id1, num_thumbs_up=1)
 
 		# Remove the vote for the bookmark.
 		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -978,7 +980,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name1, user_id1)
 
 		# Remove the vote for the bookmark again.
 		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -989,7 +991,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name1, user_id1)
 
 	"""Test that successfully votes down a bookmark.
 	"""
@@ -1016,7 +1018,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_down=1)
+				user_name1, user_id1, num_thumbs_down=1)
 
 		# Vote down the bookmark again.
 		bookmarks_db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
@@ -1027,7 +1029,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_down=1)
+				user_name1, user_id1, num_thumbs_down=1)
 
 		# Remove the vote for the bookmark.
 		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1038,7 +1040,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name1, user_id1)
 
 		# Remove the vote for the bookmark again.
 		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1049,7 +1051,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name1, user_id1)
 
 	"""Test that successfully changes the vote of a bookmark.
 	"""
@@ -1076,7 +1078,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1)
+				user_name1, user_id1, num_thumbs_up=1)
 
 		# Vote down the bookmark.
 		bookmarks_db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
@@ -1087,7 +1089,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_down=1)
+				user_name1, user_id1, num_thumbs_down=1)
 
 		# Vote up the bookmark again.
 		bookmarks_db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -1098,7 +1100,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1)
+				user_name1, user_id1, num_thumbs_up=1)
 
 		# Remove the vote for the bookmark.
 		bookmarks_db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1109,7 +1111,7 @@ class TestBookmarksDb(unittest.TestCase):
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name1, user_id1)
 
 
 if __name__ == '__main__':

@@ -497,8 +497,7 @@ def get_displayed_playlist(playlist_id):
 				comment=bookmark.comment,
 				time_added=None,
 				author_name=None,
-				author_id=playlist.user_id,
-				) for bookmark in playlist.bookmarks]
+				author_id=playlist.user_id) for bookmark in playlist.bookmarks]
 	# TODO: set user_name, author_name, playlist_map
 	displayed_playlist = DisplayedPlaylist(
 			author_id=playlist.user_id,
@@ -513,8 +512,6 @@ def get_displayed_playlist(playlist_id):
 			bookmarks=displayed_playlist_bookmarks)
 	return displayed_playlist
 
-	# TODO
-	
 """Adds the bookmark with the given identifier to the given playlist.
 """
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
@@ -639,7 +636,8 @@ def remove_playlist_vote(user_id, playlist_id, now=None):
 """Data for displaying a video.
 """
 class DisplayedVideo:
-	def __init__(self, name, length, playlist_map, bookmarks):
+	def __init__(self, id, name, length, playlist_map, bookmarks):
+		self.id = id
 		self.name = name
 		self.length = length
 		# A mapping from playlist identifiers to their names.
@@ -648,7 +646,8 @@ class DisplayedVideo:
 		self.bookmarks = bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedVideo(name=%r, length=%r, playlist_map=%r, bookmarks=%r)' % (
+		return 'DisplayedVideo(id=%r, name=%r, length=%r, playlist_map=%r, bookmarks=%r)' % (
+				self.id,
 				self.name,
 				self.length,
 				self.playlist_map,
@@ -693,41 +692,147 @@ class DisplayedVideoBookmark:
 """Returns the DisplayedVideo with the given identifier.
 """
 def get_displayed_video(video_id):
-	# TODO
-	pass
+	try:
+		# Get the video and its bookmarks.
+		video = session.query(Video).options(
+				sa_orm.joinedload(Video.bookmarks)).filter(Video.id == video_id).one()
+	except sa_orm.exc.NoResultFound:
+		raise ValueError
+	finally:
+		# TODO: what should I do after a query?
+		session.flush()
+
+	displayed_video_bookmarks = [
+			# TODO: set user_vote, author_name, playlist_ids
+			DisplayedVideoBookmark(
+				id=bookmark.id,
+				num_thumbs_up=bookmark.num_thumbs_up,
+				num_thumbs_down=bookmark.num_thumbs_down,
+				user_vote=None,
+				comment=bookmark.comment,
+				time=bookmark.time,
+				time_created=bookmark.created,
+				author_name=None,
+				author_id=bookmark.user_id,
+				playlist_ids=[]) for bookmark in video.bookmarks]
+	# TODO: set playlist_map
+	displayed_video = DisplayedVideo(
+			video.id, video.name, video.length, {}, displayed_video_bookmarks)
+	return displayed_video
 
 """Adds a bookmark by the given user for the given video.
 """
 def add_video_bookmark(user_id, video_id, comment, time, now=None):
 	now = _get_now(now)
-	# TODO: return bookmark_id
-	pass
+	if session.query(Video).filter(Video.id == video_id).count() == 0:
+		session.rollback()
+		raise ValueError
+	
+	bookmark = Bookmark(comment, time, now, user_id=user_id, video_id=video_id)
+	session.add(bookmark)
+	session.commit()
+	return bookmark.id
 
 """Removes the bookmark with the given identifier for the given video.
 """
 def remove_video_bookmark(user_id, bookmark_id, now=None):
 	now = _get_now(now)
-	# TODO
-	pass
+	result = session.execute(
+			Bookmarks.delete().where(
+				sa.and_(Bookmark.id == bookmark_id, Bookmark.user_id == user_id)))
+	session.commit()
 
 """Votes up the bookmark with the given identifier.
 """
 def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
+	try:
+		vote = session.query(BookmarkVote).filter(
+				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+	except sa_orm.exc.NoResultFound:
+		vote = None
+
+	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
-	# TODO
-	pass
+	if vote is None:
+		# Create the vote by the user.
+		vote = BookmarkVote(
+				vote=_THUMB_UP_VOTE, now=now, user_id=user_id, bookmark_id=bookmark_id)
+		# Update the count of thumbs up for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_up: Bookmark.num_thumbs_up + 1}))
+	elif vote.vote == _THUMB_DOWN_VOTE:
+		# Change the vote by the user.
+		vote.vote = _THUMB_UP_VOTE
+		vote.created = now
+		# Update the counts of thumbs up and thumbs down for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_up: Bookmark.num_thumbs_up + 1,
+					Bookmark.num_thumbs_down: Bookmark.num_thumbs_down - 1}))
+	else:
+		session.rollback()
+		return
+
+	session.add(vote)
+	session.commit()
 
 """Votes down the bookmark with the given identifier.
 """
 def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
+	try:
+		vote = session.query(BookmarkVote).filter(
+				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+	except sa_orm.exc.NoResultFound:
+		vote = None
+
+	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
-	# TODO
-	pass
+	if vote is None:
+		# Create the vote by the user.
+		vote = BookmarkVote(
+				vote=_THUMB_DOWN_VOTE, now=now, user_id=user_id, bookmark_id=bookmark_id)
+		# Update the count of thumbs down for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_down: Bookmark.num_thumbs_down + 1}))
+	elif vote.vote == _THUMB_UP_VOTE:
+		# Change the vote by the user.
+		vote.vote = _THUMB_DOWN_VOTE
+		vote.created = now
+		# Update the counts of thumbs up and thumbs down for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_down: Bookmark.num_thumbs_down + 1,
+					Bookmark.num_thumbs_up: Bookmark.num_thumbs_up - 1}))
+	else:
+		session.rollback()
+		return
+
+	session.add(vote)
+	session.commit()
 
 """Removes the vote for the bookmark with the given identifier.
 """
 def remove_bookmark_vote(user_id, bookmark_id, now=None):
-	now = _get_now(now)
-	# TODO
-	pass
+	try:
+		vote = session.query(BookmarkVote).filter(
+				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+	except sa_orm.exc.NoResultFound:
+		session.flush()
+		return
+
+	if vote.vote == _THUMB_UP_VOTE:
+		# Update the count of thumbs up for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_up: Bookmark.num_thumbs_up - 1}))
+	elif vote.vote == _THUMB_DOWN_VOTE:
+		# Update the count of thumbs down for the bookmark.
+		session.execute(Bookmarks.update()
+				.where(Bookmark.id == bookmark_id)
+				.values({Bookmark.num_thumbs_down: Bookmark.num_thumbs_down - 1}))
+
+	session.delete(vote)
+	session.commit()
 
