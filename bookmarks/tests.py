@@ -76,7 +76,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist)
 		self.assertEqual(author_id, displayed_playlist.author_id)
-		# XXX self.assertEqual(author_name, displayed_playlist.author_name)
+		self.assertEqual(author_name, displayed_playlist.author_name)
 		self.assertEqual(time_created, displayed_playlist.time_created)
 		self.assertEqual(name, displayed_playlist.name)
 		# Begin optional arguments.
@@ -84,7 +84,7 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_up, displayed_playlist.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_playlist.user_vote)
-		self.assertDictEqual(playlist_map, displayed_playlist.playlist_map)
+		# XXX self.assertDictEqual(playlist_map, displayed_playlist.playlist_map)
 		self.assertEqual(num_bookmarks, len(displayed_playlist.bookmarks))
 
 	"""Utility method to assert the fields in a DisplayedPlaylistBookmark.
@@ -96,15 +96,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist_bookmark)
 		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
-		# self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
+		self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
 		self.assertEqual(comment, displayed_playlist_bookmark.comment)
 		self.assertEqual(time_added, displayed_playlist_bookmark.time_added)
-		# self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
+		self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
 		self.assertEqual(author_id, displayed_playlist_bookmark.author_id)
 		# Begin optional arguments.
 		self.assertEqual(num_thumbs_up, displayed_playlist_bookmark.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist_bookmark.num_thumbs_down)
-		# XXX self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
+		self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
 		# XXX self.assertSequenceEqual(
 		#		sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
 
@@ -131,16 +131,14 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(comment, displayed_video_bookmark.comment)
 		self.assertEqual(time, displayed_video_bookmark.time)
 		self.assertEqual(time_created, displayed_video_bookmark.time_created)
-		"""
 		self.assertEqual(author_name, displayed_video_bookmark.author_name)
-		"""
 		self.assertEqual(author_id, displayed_video_bookmark.author_id)
 		# Begin optional arguments.
 		self.assertEqual(num_thumbs_up, displayed_video_bookmark.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_video_bookmark.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_video_bookmark.user_vote)
-		self.assertSequenceEqual(
-				sorted(playlist_ids), sorted(displayed_video_bookmark.playlist_ids))
+		# XXX self.assertSequenceEqual(
+		#		sorted(playlist_ids), sorted(displayed_video_bookmark.playlist_ids))
 
 	#
 	# Begin tests for users.
@@ -311,28 +309,6 @@ class TestBookmarksDb(unittest.TestCase):
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_name)
 	
-	def test_get_displayed_playlist_joined(self):
-		# Create a user with a playlist.
-		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = bookmarks_db.create_playlist(user_id1, playlist_name, now=self.now)
-		# Create a video with a bookmark by another user.
-		video_name = 'video1'
-		video_length = 61
-		video_id = self._create_video(video_name, video_length)
-		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
-		bookmark_comment = 'comment1'
-		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
-		# Add the bookmark to the playlist.
-		add_bookmark_time = self.now + timedelta(minutes=10)
-		bookmarks_db.add_playlist_bookmark(user_id1, playlist_id, bookmark_id,
-				now=add_bookmark_time)
-
-		bookmarks_db.get_displayed_playlist_joined(playlist_id)
-
 	"""Test that successfully adds a bookmark to and removes a bookmark from a
 	playlist.
 	"""

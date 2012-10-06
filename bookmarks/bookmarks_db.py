@@ -7,7 +7,7 @@ import sqlalchemy.schema as sa_schema
 
 def get_engine(testing=True):
 	if testing:
-		return sa.create_engine('sqlite:///:memory:', echo=True)
+		return sa.create_engine('sqlite:///:memory:', echo=False)
 	else:
 		# TODO
 		return None
@@ -443,7 +443,7 @@ def delete_playlist(user_id, playlist_id, now=None):
 """Data for displaying a playlist.
 """
 class DisplayedPlaylist:
-	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, playlist_map, bookmarks):
+	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, bookmarks):
 		self.author_id = author_id
 		self.author_name = author_name
 		self.time_created = time_created
@@ -452,13 +452,11 @@ class DisplayedPlaylist:
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
 		self.name = name
-		# A mapping from playlist identifiers to their names.
-		self.playlist_map = playlist_map
 		# The DisplayedPlaylistBookmark objects for each bookmark.
 		self.bookmarks = bookmarks
 
 	def __repr__(self):
-		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, bookmarks=%r, playlist_map=%r)' % (
+		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, bookmarks=%r)' % (
 				self.author_id,
 				self.author_name,
 				self.time_created,
@@ -467,14 +465,13 @@ class DisplayedPlaylist:
 				self.num_thumbs_down,
 				self.user_vote,
 				self.name,
-				self.bookmarks,
-				self.playlist_map)
+				self.bookmarks)
 
 
 """Data for displaying a bookmark on a playlist page.
 """
 class DisplayedPlaylistBookmark:
-	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id, playlist_ids):
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -484,11 +481,9 @@ class DisplayedPlaylistBookmark:
 		self.time_added = time_added
 		self.author_name = author_name
 		self.author_id = author_id
-		# The identifiers of the user's playlists that this bookmark is part of.
-		self.playlist_ids = playlist_ids
 	
 	def __repr__(self):
-		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_name=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r, playlist_ids=%r)' % (
+		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_name=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -497,26 +492,27 @@ class DisplayedPlaylistBookmark:
 				self.comment,
 				self.time_added,
 				self.author_name,
-				self.author_id,
-				self.playlist_ids)
+				self.author_id)
 
 
-def get_displayed_playlist_joined(playlist_id):
-	playlist, creator_name, vote = session.query(Playlist, User.name, PlaylistVote.vote)\
-			.join(User, Playlist.user_id == User.id)\
-			.outerjoin(PlaylistVote, sa.and_(
-				PlaylistVote.user_id == Playlist.user_id,
-				PlaylistVote.playlist_id == Playlist.id))\
-			.filter(Playlist.id == playlist_id)\
-			.one()
+"""Returns the DisplayedPlaylist with the given identifier.
+"""
+def get_displayed_playlist(playlist_id):
+	try:
+		# Get the playlist without its bookmarks.
+		playlist, creator_name, playlist_vote = session.query(Playlist, User.name, PlaylistVote.vote)\
+				.join(User, Playlist.user_id == User.id)\
+				.outerjoin(PlaylistVote, sa.and_(
+					PlaylistVote.user_id == Playlist.user_id,
+					PlaylistVote.playlist_id == Playlist.id))\
+				.filter(Playlist.id == playlist_id)\
+				.one()
+	except sa_orm.exc.NoResultFound:
+		session.close()
+		raise ValueError
 
-	print 'playlist:'
-	print '  playlist.id=%s' % playlist.id
-	print '  creator_name=%s' % creator_name
-	print '  vote=%s' % vote
-
-	print 'bookmarks:'
-	for added, bookmark, author_name, video_name, vote in session.query(
+	# Get the bookmarks.
+	playlist_bookmarks_cursor = session.query(
 				PlaylistBookmark.added, Bookmark, User.name, Video.name, BookmarkVote.vote)\
 			.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 			.join(User, Bookmark.user_id == User.id)\
@@ -524,57 +520,30 @@ def get_displayed_playlist_joined(playlist_id):
 			.outerjoin(BookmarkVote, sa.and_(
 				BookmarkVote.user_id == Bookmark.user_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
-			.filter(PlaylistBookmark.playlist_id == playlist_id):
-		print '  added=%s' % added
-		print '  bookmark.id=%s' % bookmark.id
-		print '  author_name=%s' % author_name
-		print '  video_name=%s' % video_name
-		print '  vote=%s' % vote
-	print 'done'
+			.filter(PlaylistBookmark.playlist_id == playlist_id)
 
-	session.flush()
-
-
-"""Returns the DisplayedPlaylist with the given identifier.
-"""
-def get_displayed_playlist(playlist_id):
-	try:
-		# Get the playlist and its bookmarks.
-		playlist = session.query(Playlist).options(
-				sa_orm.joinedload(Playlist.bookmarks)).filter(Playlist.id == playlist_id).one()
-	except sa_orm.exc.NoResultFound:
-		session.rollback()
-		raise ValueError
-
-	if playlist.bookmarks:
-		bookmark_ids = tuple((bookmark.id for bookmark in playlist.bookmarks))
-		# TODO
-		pass
-
+	# Create the displayed bookmarks and playlist.
 	displayed_playlist_bookmarks = [
-			# TODO: set user_vote, video_name, time_added, author_name,
 			DisplayedPlaylistBookmark(
-				id=playlist_bookmark.bookmark_id,
-				num_thumbs_up=playlist_bookmark.bookmark.num_thumbs_up,
-				num_thumbs_down=playlist_bookmark.bookmark.num_thumbs_down,
-				user_vote=None,
-				video_name=None,
-				comment=playlist_bookmark.bookmark.comment,
-				time_added=playlist_bookmark.added,
-				author_name=None,
-				author_id=playlist_bookmark.bookmark.user_id,
-				playlist_ids=[]) for playlist_bookmark in playlist.bookmarks]
-	# TODO: set user_name, author_name, playlist_map
+				id=bookmark.id,
+				num_thumbs_up=bookmark.num_thumbs_up,
+				num_thumbs_down=bookmark.num_thumbs_down,
+				user_vote=bookmark_vote,
+				video_name=video_name,
+				comment=bookmark.comment,
+				time_added=added,
+				author_name=author_name,
+				author_id=bookmark.user_id)
+			for added, bookmark, author_name, video_name, bookmark_vote in playlist_bookmarks_cursor]
 	displayed_playlist = DisplayedPlaylist(
 			author_id=playlist.user_id,
-			author_name=None,
+			author_name=creator_name,
 			time_created=playlist.created,
 			time_updated=playlist.updated,
 			num_thumbs_up=playlist.num_thumbs_up,
 			num_thumbs_down=playlist.num_thumbs_down,
-			user_vote=None,
+			user_vote=playlist_vote,
 			name=playlist.name,
-			playlist_map={},
 			bookmarks=displayed_playlist_bookmarks)
 	return displayed_playlist
 
@@ -585,6 +554,7 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 		playlist = session.query(Playlist).filter(
 				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
 	except sa_orm.exc.NoResultFound:
+		session.close()
 		raise ValueError
 	
 	try:
@@ -593,14 +563,13 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 		playlist_bookmark = PlaylistBookmark(playlist_id, bookmark_id, now)
 		session.add(playlist_bookmark)
 		# Increment the count of bookmarks for the playlist.
-		# TODO: test that inserting existing bookmark doesn't increment num_bookmarks
 		session.execute(Playlists.update()
 				.where(sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id))
 				.values({
 					Playlist.num_bookmarks: Playlist.num_bookmarks + 1,
 					Playlist.updated: now}))
 		session.commit()
-	except sa_orm.exc.FlushError:
+	except sa.exc.IntegrityError:
 		# The commit failed because this bookmark is already part of the playlist.
 		session.rollback()
 
@@ -611,6 +580,7 @@ def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 		playlist = session.query(Playlist).filter(
 				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
 	except sa_orm.exc.NoResultFound:
+		session.close()
 		raise ValueError
 
 	# Remove the bookmark from the playlist.
@@ -659,7 +629,7 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 				.values({Playlist.num_thumbs_up: Playlist.num_thumbs_up + 1,
 					Playlist.num_thumbs_down: Playlist.num_thumbs_down - 1}))
 	else:
-		session.rollback()
+		session.close()
 		return
 
 	session.add(vote)
@@ -694,7 +664,7 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 				.values({Playlist.num_thumbs_down: Playlist.num_thumbs_down + 1,
 					Playlist.num_thumbs_up: Playlist.num_thumbs_up - 1}))
 	else:
-		session.rollback()
+		session.close()
 		return
 
 	session.add(vote)
@@ -708,7 +678,7 @@ def remove_playlist_vote(user_id, playlist_id, now=None):
 		vote = session.query(PlaylistVote).filter(
 				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
 	except sa_orm.exc.NoResultFound:
-		session.flush()
+		session.close()
 		return
 
 	if vote.vote == _THUMB_UP_VOTE:
@@ -750,7 +720,7 @@ class DisplayedVideo:
 """
 class DisplayedVideoBookmark:
 	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, comment, time, time_created,
-			author_name, author_id, playlist_ids):
+			author_name, author_id):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -764,11 +734,9 @@ class DisplayedVideoBookmark:
 		self.author_name = author_name
 		# The author's unique identifier, used for linking.
 		self.author_id = author_id
-		# The identifiers of the user's playlists that this bookmark is part of.
-		self.playlist_ids = playlist_ids
 
 	def __repr__(self):
-		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_id=%r, playlist_ids=%r)' % (
+		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_id=%r)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -777,8 +745,7 @@ class DisplayedVideoBookmark:
 				self.time,
 				self.time_created,
 				self.author_name,
-				self.author_id,
-				self.playlist_ids)
+				self.author_id)
 
 
 """Returns the DisplayedVideo with the given identifier.
@@ -792,7 +759,7 @@ def get_displayed_video(video_id):
 		raise ValueError
 	finally:
 		# TODO: what should I do after a query?
-		session.flush()
+		session.close()
 
 	displayed_video_bookmarks = [
 			# TODO: set user_vote, author_name, playlist_ids
@@ -805,8 +772,7 @@ def get_displayed_video(video_id):
 				time=bookmark.time,
 				time_created=bookmark.created,
 				author_name=None,
-				author_id=bookmark.user_id,
-				playlist_ids=[]) for bookmark in video.bookmarks]
+				author_id=bookmark.user_id) for bookmark in video.bookmarks]
 	# TODO: set playlist_map
 	displayed_video = DisplayedVideo(
 			video.id, video.name, video.length, {}, displayed_video_bookmarks)
@@ -816,7 +782,7 @@ def get_displayed_video(video_id):
 """
 def add_video_bookmark(user_id, video_id, comment, time, now=None):
 	if session.query(Video).filter(Video.id == video_id).count() == 0:
-		session.rollback()
+		session.close()
 		raise ValueError
 	
 	now = _get_now(now)
@@ -838,7 +804,7 @@ def remove_video_bookmark(user_id, bookmark_id, now=None):
 def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 	try:
 		vote = session.query(BookmarkVote).filter(
-				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
 	except sa_orm.exc.NoResultFound:
 		vote = None
 
@@ -862,7 +828,7 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 				.values({Bookmark.num_thumbs_up: Bookmark.num_thumbs_up + 1,
 					Bookmark.num_thumbs_down: Bookmark.num_thumbs_down - 1}))
 	else:
-		session.rollback()
+		session.close()
 		return
 
 	session.add(vote)
@@ -873,7 +839,7 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 	try:
 		vote = session.query(BookmarkVote).filter(
-				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
 	except sa_orm.exc.NoResultFound:
 		vote = None
 
@@ -897,7 +863,7 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 				.values({Bookmark.num_thumbs_down: Bookmark.num_thumbs_down + 1,
 					Bookmark.num_thumbs_up: Bookmark.num_thumbs_up - 1}))
 	else:
-		session.rollback()
+		session.close()
 		return
 
 	session.add(vote)
@@ -908,9 +874,9 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 def remove_bookmark_vote(user_id, bookmark_id, now=None):
 	try:
 		vote = session.query(BookmarkVote).filter(
-				sa.and_(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)).one()
+				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
 	except sa_orm.exc.NoResultFound:
-		session.flush()
+		session.close()
 		return
 
 	if vote.vote == _THUMB_UP_VOTE:
