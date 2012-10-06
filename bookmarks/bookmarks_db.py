@@ -553,7 +553,7 @@ def get_displayed_playlist(playlist_id):
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 	try:
 		playlist = session.query(Playlist).filter(
-				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
+				Playlist.id == playlist_id, Playlist.user_id == user_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise ValueError
@@ -579,7 +579,7 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 	try:
 		playlist = session.query(Playlist).filter(
-				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)).one()
+				Playlist.id == playlist_id, Playlist.user_id == user_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise ValueError
@@ -606,7 +606,7 @@ def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 	try:
 		vote = session.query(PlaylistVote).filter(
-				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
 	except sa_orm.exc.NoResultFound:
 		vote = None
 
@@ -641,7 +641,7 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 	try:
 		vote = session.query(PlaylistVote).filter(
-				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
 	except sa_orm.exc.NoResultFound:
 		vote = None
 
@@ -677,7 +677,7 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 def remove_playlist_vote(user_id, playlist_id, now=None):
 	try:
 		vote = session.query(PlaylistVote).filter(
-				sa.and_(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)).one()
+				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		return
