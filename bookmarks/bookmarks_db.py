@@ -388,22 +388,21 @@ class DisplayedUserPlaylist:
 """
 def get_displayed_user(client_id, user_id):
 	try:
-		# Get the user and his playlists.
-		user = session.query(User).options(
-				sa_orm.joinedload(User.playlists)).filter(User.id == user_id).one()
+		# Get the user.
+		user = session.query(User).filter(User.id == user_id).one()
 	except sa_orm.exc.NoResultFound:
-		session.rollback()
+		session.close()
 		raise ValueError
 
-	if user.playlists:
-		playlist_ids = tuple((playlist.id for playlist in user.playlists))
-		votes = session.query(PlaylistVote).filter(
-				sa.and_(PlaylistVote.user_id == client_id, PlaylistVote.playlist_id.in_(playlist_ids)))
-		vote_map = {vote.playlist_id: vote.vote for vote in votes}
-	else:
-		vote_map = {}
-	session.flush()
+	# Get the playlists.
+	playlists_cursor = session.query(Playlist, PlaylistVote.vote)\
+			.outerjoin(PlaylistVote, sa.and_(
+				PlaylistVote.user_id == client_id,
+				PlaylistVote.playlist_id == Playlist.id))\
+			.filter(Playlist.user_id == user_id)
+	session.close()
 
+	# Create the displayed playlist and bookmarks.
 	displayed_user_playlists = [
 			DisplayedUserPlaylist(
 				id=playlist.id,
@@ -411,9 +410,10 @@ def get_displayed_user(client_id, user_id):
 				time_updated=playlist.updated,
 				num_thumbs_up=playlist.num_thumbs_up,
 				num_thumbs_down=playlist.num_thumbs_down,
-				user_vote=vote_map.get(playlist.id, None),
+				user_vote=playlist_vote,
 				name=playlist.name,
-				num_bookmarks=playlist.num_bookmarks) for playlist in user.playlists]
+				num_bookmarks=playlist.num_bookmarks)
+			for playlist, playlist_vote in playlists_cursor]
 	displayed_user = DisplayedUser(user.id, user.name, displayed_user_playlists)
 	return displayed_user
 
@@ -422,7 +422,7 @@ def get_displayed_user(client_id, user_id):
 """
 def create_playlist(user_id, name, now=None):
 	if session.query(User).filter(User.id == user_id).count() == 0:
-		session.rollback()
+		session.close()
 		raise ValueError
 
 	now = _get_now(now)
@@ -521,6 +521,7 @@ def get_displayed_playlist(playlist_id):
 				BookmarkVote.user_id == Bookmark.user_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
 			.filter(PlaylistBookmark.playlist_id == playlist_id)
+	session.close()
 
 	# Create the displayed bookmarks and playlist.
 	displayed_playlist_bookmarks = [
@@ -698,21 +699,18 @@ def remove_playlist_vote(user_id, playlist_id, now=None):
 """Data for displaying a video.
 """
 class DisplayedVideo:
-	def __init__(self, id, name, length, playlist_map, bookmarks):
+	def __init__(self, id, name, length, bookmarks):
 		self.id = id
 		self.name = name
 		self.length = length
-		# A mapping from playlist identifiers to their names.
-		self.playlist_map = playlist_map
 		# The DisplayedBookmark objects for each bookmark.
 		self.bookmarks = bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedVideo(id=%r, name=%r, length=%r, playlist_map=%r, bookmarks=%r)' % (
+		return 'DisplayedVideo(id=%r, name=%r, length=%r, bookmarks=%r)' % (
 				self.id,
 				self.name,
 				self.length,
-				self.playlist_map,
 				self.bookmarks)
 
 
@@ -752,30 +750,36 @@ class DisplayedVideoBookmark:
 """
 def get_displayed_video(video_id):
 	try:
-		# Get the video and its bookmarks.
-		video = session.query(Video).options(
-				sa_orm.joinedload(Video.bookmarks)).filter(Video.id == video_id).one()
+		# Get the video without its bookmarks.
+		video = session.query(Video).filter(Video.id == video_id).one()
 	except sa_orm.exc.NoResultFound:
-		raise ValueError
-	finally:
-		# TODO: what should I do after a query?
 		session.close()
+		raise ValueError
 
+	# Get the bookmarks.
+	video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
+			.join(User, Bookmark.user_id == User.id)\
+			.outerjoin(BookmarkVote, sa.and_(
+				BookmarkVote.user_id == Bookmark.user_id,
+				BookmarkVote.bookmark_id == Bookmark.id))\
+			.filter(Bookmark.video_id == video_id)
+	session.close()
+
+	# Create the displayed bookmarks and video.
 	displayed_video_bookmarks = [
-			# TODO: set user_vote, author_name, playlist_ids
 			DisplayedVideoBookmark(
 				id=bookmark.id,
 				num_thumbs_up=bookmark.num_thumbs_up,
 				num_thumbs_down=bookmark.num_thumbs_down,
-				user_vote=None,
+				user_vote=bookmark_vote,
 				comment=bookmark.comment,
 				time=bookmark.time,
 				time_created=bookmark.created,
-				author_name=None,
-				author_id=bookmark.user_id) for bookmark in video.bookmarks]
-	# TODO: set playlist_map
+				author_name=author_name,
+				author_id=bookmark.user_id)
+			for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
 	displayed_video = DisplayedVideo(
-			video.id, video.name, video.length, {}, displayed_video_bookmarks)
+			video.id, video.name, video.length, displayed_video_bookmarks)
 	return displayed_video
 
 """Adds a bookmark by the given user for the given video.
