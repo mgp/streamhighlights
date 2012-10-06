@@ -516,8 +516,8 @@ def get_displayed_playlist_joined(playlist_id):
 	print '  vote=%s' % vote
 
 	print 'bookmarks:'
-	for playlist_bookmark, bookmark, author_name, video_name, vote in session.query(
-				PlaylistBookmark, Bookmark, User.name, Video.name, BookmarkVote.vote)\
+	for added, bookmark, author_name, video_name, vote in session.query(
+				PlaylistBookmark.added, Bookmark, User.name, Video.name, BookmarkVote.vote)\
 			.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 			.join(User, Bookmark.user_id == User.id)\
 			.join(Video, Bookmark.video_id == Video.id)\
@@ -525,7 +525,7 @@ def get_displayed_playlist_joined(playlist_id):
 				BookmarkVote.user_id == Bookmark.user_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
 			.filter(PlaylistBookmark.playlist_id == playlist_id):
-		print '  playlist_bookmark.added=%s' % playlist_bookmark.added
+		print '  added=%s' % added
 		print '  bookmark.id=%s' % bookmark.id
 		print '  author_name=%s' % author_name
 		print '  video_name=%s' % video_name
