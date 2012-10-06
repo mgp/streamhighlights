@@ -7,7 +7,7 @@ import sqlalchemy.schema as sa_schema
 
 def get_engine(testing=True):
 	if testing:
-		return sa.create_engine('sqlite:///:memory:', echo=False)
+		return sa.create_engine('sqlite:///:memory:', echo=True)
 	else:
 		# TODO
 		return None
@@ -146,7 +146,7 @@ class Playlist(_Base):
 		# Has backref: user.
 		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r, user=%r)' % (
 				self.id,
-				self.visbility,
+				self.visibility,
 				self.name,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -386,31 +386,37 @@ class DisplayedUserPlaylist:
 
 """Returns the DisplayedUser with the given identifier.
 """
-def get_displayed_user(user_id):
+def get_displayed_user(client_id, user_id):
 	try:
 		# Get the user and his playlists.
 		user = session.query(User).options(
 				sa_orm.joinedload(User.playlists)).filter(User.id == user_id).one()
 	except sa_orm.exc.NoResultFound:
+		session.rollback()
 		raise ValueError
-	finally:
-		# TODO: what should I do after a query?
-		session.flush()
+
+	if user.playlists:
+		playlist_ids = tuple((playlist.id for playlist in user.playlists))
+		votes = session.query(PlaylistVote).filter(
+				sa.and_(PlaylistVote.user_id == client_id, PlaylistVote.playlist_id.in_(playlist_ids)))
+		vote_map = {vote.playlist_id: vote.vote for vote in votes}
+	else:
+		vote_map = {}
+	session.flush()
 
 	displayed_user_playlists = [
-			# TODO: set user_vote, num_bookmarks
 			DisplayedUserPlaylist(
 				id=playlist.id,
 				time_created=playlist.created,
 				time_updated=playlist.updated,
 				num_thumbs_up=playlist.num_thumbs_up,
 				num_thumbs_down=playlist.num_thumbs_down,
-				user_vote=None,
+				user_vote=vote_map.get(playlist.id, None),
 				name=playlist.name,
-				num_bookmarks=0) for playlist in user.playlists]
+				num_bookmarks=playlist.num_bookmarks) for playlist in user.playlists]
 	displayed_user = DisplayedUser(user.id, user.name, displayed_user_playlists)
 	return displayed_user
-	
+
 
 """Creates a playlist by the given user.
 """
@@ -495,6 +501,40 @@ class DisplayedPlaylistBookmark:
 				self.playlist_ids)
 
 
+def get_displayed_playlist_joined(playlist_id):
+	playlist, creator_name, vote = session.query(Playlist, User.name, PlaylistVote.vote)\
+			.join(User, Playlist.user_id == User.id)\
+			.outerjoin(PlaylistVote, sa.and_(
+				PlaylistVote.user_id == Playlist.user_id,
+				PlaylistVote.playlist_id == Playlist.id))\
+			.filter(Playlist.id == playlist_id)\
+			.one()
+
+	print 'playlist:'
+	print '  playlist.id=%s' % playlist.id
+	print '  creator_name=%s' % creator_name
+	print '  vote=%s' % vote
+
+	print 'bookmarks:'
+	for playlist_bookmark, bookmark, author_name, video_name, vote in session.query(
+				PlaylistBookmark, Bookmark, User.name, Video.name, BookmarkVote.vote)\
+			.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
+			.join(User, Bookmark.user_id == User.id)\
+			.join(Video, Bookmark.video_id == Video.id)\
+			.outerjoin(BookmarkVote, sa.and_(
+				BookmarkVote.user_id == Bookmark.user_id,
+				BookmarkVote.bookmark_id == Bookmark.id))\
+			.filter(PlaylistBookmark.playlist_id == playlist_id):
+		print '  playlist_bookmark.added=%s' % playlist_bookmark.added
+		print '  bookmark.id=%s' % bookmark.id
+		print '  author_name=%s' % author_name
+		print '  video_name=%s' % video_name
+		print '  vote=%s' % vote
+	print 'done'
+
+	session.flush()
+
+
 """Returns the DisplayedPlaylist with the given identifier.
 """
 def get_displayed_playlist(playlist_id):
@@ -503,10 +543,13 @@ def get_displayed_playlist(playlist_id):
 		playlist = session.query(Playlist).options(
 				sa_orm.joinedload(Playlist.bookmarks)).filter(Playlist.id == playlist_id).one()
 	except sa_orm.exc.NoResultFound:
+		session.rollback()
 		raise ValueError
-	finally:
-		# TODO: what should I do after a query?
-		session.flush()
+
+	if playlist.bookmarks:
+		bookmark_ids = tuple((bookmark.id for bookmark in playlist.bookmarks))
+		# TODO
+		pass
 
 	displayed_playlist_bookmarks = [
 			# TODO: set user_vote, video_name, time_added, author_name,
