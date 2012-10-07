@@ -613,10 +613,19 @@ def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 """
 def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 	try:
-		vote = session.query(PlaylistVote).filter(
-				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
+		playlist_user_id, vote = session.query(Playlist.user_id, PlaylistVote)\
+				.outerjoin(PlaylistVote, sa.and_(
+					PlaylistVote.user_id == user_id,
+					PlaylistVote.playlist_id == Playlist.id))\
+				.filter(Playlist.id == playlist_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
-		vote = None
+		session.close()
+		raise ValueError
+
+	# Do not allow the creator to vote up his own playlist.
+	if playlist_user_id == user_id:
+		raise ValueError
 
 	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
@@ -652,10 +661,19 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 """
 def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 	try:
-		vote = session.query(PlaylistVote).filter(
-				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
+		playlist_user_id, vote = session.query(Playlist.user_id, PlaylistVote)\
+				.outerjoin(PlaylistVote, sa.and_(
+					PlaylistVote.user_id == user_id,
+					PlaylistVote.playlist_id == Playlist.id))\
+				.filter(Playlist.id == playlist_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
-		vote = None
+		session.close()
+		raise ValueError
+
+	# Do not allow the creator to vote down his own playlist.
+	if playlist_user_id == user_id:
+		raise ValueError
 
 	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
@@ -822,10 +840,19 @@ def remove_video_bookmark(user_id, bookmark_id, now=None):
 """
 def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 	try:
-		vote = session.query(BookmarkVote).filter(
-				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
+		bookmark_user_id, vote = session.query(Bookmark.user_id, BookmarkVote)\
+				.outerjoin(BookmarkVote, sa.and_(
+					BookmarkVote.user_id == user_id,
+					BookmarkVote.bookmark_id == Bookmark.id))\
+				.filter(Bookmark.id == bookmark_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
-		vote = None
+		session.close()
+		raise ValueError
+
+	# Do not allow the creator to vote up his own bookmark.
+	if bookmark_user_id == user_id:
+		raise ValueError
 
 	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
@@ -861,10 +888,19 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 """
 def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 	try:
-		vote = session.query(BookmarkVote).filter(
-				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
+		bookmark_user_id, vote = session.query(Bookmark.user_id, BookmarkVote)\
+				.outerjoin(BookmarkVote, sa.and_(
+					BookmarkVote.user_id == user_id,
+					BookmarkVote.bookmark_id == Bookmark.id))\
+				.filter(Bookmark.id == bookmark_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
-		vote = None
+		session.close()
+		raise ValueError
+
+	# Do not allow the creator to vote down his own bookmark.
+	if bookmark_user_id == user_id:
+		raise ValueError
 
 	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
