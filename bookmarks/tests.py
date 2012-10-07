@@ -165,7 +165,7 @@ class TestBookmarksDb(unittest.TestCase):
 
 	"""Test that successfully creates and deletes a bookmark.
 	"""
-	def test_create_delete_playlist(self):
+	def test_create_remove_playlist(self):
 		# Create a playlist for a user.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
@@ -184,7 +184,7 @@ class TestBookmarksDb(unittest.TestCase):
 				playlist_id, playlist_name, self.now)
 
 		# Delete the playlist.
-		bookmarks_db.delete_playlist(user_id, playlist_id)
+		bookmarks_db.remove_playlist(user_id, playlist_id)
 
 		# Assert that the playlist is no longer returned.
 		displayed_user = bookmarks_db.get_displayed_user(client_id, user_id)
@@ -201,7 +201,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id = self._create_user(user_name)
 		# Delete a missing playlist.
 		missing_playlist_id = 'missing_playlist_id'
-		bookmarks_db.delete_playlist(user_id, missing_playlist_id)
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_playlist(user_id, missing_playlist_id)
 
 		# Assert that this had no effect.
 		displayed_user = bookmarks_db.get_displayed_user(client_id, user_id)
@@ -210,7 +211,10 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Test that fails to delete a playlist because the user identifier is not the
 	creator.
 	"""
-	def test_delete_playlist_wrong_user(self):
+	def test_remove_playlist_wrong_user(self):
+		# Create the client.
+		client_name = 'client_name1'
+		client_id = self._create_user(client_name)
 		# Create a playlist for a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
@@ -222,12 +226,12 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Attempt to delete the playlist with another user.
 		with self.assertRaises(ValueError):
-			bookmarks_db.delete_playlist(user_id2, playlist_id)
+			bookmarks_db.remove_playlist(user_id2, playlist_id)
 
 		# Assert that this had no effect.
-		displayed_user = bookmarks_db.get_displayed_user(user_id1)
-		self._assert_displayed_user(displayed_user, user_id1, user_name1, num_bookmarks=1)
-		displayed_user_playlist = displayed_user.bookmarks[0]
+		displayed_user = bookmarks_db.get_displayed_user(client_id, user_id1)
+		self._assert_displayed_user(displayed_user, user_id1, user_name1, num_playlists=1)
+		displayed_user_playlist = displayed_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_name, self.now)
 
@@ -759,8 +763,9 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Remove the bookmark from the video again.
 		remove_bookmark_again_time = self.now + timedelta(minutes=30)
-		bookmarks_db.remove_video_bookmark(
-				user_id, bookmark_id, now=remove_bookmark_again_time)
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_video_bookmark(
+					user_id, bookmark_id, now=remove_bookmark_again_time)
 		# Assert that this had no effect.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)
 		self._assert_displayed_video(displayed_video, video_name, video_length)
@@ -778,8 +783,9 @@ class TestBookmarksDb(unittest.TestCase):
 		# Delete a missing bookmark.
 		remove_bookmark_time = self.now + timedelta(minutes=10)
 		missing_bookmark_id = 'missing_bookmark_id'
-		bookmarks_db.remove_video_bookmark(
-				user_id, missing_bookmark_id, now=remove_bookmark_time)
+		with self.assertRaises(ValueError):
+			bookmarks_db.remove_video_bookmark(
+					user_id, missing_bookmark_id, now=remove_bookmark_time)
 
 		# Assert that this had no effect.
 		displayed_video = bookmarks_db.get_displayed_video(video_id)

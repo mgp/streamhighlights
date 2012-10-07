@@ -441,11 +441,15 @@ def create_playlist(user_id, name, now=None):
 
 """Deletes the playlist with the given identifier.
 """
-def delete_playlist(user_id, playlist_id, now=None):
+def remove_playlist(user_id, playlist_id, now=None):
 	result = session.execute(
 			Playlists.delete().where(
 				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)))
-	session.commit()
+	if result.rowcount:
+		session.commit()
+	else:
+		session.rollback()
+		raise ValueError
 
 
 """Data for displaying a playlist.
@@ -834,7 +838,11 @@ def remove_video_bookmark(user_id, bookmark_id, now=None):
 	result = session.execute(
 			Bookmarks.delete().where(
 				sa.and_(Bookmark.id == bookmark_id, Bookmark.user_id == user_id)))
-	session.commit()
+	if result.rowcount:
+		session.commit()
+	else:
+		session.rollback()
+		raise ValueError
 
 """Votes up the bookmark with the given identifier.
 """
