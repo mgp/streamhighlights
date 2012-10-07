@@ -1,5 +1,6 @@
 from datetime import datetime
 import sqlalchemy as sa
+import sqlalchemy.engine as sa_engine
 import sqlalchemy.ext.declarative as sa_ext_declarative
 import sqlalchemy.orm as sa_orm
 import sqlalchemy.schema as sa_schema
@@ -17,6 +18,13 @@ _Session = sa_orm.sessionmaker(bind=_engine)
 # TODO: Use a contextual session
 # http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#unitofwork-contextual
 session = _Session()
+
+# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
+@sa.event.listens_for(sa_engine.Engine, "connect")
+def set_sqlite_pragma(dbapi_connection, connection_record):
+	cursor = dbapi_connection.cursor()
+	cursor.execute("PRAGMA foreign_keys=ON")
+	cursor.close()
 
 
 _Base = sa_ext_declarative.declarative_base()
@@ -633,8 +641,12 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 		session.close()
 		return
 
-	session.add(vote)
-	session.commit()
+	try:
+		session.add(vote)
+		session.commit()
+	except sa.exc.IntegrityError:
+		session.rollback()
+		raise ValueError
 
 """Votes down the playlist with the given identifier.
 """
@@ -668,9 +680,12 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 		session.close()
 		return
 
-	session.add(vote)
-	session.commit()
-
+	try:
+		session.add(vote)
+		session.commit()
+	except sa.exc.IntegrityError:
+		session.rollback()
+		raise ValueError
 
 """Removes the vote for the playlist with the given identifier.
 """
@@ -680,7 +695,7 @@ def remove_playlist_vote(user_id, playlist_id, now=None):
 				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		return
+		raise ValueError
 
 	if vote.vote == _THUMB_UP_VOTE:
 		# Update the count of thumbs up for the playlist.
@@ -785,15 +800,15 @@ def get_displayed_video(video_id):
 """Adds a bookmark by the given user for the given video.
 """
 def add_video_bookmark(user_id, video_id, comment, time, now=None):
-	if session.query(Video).filter(Video.id == video_id).count() == 0:
-		session.close()
-		raise ValueError
-	
 	now = _get_now(now)
-	bookmark = Bookmark(comment, time, now, user_id=user_id, video_id=video_id)
-	session.add(bookmark)
-	session.commit()
-	return bookmark.id
+	try:
+		bookmark = Bookmark(comment, time, now, user_id=user_id, video_id=video_id)
+		session.add(bookmark)
+		session.commit()
+		return bookmark.id
+	except sa.exc.IntegrityError: 
+		session.rollback()
+		raise ValueError
 
 """Removes the bookmark with the given identifier for the given video.
 """
@@ -835,8 +850,12 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 		session.close()
 		return
 
-	session.add(vote)
-	session.commit()
+	try:
+		session.add(vote)
+		session.commit()
+	except sa.exc.IntegrityError:
+		session.rollback()
+		raise ValueError
 
 """Votes down the bookmark with the given identifier.
 """
@@ -870,8 +889,12 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 		session.close()
 		return
 
-	session.add(vote)
-	session.commit()
+	try:
+		session.add(vote)
+		session.commit()
+	except sa.exc.IntegrityError:
+		session.rollback()
+		raise ValueError
 
 """Removes the vote for the bookmark with the given identifier.
 """
@@ -881,7 +904,7 @@ def remove_bookmark_vote(user_id, bookmark_id, now=None):
 				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		return
+		raise ValueError
 
 	if vote.vote == _THUMB_UP_VOTE:
 		# Update the count of thumbs up for the bookmark.
