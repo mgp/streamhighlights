@@ -428,23 +428,23 @@ def get_displayed_user(client_id, user_id):
 
 """Creates a playlist by the given user.
 """
-def create_playlist(user_id, name, now=None):
-	if session.query(User).filter(User.id == user_id).count() == 0:
+def create_playlist(client_id, name, now=None):
+	if session.query(User).filter(User.id == client_id).count() == 0:
 		session.close()
 		raise ValueError
 
 	now = _get_now(now)
-	playlist = Playlist('public', name, now, user_id=user_id)
+	playlist = Playlist('public', name, now, user_id=client_id)
 	session.add(playlist)
 	session.commit()
 	return playlist.id
 
 """Deletes the playlist with the given identifier.
 """
-def remove_playlist(user_id, playlist_id, now=None):
+def remove_playlist(client_id, playlist_id, now=None):
 	result = session.execute(
 			Playlists.delete().where(
-				sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id)))
+				sa.and_(Playlist.id == playlist_id, Playlist.user_id == client_id)))
 	if result.rowcount:
 		session.commit()
 	else:
@@ -562,10 +562,10 @@ def get_displayed_playlist(playlist_id):
 
 """Adds the bookmark with the given identifier to the given playlist.
 """
-def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+def add_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 	missing = session.query(Playlist, Bookmark)\
 			.join(Bookmark, Bookmark.id == bookmark_id)\
-			.filter(Playlist.id == playlist_id, Playlist.user_id == user_id)\
+			.filter(Playlist.id == playlist_id, Playlist.user_id == client_id)\
 			.count() == 0
 	if missing:
 		session.close()
@@ -578,7 +578,7 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 		session.add(playlist_bookmark)
 		# Increment the count of bookmarks for the playlist.
 		session.execute(Playlists.update()
-				.where(sa.and_(Playlist.id == playlist_id, Playlist.user_id == user_id))
+				.where(sa.and_(Playlist.id == playlist_id, Playlist.user_id == client_id))
 				.values({
 					Playlist.num_bookmarks: Playlist.num_bookmarks + 1,
 					Playlist.updated: now}))
@@ -589,9 +589,9 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 
 """Removes the bookmark with the given identifier from the given playlist.
 """
-def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
+def remove_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 	missing = session.query(Playlist)\
-			.filter(Playlist.id == playlist_id, Playlist.user_id == user_id)\
+			.filter(Playlist.id == playlist_id, Playlist.user_id == client_id)\
 			.count() == 0
 	if missing:
 		session.close()
@@ -616,11 +616,11 @@ def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 
 """Votes up the playlist with the given identifier.
 """
-def vote_playlist_thumb_up(user_id, playlist_id, now=None):
+def vote_playlist_thumb_up(client_id, playlist_id, now=None):
 	try:
 		playlist_user_id, vote = session.query(Playlist.user_id, PlaylistVote)\
 				.outerjoin(PlaylistVote, sa.and_(
-					PlaylistVote.user_id == user_id,
+					PlaylistVote.user_id == client_id,
 					PlaylistVote.playlist_id == Playlist.id))\
 				.filter(Playlist.id == playlist_id)\
 				.one()
@@ -629,14 +629,14 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 		raise ValueError
 
 	# Do not allow the creator to vote up his own playlist.
-	if playlist_user_id == user_id:
+	if playlist_user_id == client_id:
 		raise ValueError
 
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
 		vote = PlaylistVote(
-				vote=_THUMB_UP_VOTE, now=now, user_id=user_id, playlist_id=playlist_id)
+				vote=_THUMB_UP_VOTE, now=now, user_id=client_id, playlist_id=playlist_id)
 		# Update the count of thumbs up for the playlist.
 		session.execute(Playlists.update()
 				.where(Playlist.id == playlist_id)
@@ -663,11 +663,11 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 
 """Votes down the playlist with the given identifier.
 """
-def vote_playlist_thumb_down(user_id, playlist_id, now=None):
+def vote_playlist_thumb_down(client_id, playlist_id, now=None):
 	try:
 		playlist_user_id, vote = session.query(Playlist.user_id, PlaylistVote)\
 				.outerjoin(PlaylistVote, sa.and_(
-					PlaylistVote.user_id == user_id,
+					PlaylistVote.user_id == client_id,
 					PlaylistVote.playlist_id == Playlist.id))\
 				.filter(Playlist.id == playlist_id)\
 				.one()
@@ -676,14 +676,14 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 		raise ValueError
 
 	# Do not allow the creator to vote down his own playlist.
-	if playlist_user_id == user_id:
+	if playlist_user_id == client_id:
 		raise ValueError
 
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
 		vote = PlaylistVote(
-				vote=_THUMB_DOWN_VOTE, now=now, user_id=user_id, playlist_id=playlist_id)
+				vote=_THUMB_DOWN_VOTE, now=now, user_id=client_id, playlist_id=playlist_id)
 		# Update the count of thumbs down for the playlist.
 		session.execute(Playlists.update()
 				.where(Playlist.id == playlist_id)
@@ -710,10 +710,10 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 
 """Removes the vote for the playlist with the given identifier.
 """
-def remove_playlist_vote(user_id, playlist_id, now=None):
+def remove_playlist_vote(client_id, playlist_id, now=None):
 	try:
 		vote = session.query(PlaylistVote)\
-				.filter(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)\
+				.filter(PlaylistVote.user_id == client_id, PlaylistVote.playlist_id == playlist_id)\
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
@@ -821,10 +821,10 @@ def get_displayed_video(video_id):
 
 """Adds a bookmark by the given user for the given video.
 """
-def add_video_bookmark(user_id, video_id, comment, time, now=None):
+def add_video_bookmark(client_id, video_id, comment, time, now=None):
 	now = _get_now(now)
 	try:
-		bookmark = Bookmark(comment, time, now, user_id=user_id, video_id=video_id)
+		bookmark = Bookmark(comment, time, now, user_id=client_id, video_id=video_id)
 		session.add(bookmark)
 		session.commit()
 		return bookmark.id
@@ -834,10 +834,10 @@ def add_video_bookmark(user_id, video_id, comment, time, now=None):
 
 """Removes the bookmark with the given identifier for the given video.
 """
-def remove_video_bookmark(user_id, bookmark_id, now=None):
+def remove_video_bookmark(client_id, bookmark_id, now=None):
 	result = session.execute(
 			Bookmarks.delete().where(
-				sa.and_(Bookmark.id == bookmark_id, Bookmark.user_id == user_id)))
+				sa.and_(Bookmark.id == bookmark_id, Bookmark.user_id == client_id)))
 	if result.rowcount:
 		session.commit()
 	else:
@@ -846,11 +846,11 @@ def remove_video_bookmark(user_id, bookmark_id, now=None):
 
 """Votes up the bookmark with the given identifier.
 """
-def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
+def vote_bookmark_thumb_up(client_id, bookmark_id, now=None):
 	try:
 		bookmark_user_id, vote = session.query(Bookmark.user_id, BookmarkVote)\
 				.outerjoin(BookmarkVote, sa.and_(
-					BookmarkVote.user_id == user_id,
+					BookmarkVote.user_id == client_id,
 					BookmarkVote.bookmark_id == Bookmark.id))\
 				.filter(Bookmark.id == bookmark_id)\
 				.one()
@@ -859,14 +859,14 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 		raise ValueError
 
 	# Do not allow the creator to vote up his own bookmark.
-	if bookmark_user_id == user_id:
+	if bookmark_user_id == client_id:
 		raise ValueError
 
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
 		vote = BookmarkVote(
-				vote=_THUMB_UP_VOTE, now=now, user_id=user_id, bookmark_id=bookmark_id)
+				vote=_THUMB_UP_VOTE, now=now, user_id=client_id, bookmark_id=bookmark_id)
 		# Update the count of thumbs up for the bookmark.
 		session.execute(Bookmarks.update()
 				.where(Bookmark.id == bookmark_id)
@@ -893,11 +893,11 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 
 """Votes down the bookmark with the given identifier.
 """
-def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
+def vote_bookmark_thumb_down(client_id, bookmark_id, now=None):
 	try:
 		bookmark_user_id, vote = session.query(Bookmark.user_id, BookmarkVote)\
 				.outerjoin(BookmarkVote, sa.and_(
-					BookmarkVote.user_id == user_id,
+					BookmarkVote.user_id == client_id,
 					BookmarkVote.bookmark_id == Bookmark.id))\
 				.filter(Bookmark.id == bookmark_id)\
 				.one()
@@ -906,14 +906,14 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 		raise ValueError
 
 	# Do not allow the creator to vote down his own bookmark.
-	if bookmark_user_id == user_id:
+	if bookmark_user_id == client_id:
 		raise ValueError
 
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
 		vote = BookmarkVote(
-				vote=_THUMB_DOWN_VOTE, now=now, user_id=user_id, bookmark_id=bookmark_id)
+				vote=_THUMB_DOWN_VOTE, now=now, user_id=client_id, bookmark_id=bookmark_id)
 		# Update the count of thumbs down for the bookmark.
 		session.execute(Bookmarks.update()
 				.where(Bookmark.id == bookmark_id)
@@ -940,10 +940,10 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 
 """Removes the vote for the bookmark with the given identifier.
 """
-def remove_bookmark_vote(user_id, bookmark_id, now=None):
+def remove_bookmark_vote(client_id, bookmark_id, now=None):
 	try:
 		vote = session.query(BookmarkVote)\
-				.filter(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)\
+				.filter(BookmarkVote.user_id == client_id, BookmarkVote.bookmark_id == bookmark_id)\
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
