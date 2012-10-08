@@ -611,7 +611,6 @@ def remove_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 					Playlist.updated: now}))
 		session.commit()
 	else:
-		# TODO: test that deleting for unknown bookmark doesn't decrement num_bookmarks
 		session.rollback()
 
 """Votes up the playlist with the given identifier.
