@@ -69,7 +69,7 @@ class TestBookmarksDb(unittest.TestCase):
 	def _assert_displayed_playlist(self,
 			displayed_playlist, author_id, author_name, time_created, name,
 			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
-			playlist_map={}, num_bookmarks=0):
+			num_bookmarks=0):
 		if time_updated is None:
 			time_updated = time_created
 
@@ -84,7 +84,6 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_up, displayed_playlist.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_playlist.user_vote)
-		# XXX self.assertDictEqual(playlist_map, displayed_playlist.playlist_map)
 		self.assertEqual(num_bookmarks, len(displayed_playlist.bookmarks))
 
 	"""Utility method to assert the fields in a DisplayedPlaylistBookmark.
@@ -92,7 +91,7 @@ class TestBookmarksDb(unittest.TestCase):
 	def _assert_displayed_playlist_bookmark(self,
 			displayed_playlist_bookmark, bookmark_id, video_name, comment,
 			time_added, author_name, author_id,
-			num_thumbs_up=0, num_thumbs_down=0, user_vote=None, playlist_ids=[]):
+			num_thumbs_up=0, num_thumbs_down=0, user_vote=None):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist_bookmark)
 		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
@@ -105,26 +104,23 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_up, displayed_playlist_bookmark.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_playlist_bookmark.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
-		# XXX self.assertSequenceEqual(
-		#		sorted(playlist_ids), sorted(displayed_playlist_bookmark.playlist_ids))
 
 	"""Utility method to assert the fields in a DisplayedVideo.
 	"""
 	def _assert_displayed_video(self,
-			displayed_video, name, length, playlist_map={}, num_bookmarks=0):
+			displayed_video, name, length, num_bookmarks=0):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_video)
 		self.assertEqual(name, displayed_video.name)
 		self.assertEqual(length, displayed_video.length)
 		# Begin optional arguments.
-		# XXX self.assertDictEqual(playlist_map, displayed_video.playlist_map)
 		self.assertEqual(num_bookmarks, len(displayed_video.bookmarks))
 
 	"""Utility method to assert the fields in a DisplayedVideoBookmark.
 	"""
 	def _assert_displayed_video_bookmark(self,
 			displayed_video_bookmark, bookmark_id, comment, time, time_created, author_name, author_id, 
-			num_thumbs_up=0, num_thumbs_down=0, user_vote=None, playlist_ids=[]):
+			num_thumbs_up=0, num_thumbs_down=0, user_vote=None):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_video_bookmark)
 		self.assertEqual(bookmark_id, displayed_video_bookmark.id)
@@ -137,8 +133,6 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_up, displayed_video_bookmark.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_video_bookmark.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_video_bookmark.user_vote)
-		# XXX self.assertSequenceEqual(
-		#		sorted(playlist_ids), sorted(displayed_video_bookmark.playlist_ids))
 
 	#
 	# Begin tests for users.
