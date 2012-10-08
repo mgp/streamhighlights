@@ -563,10 +563,11 @@ def get_displayed_playlist(playlist_id):
 """Adds the bookmark with the given identifier to the given playlist.
 """
 def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
-	try:
-		playlist = session.query(Playlist).filter(
-				Playlist.id == playlist_id, Playlist.user_id == user_id).one()
-	except sa_orm.exc.NoResultFound:
+	missing = session.query(Playlist, Bookmark)\
+			.join(Bookmark, Bookmark.id == bookmark_id)\
+			.filter(Playlist.id == playlist_id, Playlist.user_id == user_id)\
+			.count() == 0
+	if missing:
 		session.close()
 		raise ValueError
 	
@@ -589,10 +590,10 @@ def add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
 """Removes the bookmark with the given identifier from the given playlist.
 """
 def remove_playlist_bookmark(user_id, playlist_id, bookmark_id, now=None):
-	try:
-		playlist = session.query(Playlist).filter(
-				Playlist.id == playlist_id, Playlist.user_id == user_id).one()
-	except sa_orm.exc.NoResultFound:
+	missing = session.query(Playlist)\
+			.filter(Playlist.id == playlist_id, Playlist.user_id == user_id)\
+			.count() == 0
+	if missing:
 		session.close()
 		raise ValueError
 

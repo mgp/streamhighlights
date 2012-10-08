@@ -457,7 +457,7 @@ class TestBookmarksDb(unittest.TestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, self.now, user_name2, user_id2)
+				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
