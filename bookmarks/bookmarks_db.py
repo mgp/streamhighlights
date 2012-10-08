@@ -632,7 +632,6 @@ def vote_playlist_thumb_up(user_id, playlist_id, now=None):
 	if playlist_user_id == user_id:
 		raise ValueError
 
-	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
@@ -680,7 +679,6 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 	if playlist_user_id == user_id:
 		raise ValueError
 
-	# TODO: foreign key constraint guarantees cannot add for unknown user or playlist?
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
@@ -714,8 +712,9 @@ def vote_playlist_thumb_down(user_id, playlist_id, now=None):
 """
 def remove_playlist_vote(user_id, playlist_id, now=None):
 	try:
-		vote = session.query(PlaylistVote).filter(
-				PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id).one()
+		vote = session.query(PlaylistVote)\
+				.filter(PlaylistVote.user_id == user_id, PlaylistVote.playlist_id == playlist_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise ValueError
@@ -863,7 +862,6 @@ def vote_bookmark_thumb_up(user_id, bookmark_id, now=None):
 	if bookmark_user_id == user_id:
 		raise ValueError
 
-	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
@@ -911,7 +909,6 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 	if bookmark_user_id == user_id:
 		raise ValueError
 
-	# TODO: foreign key constraint guarantees cannot add for unknown user or bookmark?
 	now = _get_now(now)
 	if vote is None:
 		# Create the vote by the user.
@@ -945,8 +942,9 @@ def vote_bookmark_thumb_down(user_id, bookmark_id, now=None):
 """
 def remove_bookmark_vote(user_id, bookmark_id, now=None):
 	try:
-		vote = session.query(BookmarkVote).filter(
-				BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id).one()
+		vote = session.query(BookmarkVote)\
+				.filter(BookmarkVote.user_id == user_id, BookmarkVote.bookmark_id == bookmark_id)\
+				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise ValueError
