@@ -1,0 +1,2 @@
+from streamhighlights import app
+
