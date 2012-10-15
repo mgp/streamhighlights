@@ -217,6 +217,32 @@ class TestViews(unittest.TestCase, Foo):
 			response = client.post('/remove_playlist_vote')
 			self._assert_ajax_failure(response)
 
+	def test_remove_video_bookmark(self):
+		user_id = self._create_user('user_name')
+		video_id = self._create_video('video_name', 99)
+		bookmark_id = self._create_bookmark(user_id, video_id, 'comment', 33)
+
+		with app.test_client() as client:
+			self._add_client_id(client, user_id)
+			response = client.post('/remove_video_bookmark', data={'bookmark_id': bookmark_id})
+			self._assert_ajax_success(response)
+
+	def test_remove_video_bookmark_bad_request(self):
+		user_id = self._create_user('user_name')
+		video_id = self._create_video('video_name', 99)
+		bookmark_id = self._create_bookmark(user_id, video_id, 'comment', 33)
+
+		# Assert that the request fails with a missing client identifier.
+		with app.test_client() as client:
+			response = client.post('/remove_video_bookmark', data={'bookmark_id': bookmark_id})
+			self._assert_ajax_failure(response)
+
+		# Assert that the request fails with a missing bookmark identifier.
+		with app.test_client() as client:
+			self._add_client_id(client, user_id)
+			response = client.post('/remove_video_bookmark')
+			self._assert_ajax_failure(response)
+
 	def test_vote_bookmark_thumb_up(self):
 		user_id = self._create_user('user_name')
 		video_id = self._create_video('video_name', 99)

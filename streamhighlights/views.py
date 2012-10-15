@@ -8,26 +8,27 @@ import re
 import requests
 from urlparse import urlparse
 
-_AJAX_SUCCESS = {'success': True}
-_AJAX_FAILURE = {'success': False}
-
-def ajax_request(f):
+def login_required(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		try:
-			# Raise an exception if the session is missing the client identifier.
-			flask.g.client_id = flask.session['client_id']
-			f(*pargs, **kwargs)
-			return flask.jsonify(_AJAX_SUCCESS)
-		except Exception as e:
-			return flask.jsonify(_AJAX_FAILURE)
+		# TODO: Get user from database, assign g.client_id or g.client?
+		f(*pargs, **kwargs)
+	return decorated_function
+
+def login_optional(f):
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		# TODO: Get user from database, assign g.client_id or g.client?
+		f(*pargs, **kwargs)
 	return decorated_function
 
 @app.route('/')
+@login_optional
 def show_home():
 	return flask.render_template('home.html')
 
 @app.route('/user/steam/<user_id>')
+@login_optional
 def show_steam_user(user_id):
 	displayed_user = None
 	try:
@@ -39,6 +40,7 @@ def show_steam_user(user_id):
 	return flask.render_template('steam_user.html', displayed_user=displayed_user)
 
 @app.route('/user/twitch/<user_id>')
+@login_optional
 def show_twitch_user(user_id):
 	displayed_user = None
 	try:
@@ -50,6 +52,7 @@ def show_twitch_user(user_id):
 	return flask.render_template('twitch_user.html', displayed_user=displayed_user)
 
 @app.route('/playlist/<playlist_id>')
+@login_optional
 def show_playlist(playlist_id):
 	displayed_playlist = None
 	try:
@@ -95,6 +98,7 @@ def download_twitch_video_by_url(url):
 	return download_twitch_video_by_archive_id(archive_id)
 
 @app.route('/video/twitch/<video_id>')
+@login_optional
 def show_twitch_video(video_id):
 	try:
 		displayed_video = get_displayed_video(video_id)
@@ -120,6 +124,21 @@ def show_twitch_video(video_id):
 			video_id, twitch_video.title, twitch_video.length, ())
 	return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 
+_AJAX_SUCCESS = {'success': True}
+_AJAX_FAILURE = {'success': False}
+
+def ajax_request(f):
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		try:
+			# Raise an exception if the session is missing the client identifier.
+			flask.g.client_id = flask.session['client_id']
+			f(*pargs, **kwargs)
+			return flask.jsonify(_AJAX_SUCCESS)
+		except Exception as e:
+			return flask.jsonify(_AJAX_FAILURE)
+	return decorated_function
+
 @app.route('/add_playlist_bookmark', methods=['POST'])
 @ajax_request
 def add_playlist_bookmark():
@@ -130,7 +149,7 @@ def add_playlist_bookmark():
 @ajax_request
 def remove_playlist_bookmark():
 	db.remove_playlist_bookmark(
-				flask.g.client_id, flask.request.form['playlist_id'], flask.request.form['bookmark_id'])
+			flask.g.client_id, flask.request.form['playlist_id'], flask.request.form['bookmark_id'])
 
 @app.route('/vote_playlist_thumb_up', methods=['POST'])
 @ajax_request
@@ -146,6 +165,11 @@ def vote_playlist_thumb_down():
 @ajax_request
 def remove_playlist_vote():
 	db.remove_playlist_vote(flask.g.client_id, flask.request.form['playlist_id'])
+
+@app.route('/remove_video_bookmark', methods=['POST'])
+@ajax_request
+def remove_video_bookmark():
+	db.remove_video_bookmark(flask.g.client_id, flask.request.form['bookmark_id'])
 
 @app.route('/vote_bookmark_thumb_up', methods=['POST'])
 @ajax_request
