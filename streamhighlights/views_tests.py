@@ -305,6 +305,33 @@ class TestViews(unittest.TestCase, Foo):
 			response = client.post('/remove_bookmark_vote')
 			self._assert_ajax_failure(response)
 
+
+class TestRequestTwitchVideo(unittest.TestCase):
+	def _get_twitch_video(self, url):
+		self.url = url
+		return self.twitch_video_response
+
+	def setUp(self):
+		unittest.TestCase.setUp(self)
+		# Create the Response object containing the Twitch video JSON.
+		self.twitch_video_json = {
+				'title': 'title_value',
+				'length': 33,
+				'video_file_url': 'video_file_url_value',
+				'link_url': 'link_url_value'
+		}
+		self.twitch_video_response = requests.models.Response()
+		self.twitch_video_response.status_code = requests.codes.ok
+		self.twitch_video_response._content = json.dumps(self.twitch_video_json)
+		# Replace the getter to return this JSON.
+		views.requests.get = self._get_twitch_video
+	
+	def tearDown(self):
+		self.url = None
+		# Reset the getter.
+		views.requests.get = requests.get
+		unittest.TestCase.tearDown(self)
+
 	def _assert_match_host_regex_success(self, url):
 		self.assertTrue(views._MATCH_HOST_REGEX.search(url))
 
@@ -346,4 +373,29 @@ class TestViews(unittest.TestCase, Foo):
 		self._assert_get_archive_id_regex_failure('/b/')
 		self._assert_get_archive_id_regex_failure('/b/foo')
 		self._assert_get_archive_id_regex_failure('/b/123/456')
+
+	def _assert_twitch_video(self, archive_id, twitch_video):
+		# Assert that the URL requested was correct.
+		self.assertEqual(
+				'http://api.justin.tv/api/broadcast/by_archive/%s.json' % archive_id,
+				self.url)
+		# Assert that the TwitchVideo returned is correct.
+		self.assertIsNotNone(twitch_video)
+		self.assertEqual(archive_id, twitch_video.archive_id)
+		self.assertEqual(self.twitch_video_json['title'], twitch_video.title)
+		self.assertEqual(self.twitch_video_json['length'], twitch_video.length)
+		self.assertEqual(
+				self.twitch_video_json['video_file_url'], twitch_video.video_file_url)
+		self.assertEqual(self.twitch_video_json['link_url'], twitch_video.link_url)
+
+	def test_download_twitch_video_by_archive_id(self):
+		archive_id = 123
+		twitch_video = views.download_twitch_video_by_archive_id(123)
+		self._assert_twitch_video(archive_id, twitch_video)
+
+	def test_download_twitch_video_by_url(self):
+		archive_id = 123
+		url = 'http://www.twitch.tv/channel_name/b/%s' % archive_id
+		twitch_video = views.download_twitch_video_by_url(url)
+		self._assert_twitch_video(archive_id, twitch_video)
 

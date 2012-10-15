@@ -6,6 +6,7 @@ import flask
 import functools
 import re
 import requests
+from urlparse import urlparse
 
 _AJAX_SUCCESS = {'success': True}
 _AJAX_FAILURE = {'success': False}
@@ -22,6 +23,10 @@ def ajax_request(f):
 			return flask.jsonify(_AJAX_FAILURE)
 	return decorated_function
 
+@app.route('/')
+def show_home():
+	pass
+
 @app.route('/user/<user_id>')
 def show_user(user_id):
 	pass
@@ -36,21 +41,24 @@ _GET_ARCHIVE_ID_REGEX = re.compile('/b/(?P<archive_id>\d+)$')
 """Details about a video on Twitch.
 """
 TwitchVideo = namedtuple('TwitchVideo', [
-		'twitch_id', 'title', 'length', 'video_file_url', 'link_url'])
+		'archive_id', 'title', 'length', 'video_file_url', 'link_url'])
 
+"""Returns a TwitchVideo given its archive identifier.
+"""
 def download_twitch_video_by_archive_id(archive_id):
 	url = 'http://api.justin.tv/api/broadcast/by_archive/%s.json' % archive_id
 	response = requests.get(url)
 	if response.status_code != requests.codes.ok:
 		raise ValueError
 
-	twitch_id = archive_id
 	title = response.json['title']
 	length = response.json['length']
 	video_file_url = response.json['video_file_url']
 	link_url = response.json['link_url']
-	return TwitchVideo(twitch_id, title, length, video_file_url, link_url)
+	return TwitchVideo(archive_id, title, length, video_file_url, link_url)
 
+"""Returns a TwitchVideo given its archived URL on Twitch.
+"""
 def download_twitch_video_by_url(url):
 	parsed_url = urlparse(url)
 	if not _MATCH_HOST_REGEX.search(parsed_url.netloc):
@@ -58,7 +66,8 @@ def download_twitch_video_by_url(url):
 	archive_id_match = _GET_ARCHIVE_ID_REGEX.search(parsed_url.path)
 	if not archive_id_match:
 		raise ValueError
-	return int(archive_id_match.group('archive_id'))
+	archive_id = int(archive_id_match.group('archive_id'))
+	return download_twitch_video_by_archive_id(archive_id)
 
 @app.route('/video/twitchtv/<video_id>')
 def show_twitchtv_video(video_id):
