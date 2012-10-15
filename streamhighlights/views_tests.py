@@ -305,3 +305,45 @@ class TestViews(unittest.TestCase, Foo):
 			response = client.post('/remove_bookmark_vote')
 			self._assert_ajax_failure(response)
 
+	def _assert_match_host_regex_success(self, url):
+		self.assertTrue(views._MATCH_HOST_REGEX.search(url))
+
+	def _assert_match_host_regex_failure(self, url):
+		self.assertFalse(views._MATCH_HOST_REGEX.search(url))
+
+	def test_match_host_regex_success(self):
+		self._assert_match_host_regex_success('twitch.tv')
+		self._assert_match_host_regex_success('www.twitch.tv')
+		self._assert_match_host_regex_success('twitchtv.com')
+		self._assert_match_host_regex_success('www.twitchtv.com')
+		self._assert_match_host_regex_success('justin.tv')
+		self._assert_match_host_regex_success('www.justin.tv')
+		self._assert_match_host_regex_success('justintv.com')
+		self._assert_match_host_regex_success('www.justintv.com')
+
+	def test_match_host_regex_failure(self):
+		self._assert_match_host_regex_failure('foo.com')
+		self._assert_match_host_regex_failure('twitch')
+		self._assert_match_host_regex_failure('twitch.tv.com')
+		self._assert_match_host_regex_failure('justin')
+		self._assert_match_host_regex_failure('justin.tv.com')
+
+	def _assert_get_archive_id_regex_success(self, url, archive_id):
+		archive_id_match = views._GET_ARCHIVE_ID_REGEX.search(url)
+		self.assertIsNotNone(archive_id_match)
+		self.assertEqual(archive_id, int(archive_id_match.group('archive_id')))
+
+	def _assert_get_archive_id_regex_failure(self, url):
+		self.assertFalse(views._GET_ARCHIVE_ID_REGEX.search(url))
+
+	def test_get_archive_id_regex_success(self):
+		self._assert_get_archive_id_regex_success('/b/123', 123)
+		self._assert_get_archive_id_regex_success('/foo/b/456', 456)
+	
+	def test_get_archive_id_regex_failure(self):
+		self._assert_get_archive_id_regex_failure('/123')
+		self._assert_get_archive_id_regex_failure('/x/123')
+		self._assert_get_archive_id_regex_failure('/b/')
+		self._assert_get_archive_id_regex_failure('/b/foo')
+		self._assert_get_archive_id_regex_failure('/b/123/456')
+
