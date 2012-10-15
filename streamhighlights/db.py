@@ -510,6 +510,7 @@ class DisplayedPlaylistBookmark:
 				self.author_id)
 
 
+# TODO: this must accept client_id and get the client's votes, not the creator's.
 """Returns the DisplayedPlaylist with the given identifier.
 """
 def get_displayed_playlist(playlist_id):

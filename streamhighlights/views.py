@@ -25,15 +25,40 @@ def ajax_request(f):
 
 @app.route('/')
 def show_home():
-	pass
+	return flask.render_template('home.html')
 
-@app.route('/user/<user_id>')
-def show_user(user_id):
-	pass
+@app.route('/user/steam/<user_id>')
+def show_steam_user(user_id):
+	displayed_user = None
+	try:
+		displayed_user = db.get_displayed_steam_user(flask.g.client_id, user_id)
+	except Exception as e:
+		# If displayed_user is None then the template will show an error message.
+		pass
+
+	return flask.render_template('steam_user.html', displayed_user=displayed_user)
+
+@app.route('/user/twitch/<user_id>')
+def show_twitch_user(user_id):
+	displayed_user = None
+	try:
+		displayed_user = db.get_displayed_twitch_user(flask.g.client_id, user_id)
+	except Exception as e:
+		# If displayed_user is None then the template will show an error message.
+		pass
+	
+	return flask.render_template('twitch_user.html', displayed_user=displayed_user)
 
 @app.route('/playlist/<playlist_id>')
 def show_playlist(playlist_id):
-	pass
+	displayed_playlist = None
+	try:
+		displayed_playlist = db.get_displayed_playlist(flask.g.client_id, playlist_id)
+	except Exception as e:
+		# If displayed_playlist is None then the template will show an error message.
+		pass
+	
+	return flask.render_template('playlist.html', displayed_playlist=displayed_playlist)
 
 _MATCH_HOST_REGEX = re.compile('(?:twitchtv\.com|twitch\.tv|justintv\.com|justin\.tv)$')
 _GET_ARCHIVE_ID_REGEX = re.compile('/b/(?P<archive_id>\d+)$')
@@ -73,26 +98,27 @@ def download_twitch_video_by_url(url):
 def show_twitch_video(video_id):
 	try:
 		displayed_video = get_displayed_video(video_id)
-		return render_template('twitch_video.html', displayed_video=displayed_video)
+		return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 	except Exception as e:
 		# The video was not found, so go retrieve its JSON from Twitch.
 		pass
 	
 	try:
 		twitch_video = download_twitch_video_by_archive_id(video_id)
-		video_id = db.add_twitch_video(
-				twitch_video.archive_id,
-				twitch_video.title,
-				twitch_video.length,
-				twitch_video.video_file_url,
-				twitch_video.link_url)
-		# TODO: return video_file_url, link_url
-		displayed_video = db.DisplayedVideo(
-				video_id, twitch_video.title, twitch_video.length, ())
-		return render_template('twitch_video.html', displayed_video=displayed_video)
 	except Exception as e:
-		# TODO: the video could not be found
-		pass
+		# The video could not be retrieved, so display an error message.
+		return flask.render_template('twitch_video.html', displayed_video=None)
+
+	video_id = db.add_twitch_video(
+			twitch_video.archive_id,
+			twitch_video.title,
+			twitch_video.length,
+			twitch_video.video_file_url,
+			twitch_video.link_url)
+	# TODO: return video_file_url, link_url
+	displayed_video = db.DisplayedVideo(
+			video_id, twitch_video.title, twitch_video.length, ())
+	return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 
 @app.route('/add_playlist_bookmark', methods=['POST'])
 @ajax_request
