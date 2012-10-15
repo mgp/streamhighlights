@@ -350,6 +350,9 @@ def _get_now(now):
 		return datetime.utcnow()
 	return now
 
+def add_twitch_video(archive_id, title, length, video_file_url, link_url):
+	pass
+
 
 """Data for displaying a user.
 """

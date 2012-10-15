@@ -69,12 +69,29 @@ def download_twitch_video_by_url(url):
 	archive_id = int(archive_id_match.group('archive_id'))
 	return download_twitch_video_by_archive_id(archive_id)
 
-@app.route('/video/twitchtv/<video_id>')
-def show_twitchtv_video(video_id):
+@app.route('/video/twitch/<video_id>')
+def show_twitch_video(video_id):
 	try:
 		displayed_video = get_displayed_video(video_id)
-		return render_template('video.html')
+		return render_template('twitch_video.html', displayed_video=displayed_video)
 	except Exception as e:
+		# The video was not found, so go retrieve its JSON from Twitch.
+		pass
+	
+	try:
+		twitch_video = download_twitch_video_by_archive_id(video_id)
+		video_id = db.add_twitch_video(
+				twitch_video.archive_id,
+				twitch_video.title,
+				twitch_video.length,
+				twitch_video.video_file_url,
+				twitch_video.link_url)
+		# TODO: return video_file_url, link_url
+		displayed_video = db.DisplayedVideo(
+				video_id, twitch_video.title, twitch_video.length, ())
+		return render_template('twitch_video.html', displayed_video=displayed_video)
+	except Exception as e:
+		# TODO: the video could not be found
 		pass
 
 @app.route('/add_playlist_bookmark', methods=['POST'])
