@@ -11,8 +11,8 @@ class TestBookmarksDb(unittest.TestCase):
 		return user.id
 
 	"""Utility method for creating a video."""
-	def _create_video(self, name, length):
-		video = db.Video(name, length)
+	def _create_video(self, title, length):
+		video = db.Video(title, length)
 		self.session.add(video)
 		self.session.commit()
 		return video.id
@@ -47,7 +47,7 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Utility method to assert the fields in a DisplayedUserPlaylist.
 	"""
 	def _assert_displayed_user_playlist(self,
-			displayed_user_playlist, playlist_id, name, time_created,
+			displayed_user_playlist, playlist_id, title, time_created,
 			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None, num_bookmarks=0):
 		if time_updated is None:
 			time_updated = time_created
@@ -61,13 +61,13 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_up, displayed_user_playlist.num_thumbs_up)
 		self.assertEqual(num_thumbs_down, displayed_user_playlist.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_user_playlist.user_vote)
-		self.assertEqual(name, displayed_user_playlist.name)
+		self.assertEqual(title, displayed_user_playlist.title)
 		self.assertEqual(num_bookmarks, displayed_user_playlist.num_bookmarks)
 
 	"""Utility method to assert the fields in a DisplayedPlaylist.
 	"""
 	def _assert_displayed_playlist(self,
-			displayed_playlist, author_id, author_name, time_created, name,
+			displayed_playlist, author_id, author_name, time_created, title,
 			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
 			num_bookmarks=0):
 		if time_updated is None:
@@ -78,7 +78,7 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(author_id, displayed_playlist.author_id)
 		self.assertEqual(author_name, displayed_playlist.author_name)
 		self.assertEqual(time_created, displayed_playlist.time_created)
-		self.assertEqual(name, displayed_playlist.name)
+		self.assertEqual(title, displayed_playlist.title)
 		# Begin optional arguments.
 		self.assertEqual(time_updated, displayed_playlist.time_updated)
 		self.assertEqual(num_thumbs_up, displayed_playlist.num_thumbs_up)
@@ -89,13 +89,13 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Utility method to assert the fields in a DisplayedPlaylistBookmark.
 	"""
 	def _assert_displayed_playlist_bookmark(self,
-			displayed_playlist_bookmark, bookmark_id, video_name, comment,
+			displayed_playlist_bookmark, bookmark_id, video_title, comment,
 			time_added, author_name, author_id,
 			num_thumbs_up=0, num_thumbs_down=0, user_vote=None):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist_bookmark)
 		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
-		self.assertEqual(video_name, displayed_playlist_bookmark.video_name)
+		self.assertEqual(video_title, displayed_playlist_bookmark.video_title)
 		self.assertEqual(comment, displayed_playlist_bookmark.comment)
 		self.assertEqual(time_added, displayed_playlist_bookmark.time_added)
 		self.assertEqual(author_name, displayed_playlist_bookmark.author_name)
@@ -108,10 +108,10 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Utility method to assert the fields in a DisplayedVideo.
 	"""
 	def _assert_displayed_video(self,
-			displayed_video, name, length, num_bookmarks=0):
+			displayed_video, title, length, num_bookmarks=0):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_video)
-		self.assertEqual(name, displayed_video.name)
+		self.assertEqual(title, displayed_video.title)
 		self.assertEqual(length, displayed_video.length)
 		# Begin optional arguments.
 		self.assertEqual(num_bookmarks, len(displayed_video.bookmarks))
@@ -153,9 +153,9 @@ class TestBookmarksDb(unittest.TestCase):
 	"""
 	def test_create_playlist_unknown_user(self):
 		missing_user_id = 'missing_user_id'
-		playlist_name = 'playlist1'
+		playlist_title = 'playlist1'
 		with self.assertRaises(ValueError):
-			db.create_playlist(missing_user_id, playlist_name, now=self.now)
+			db.create_playlist(missing_user_id, playlist_title, now=self.now)
 
 	"""Test that successfully creates and deletes a bookmark.
 	"""
@@ -166,8 +166,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a playlist for a user.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 
 		# Get the displayed user.
 		displayed_user = db.get_displayed_user(client_id, user_id)
@@ -175,7 +175,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the created playlist was returned.
 		displayed_user_playlist = displayed_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
-				playlist_id, playlist_name, self.now)
+				playlist_id, playlist_title, self.now)
 
 		# Delete the playlist.
 		db.remove_playlist(user_id, playlist_id)
@@ -212,8 +212,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a playlist for a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -227,7 +227,7 @@ class TestBookmarksDb(unittest.TestCase):
 		self._assert_displayed_user(displayed_user, user_id1, user_name1, num_playlists=1)
 		displayed_user_playlist = displayed_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
-				playlist_id, playlist_name, self.now)
+				playlist_id, playlist_title, self.now)
 
 
 	# 
@@ -255,12 +255,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark by another user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -276,7 +276,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 	"""Test that fails to add a bookmark to a playlist because the playlist identifier
 	is unknown.
@@ -286,9 +286,9 @@ class TestBookmarksDb(unittest.TestCase):
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		# Create a video with a bookmark by another user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -311,8 +311,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 
 		# Assert that adding a missing bookmark to a playlist fails.
 		missing_bookmark_id = 'missing_bookmark_id'
@@ -323,7 +323,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 	
 	"""Test that successfully adds a bookmark to and removes a bookmark from a
 	playlist.
@@ -335,12 +335,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark by another user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -354,12 +354,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the playlist has a bookmark.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name,
+				user_id1, user_name1, self.now, playlist_title,
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		# Assert that the bookmark is correct.
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 		# Add the bookmark to the playlist again.
 		add_bookmark_again_time = self.now + timedelta(minutes=20)
@@ -368,11 +368,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name,
+				user_id1, user_name1, self.now, playlist_title,
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 		# Remove the bookmark from the playlist.
 		remove_bookmark_time = self.now + timedelta(minutes=30)
@@ -381,7 +381,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the playlist has no bookmarks.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name,
+				user_id1, user_name1, self.now, playlist_title,
 				time_updated=remove_bookmark_time, num_bookmarks=0)
 
 		# Remove the bookmark from the playlist again.
@@ -391,7 +391,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name,
+				user_id1, user_name1, self.now, playlist_title,
 				time_updated=remove_bookmark_time, num_bookmarks=0)
 
 	"""Test that fails to add a bookmark to a playlist because the user identifier is
@@ -404,12 +404,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark by another user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -426,7 +426,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 	"""Test that fails to remove a bookmark from a playlist because the user identifier
 	is not the playlist creator.
@@ -438,12 +438,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark by another user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -465,11 +465,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name,
+				user_id1, user_name1, self.now, playlist_title,
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_name, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
@@ -481,8 +481,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 		
 		missing_user_id = 'missing_user_id'
 
@@ -492,7 +492,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 		# Assert that voting down the playlist with a missing user fails.
 		with self.assertRaises(ValueError):
@@ -500,7 +500,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 		# Assert that removing the playlist vote with a missing user fails.
 		with self.assertRaises(ValueError):
@@ -508,7 +508,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	the creator.
@@ -520,8 +520,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 			
 		# Assert that the creator voting up the playlist fails.
 		with self.assertRaises(ValueError):
@@ -529,7 +529,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 		# Assert that the creator voting down the playlist fails.
 		with self.assertRaises(ValueError):
@@ -537,7 +537,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 		# Assert that the creator removing the playlist vote fails.
 		with self.assertRaises(ValueError):
@@ -545,7 +545,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_name)
+				user_id, user_name, self.now, playlist_title)
 
 	"""Test that fails to vote a playlist up or down because the playlist identifier
 	is unknown.
@@ -590,8 +590,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote up the playlist.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -601,21 +601,21 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
 
 		# Vote up the playlist again.
 		db.vote_playlist_thumb_up(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 		# Remove the vote for the playlist again.
 		with self.assertRaises(ValueError):
@@ -623,7 +623,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 	"""Test that successfully votes down a playlist.
 	"""
@@ -634,8 +634,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote down the playlist.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -645,21 +645,21 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
 
 		# Vote down the playlist again.
 		db.vote_playlist_thumb_down(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 		# Remove the vote for the playlist again.
 		with self.assertRaises(ValueError):
@@ -667,7 +667,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 	"""Test that successfully changes the vote of a playlist.
 	"""
@@ -678,8 +678,8 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		playlist_name = 'playlist1'
-		playlist_id = db.create_playlist(user_id1, playlist_name, now=self.now)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote on the playlist.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -689,28 +689,28 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
 
 		# Vote down the playlist.
 		db.vote_playlist_thumb_down(user_id2, playlist_id, now=self.now)
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
 
 		# Vote up the playlist again.
 		db.vote_playlist_thumb_up(user_id2, playlist_id, now=self.now)
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_name)
+				user_id1, user_name1, self.now, playlist_title)
 
 	# 
 	# Begin tests for videos.
@@ -730,9 +730,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 
 		# Assert that creating a bookmark by a missing user fails.
 		bookmark_comment = 'comment1'
@@ -743,7 +743,7 @@ class TestBookmarksDb(unittest.TestCase):
 					bookmark_comment, bookmark_time, now=self.now)
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_name, video_length)
+		self._assert_displayed_video(displayed_video, video_title, video_length)
 	
 	"""Test that fails to create a bookmark because the video identifier is unknown.
 	"""
@@ -770,9 +770,9 @@ class TestBookmarksDb(unittest.TestCase):
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		# Create a video.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 
 		# Add the bookmark to the video.
 		add_bookmark_time = self.now + timedelta(minutes=10)
@@ -783,7 +783,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the video has a bookmark.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		# Assert that the bookmark is correct.
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
@@ -795,7 +795,7 @@ class TestBookmarksDb(unittest.TestCase):
 		db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
 		# Assert that the video has no bookmarks.
 		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_name, video_length)
+		self._assert_displayed_video(displayed_video, video_title, video_length)
 
 		# Remove the bookmark from the video again.
 		remove_bookmark_again_time = self.now + timedelta(minutes=30)
@@ -804,7 +804,7 @@ class TestBookmarksDb(unittest.TestCase):
 					user_id, bookmark_id, now=remove_bookmark_again_time)
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_name, video_length)
+		self._assert_displayed_video(displayed_video, video_title, video_length)
 	
 	"""Test that fails to delete a bookmark that does not exist.
 	"""
@@ -816,9 +816,9 @@ class TestBookmarksDb(unittest.TestCase):
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		# Create a video.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		# Delete a missing bookmark.
 		remove_bookmark_time = self.now + timedelta(minutes=10)
 		missing_bookmark_id = 'missing_bookmark_id'
@@ -828,7 +828,7 @@ class TestBookmarksDb(unittest.TestCase):
 
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_name, video_length)
+		self._assert_displayed_video(displayed_video, video_title, video_length)
 
 	"""Test that fails to delete a bookmark because the user identifier is not
 	the creator.
@@ -838,9 +838,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -858,7 +858,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -872,9 +872,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
@@ -889,7 +889,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -901,7 +901,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -913,7 +913,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -927,9 +927,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
@@ -942,7 +942,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -954,7 +954,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -966,7 +966,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1001,9 +1001,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1018,7 +1018,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark has been voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1029,7 +1029,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1040,7 +1040,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark is no longer voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1052,7 +1052,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1065,9 +1065,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1082,7 +1082,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark has been voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1093,7 +1093,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1104,7 +1104,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark is no longer voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1116,7 +1116,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that this had no effect.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1129,9 +1129,9 @@ class TestBookmarksDb(unittest.TestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		# Create a video with a bookmark by a user.
-		video_name = 'video1'
+		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_name, video_length)
+		video_id = self._create_video(video_title, video_length)
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1146,7 +1146,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark has been voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1157,7 +1157,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark has been voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1168,7 +1168,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark has been voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
@@ -1179,7 +1179,7 @@ class TestBookmarksDb(unittest.TestCase):
 		# Assert that the bookmark is no longer voted on.
 		displayed_video = db.get_displayed_video(client_id, video_id)
 		self._assert_displayed_video(displayed_video,
-				video_name, video_length, num_bookmarks=1)
+				video_title, video_length, num_bookmarks=1)
 		displayed_video_bookmark = displayed_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,

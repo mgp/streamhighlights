@@ -129,7 +129,7 @@ class Playlist(_Base):
 	id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	visibility = sa.Column(sa.Enum('public', 'private'), nullable=False)
-	name = sa.Column(sa.String, nullable=False)
+	title = sa.Column(sa.String, nullable=False)
 	num_thumbs_up = sa.Column(sa.Integer, nullable=False)
 	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
@@ -139,11 +139,11 @@ class Playlist(_Base):
 	votes = sa_orm.relationship('PlaylistVote', backref='playlist')
 	bookmarks = sa_orm.relationship('PlaylistBookmark', backref='Playlist')
 
-	def __init__(self, visibility, name, now, user_id=None):
+	def __init__(self, visibility, title, now, user_id=None):
 		if user_id:
 			self.user_id = user_id
 		self.visibility = visibility
-		self.name = name
+		self.title = title
 		self.num_thumbs_up = 0
 		self.num_thumbs_down = 0
 		self.created = now
@@ -152,10 +152,10 @@ class Playlist(_Base):
 	
 	def __repr__(self):
 		# Has backref: user.
-		return 'Playlist(id=%r, visibility=%r, name=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r, user=%r)' % (
+		return 'Playlist(id=%r, visibility=%r, title=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r, user=%r)' % (
 				self.id,
 				self.visibility,
-				self.name,
+				self.title,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.created,
@@ -208,18 +208,18 @@ class Video(_Base):
 	__tablename__ = 'Videos'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
+	title = sa.Column(sa.String, nullable=False)
 	length = sa.Column(sa.Integer, nullable=False)
 	bookmarks = sa_orm.relationship("Bookmark", backref='video')
 
-	def __init__(self, name, length):
-		self.name = name
+	def __init__(self, title, length):
+		self.title = title
 		self.length = length
 
 	def __repr__(self):
-		return 'Video(id=%r, name=%r, length=%r, bookmarks=%r)' % (
+		return 'Video(id=%r, title=%r, length=%r, bookmarks=%r)' % (
 				self.id,
-				self.name,
+				self.title,
 				self.length,
 				self.bookmarks)
 
@@ -373,25 +373,25 @@ class DisplayedUser:
 """Data for displaying a playlist on a user page.
 """
 class DisplayedUserPlaylist:
-	def __init__(self, id, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, num_bookmarks):
+	def __init__(self, id, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, num_bookmarks):
 		self.id = id
 		self.time_created = time_created
 		self.time_updated = time_updated
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
-		self.name = name
+		self.title = title
 		self.num_bookmarks = num_bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedUserPlaylist(id=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, num_bookmarks=%r)' % (
+		return 'DisplayedUserPlaylist(id=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, num_bookmarks=%r)' % (
 				self.id,
 				self.time_created,
 				self.time_updated,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
-				self.name,
+				self.title,
 				self.num_bookmarks)
 
 
@@ -422,7 +422,7 @@ def get_displayed_user(client_id, user_id):
 				num_thumbs_up=playlist.num_thumbs_up,
 				num_thumbs_down=playlist.num_thumbs_down,
 				user_vote=playlist_vote,
-				name=playlist.name,
+				title=playlist.title,
 				num_bookmarks=playlist.num_bookmarks)
 			for playlist, playlist_vote in playlists_cursor]
 	displayed_user = DisplayedUser(user.id, user.name, displayed_user_playlists)
@@ -431,13 +431,13 @@ def get_displayed_user(client_id, user_id):
 
 """Creates a playlist by the given user.
 """
-def create_playlist(client_id, name, now=None):
+def create_playlist(client_id, title, now=None):
 	if session.query(User).filter(User.id == client_id).count() == 0:
 		session.close()
 		raise ValueError
 
 	now = _get_now(now)
-	playlist = Playlist('public', name, now, user_id=client_id)
+	playlist = Playlist('public', title, now, user_id=client_id)
 	session.add(playlist)
 	session.commit()
 	return playlist.id
@@ -458,7 +458,7 @@ def remove_playlist(client_id, playlist_id, now=None):
 """Data for displaying a playlist.
 """
 class DisplayedPlaylist:
-	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, name, bookmarks):
+	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, bookmarks):
 		self.author_id = author_id
 		self.author_name = author_name
 		self.time_created = time_created
@@ -466,12 +466,12 @@ class DisplayedPlaylist:
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
-		self.name = name
+		self.title = title
 		# The DisplayedPlaylistBookmark objects for each bookmark.
 		self.bookmarks = bookmarks
 
 	def __repr__(self):
-		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, name=%r, bookmarks=%r)' % (
+		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, bookmarks=%r)' % (
 				self.author_id,
 				self.author_name,
 				self.time_created,
@@ -479,31 +479,31 @@ class DisplayedPlaylist:
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
-				self.name,
+				self.title,
 				self.bookmarks)
 
 
 """Data for displaying a bookmark on a playlist page.
 """
 class DisplayedPlaylistBookmark:
-	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_name, comment, time_added, author_name, author_id):
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_title, comment, time_added, author_name, author_id):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
 		self.user_vote = user_vote
-		self.video_name = video_name
+		self.video_title = video_title
 		self.comment = comment
 		self.time_added = time_added
 		self.author_name = author_name
 		self.author_id = author_id
 	
 	def __repr__(self):
-		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_name=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r)' % (
+		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_title=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
 				self.user_vote,
-				self.video_name,
+				self.video_title,
 				self.comment,
 				self.time_added,
 				self.author_name,
@@ -528,7 +528,7 @@ def get_displayed_playlist(client_id, playlist_id):
 
 	# Get the bookmarks.
 	playlist_bookmarks_cursor = session.query(
-				PlaylistBookmark.added, Bookmark, User.name, Video.name, BookmarkVote.vote)\
+				PlaylistBookmark.added, Bookmark, User.name, Video.title, BookmarkVote.vote)\
 			.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 			.join(User, Bookmark.user_id == User.id)\
 			.join(Video, Bookmark.video_id == Video.id)\
@@ -545,12 +545,12 @@ def get_displayed_playlist(client_id, playlist_id):
 				num_thumbs_up=bookmark.num_thumbs_up,
 				num_thumbs_down=bookmark.num_thumbs_down,
 				user_vote=bookmark_vote,
-				video_name=video_name,
+				video_title=video_title,
 				comment=bookmark.comment,
 				time_added=added,
 				author_name=author_name,
 				author_id=bookmark.user_id)
-			for added, bookmark, author_name, video_name, bookmark_vote in playlist_bookmarks_cursor]
+			for added, bookmark, author_name, video_title, bookmark_vote in playlist_bookmarks_cursor]
 	displayed_playlist = DisplayedPlaylist(
 			author_id=playlist.user_id,
 			author_name=creator_name,
@@ -559,7 +559,7 @@ def get_displayed_playlist(client_id, playlist_id):
 			num_thumbs_up=playlist.num_thumbs_up,
 			num_thumbs_down=playlist.num_thumbs_down,
 			user_vote=playlist_vote,
-			name=playlist.name,
+			title=playlist.title,
 			bookmarks=displayed_playlist_bookmarks)
 	return displayed_playlist
 
@@ -738,17 +738,17 @@ def remove_playlist_vote(client_id, playlist_id, now=None):
 """Data for displaying a video.
 """
 class DisplayedVideo:
-	def __init__(self, id, name, length, bookmarks):
+	def __init__(self, id, title, length, bookmarks):
 		self.id = id
-		self.name = name
+		self.title = title
 		self.length = length
 		# The DisplayedBookmark objects for each bookmark.
 		self.bookmarks = bookmarks
 	
 	def __repr__(self):
-		return 'DisplayedVideo(id=%r, name=%r, length=%r, bookmarks=%r)' % (
+		return 'DisplayedVideo(id=%r, title=%r, length=%r, bookmarks=%r)' % (
 				self.id,
-				self.name,
+				self.title,
 				self.length,
 				self.bookmarks)
 
@@ -818,7 +818,7 @@ def get_displayed_video(client_id, video_id):
 				author_id=bookmark.user_id)
 			for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
 	displayed_video = DisplayedVideo(
-			video.id, video.name, video.length, displayed_video_bookmarks)
+			video.id, video.title, video.length, displayed_video_bookmarks)
 	return displayed_video
 
 """Adds a bookmark by the given user for the given video.
