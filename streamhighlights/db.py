@@ -510,16 +510,15 @@ class DisplayedPlaylistBookmark:
 				self.author_id)
 
 
-# TODO: this must accept client_id and get the client's votes, not the creator's.
 """Returns the DisplayedPlaylist with the given identifier.
 """
-def get_displayed_playlist(playlist_id):
+def get_displayed_playlist(client_id, playlist_id):
 	try:
 		# Get the playlist without its bookmarks.
 		playlist, creator_name, playlist_vote = session.query(Playlist, User.name, PlaylistVote.vote)\
 				.join(User, Playlist.user_id == User.id)\
 				.outerjoin(PlaylistVote, sa.and_(
-					PlaylistVote.user_id == Playlist.user_id,
+					PlaylistVote.user_id == client_id,
 					PlaylistVote.playlist_id == Playlist.id))\
 				.filter(Playlist.id == playlist_id)\
 				.one()
@@ -788,7 +787,7 @@ class DisplayedVideoBookmark:
 
 """Returns the DisplayedVideo with the given identifier.
 """
-def get_displayed_video(video_id):
+def get_displayed_video(client_id, video_id):
 	try:
 		# Get the video without its bookmarks.
 		video = session.query(Video).filter(Video.id == video_id).one()
@@ -800,7 +799,7 @@ def get_displayed_video(video_id):
 	video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
 			.join(User, Bookmark.user_id == User.id)\
 			.outerjoin(BookmarkVote, sa.and_(
-				BookmarkVote.user_id == Bookmark.user_id,
+				BookmarkVote.user_id == client_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
 			.filter(Bookmark.video_id == video_id)
 	session.close()
