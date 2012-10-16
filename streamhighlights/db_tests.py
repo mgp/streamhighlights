@@ -134,6 +134,16 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(num_thumbs_down, displayed_video_bookmark.num_thumbs_down)
 		self.assertEqual(user_vote, displayed_video_bookmark.user_vote)
 
+	def test_add_twitch_video(self):
+		title = 'title_value'
+		length = 33
+		archive_id = 'archive_id_value'
+		video_file_url = 'video_file_value'
+		link_url = 'link_url_value'
+
+		db.add_twitch_video(title, length, archive_id, video_file_url, link_url)
+		# TODO: Assert the video can be retrieved.
+
 	#
 	# Begin tests for users.
 	# 

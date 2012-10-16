@@ -202,7 +202,7 @@ class PlaylistVote(_Base):
 				self.playlist)
 
 
-"""A video on Twitch.
+"""A video.
 """
 class Video(_Base):
 	__tablename__ = 'Videos'
@@ -212,16 +212,48 @@ class Video(_Base):
 	length = sa.Column(sa.Integer, nullable=False)
 	bookmarks = sa_orm.relationship("Bookmark", backref='video')
 
+	twitch_video = sa_orm.relationship('TwitchVideo', uselist=False, backref='video')
+
 	def __init__(self, title, length):
 		self.title = title
 		self.length = length
 
 	def __repr__(self):
-		return 'Video(id=%r, title=%r, length=%r, bookmarks=%r)' % (
+		return 'Video(id=%r, title=%r, length=%r, bookmarks=%r, twitch_video=%r)' % (
 				self.id,
 				self.title,
 				self.length,
-				self.bookmarks)
+				self.bookmarks,
+				self.twitch_video)
+
+
+"""A video on Twitch.
+"""
+class TwitchVideo(_Base):
+	__tablename__ = 'TwitchVideos'
+
+	id = sa.Column(sa.Integer, primary_key=True)
+	twitch_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
+	archive_id = sa.Column(sa.String, nullable=False)
+	video_file_url = sa.Column(sa.String, nullable=False)
+	link_url = sa.Column(sa.String, nullable=False)
+
+	def __init__(self, archive_id, video_file_url, link_url, twitch_id=None):
+		if twitch_id is not None:
+			self.twitch_id = twitch_id
+		self.archive_id = archive_id
+		self.video_file_url = video_file_url
+		self.link_url = link_url
+
+	def __repr__(self):
+		# Has backref: video.
+		return 'TwitchVideo(id=%r, twitch_id=%r, archive_id=%r, video_file_url=%r, link_url=%r, video=%r)' % (
+				self.id,
+				self.twitch_id,
+				self.archive_id,
+				self.video_file_url,
+				self.link_url,
+				self.video)
 
 
 """A bookmark for a video.
@@ -305,6 +337,7 @@ def create_all():
 	global PlaylistVotes
 	global PlaylistBookmarks
 	global Videos
+	global TwitchVideos
 	global Bookmarks
 	global BookmarkVotes
 
@@ -318,6 +351,7 @@ def create_all():
 	PlaylistVotes = PlaylistVote.__table__
 	PlaylistBookmarks = PlaylistBookmark.__table__
 	Videos = Video.__table__
+	TwitchVideos = TwitchVideo.__table__
 	Bookmarks = Bookmark.__table__
 	BookmarkVotes = BookmarkVote.__table__
 
@@ -329,6 +363,7 @@ def drop_all():
 	global PlaylistVotes
 	global PlaylistBookmarks
 	global Videos
+	global TwitchVideos
 	global Bookmarks
 	global BookmarkVotes
 
@@ -340,6 +375,7 @@ def drop_all():
 	PlaylistVotes = None
 	PlaylistBookmarks = None
 	Videos = None
+	TwitchVideos = None
 	Bookmarks = None
 	BookmarkVotes = None
 
@@ -350,8 +386,14 @@ def _get_now(now):
 		return datetime.utcnow()
 	return now
 
-def add_twitch_video(archive_id, title, length, video_file_url, link_url):
-	pass
+"""Adds the given video on Twitch.
+"""
+def add_twitch_video(title, length, archive_id, video_file_url, link_url):
+	twitch_video = TwitchVideo(archive_id, video_file_url, link_url)
+	twitch_video.video = Video(title, length)
+	session.add(twitch_video)
+	session.commit()
+	return twitch_video.id
 
 
 """Data for displaying a user.
@@ -751,6 +793,26 @@ class DisplayedVideo:
 				self.title,
 				self.length,
 				self.bookmarks)
+
+
+"""Data for displaying a video on Twitch.
+"""
+class DisplayedTwitchVideo(DisplayedVideo):
+	def __init__(self, id, title, length, bookmarks, archive_id, video_file_url, link_url):
+		DisplayedVideo.__init__(self, id, title, length, bookmarks)
+		self.archive_id = archive_id
+		self.video_file_url = video_file_url
+		self.link_url = link_url
+	
+	def __repr__(self):
+		return 'DisplayedTwitchVideo(id=%r, title=%r, length=%r, bookmarks=%r, archive_id=%r, video_file_url=%r, link_url=%r)' % (
+				self.id,
+				self.title,
+				self.length,
+				self.bookmarks,
+				self.archive_id,
+				self.video_file_url,
+				self.link_url)
 
 
 """Data for displaying a bookmark on a video page.
