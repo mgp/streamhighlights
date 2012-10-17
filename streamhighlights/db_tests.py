@@ -10,14 +10,6 @@ class TestBookmarksDb(unittest.TestCase):
 		self.session.commit()
 		return user.id
 
-	"""Utility method for creating a bookmark."""
-	def _create_bookmark(self, user_id, video_id, comment, time):
-		bookmark = db.Bookmark(
-				comment, time, self.now, user_id=user_id, video_id=video_id)
-		self.session.add(bookmark)
-		self.session.commit()
-		return bookmark.id
-
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
@@ -283,7 +275,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id2, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that adding the bookmark by a missing user fails.
 		missing_user_id = 'missing_user_id'
@@ -316,7 +309,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id2, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that adding the bookmark to a missing playlist fails.
 		missing_playlist_id = 'missing_playlist_id'
@@ -373,7 +367,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id2, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Add the bookmark to the playlist.
 		add_bookmark_time = self.now + timedelta(minutes=10)
@@ -447,7 +442,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id2, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that adding the bookmark by a user not the playlist creator fails.
 		user_name3 = 'user_name3'
@@ -486,7 +482,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id2, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id2, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Add the bookmark to the playlist.
 		add_bookmark_time = self.now + timedelta(minutes=10)
@@ -905,7 +902,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that a user removing the bookmark who is not the creator fails.
 		user_name2 = 'user_name2'
@@ -945,7 +943,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id, video_id, bookmark_comment, bookmark_time, self.now)
 
 		missing_user_id = 'missing_user_id'
 
@@ -1008,7 +1007,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that the creator voting up the bookmark fails.
 		with self.assertRaises(ValueError):
@@ -1090,7 +1090,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote up the bookmark.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -1163,7 +1164,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote down the bookmark.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
@@ -1235,7 +1237,8 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
-		bookmark_id = self._create_bookmark(user_id1, video_id, bookmark_comment, bookmark_time)
+		bookmark_id = db.add_video_bookmark(
+				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote on the bookmark.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
