@@ -233,23 +233,23 @@ class TwitchVideo(_Base):
 	__tablename__ = 'TwitchVideos'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	twitch_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
+	video_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
 	archive_id = sa.Column(sa.String, nullable=False)
 	video_file_url = sa.Column(sa.String, nullable=False)
 	link_url = sa.Column(sa.String, nullable=False)
 
-	def __init__(self, archive_id, video_file_url, link_url, twitch_id=None):
-		if twitch_id is not None:
-			self.twitch_id = twitch_id
+	def __init__(self, archive_id, video_file_url, link_url, video_id=None):
+		if video_id is not None:
+			self.video_id = video_id
 		self.archive_id = archive_id
 		self.video_file_url = video_file_url
 		self.link_url = link_url
 
 	def __repr__(self):
 		# Has backref: video.
-		return 'TwitchVideo(id=%r, twitch_id=%r, archive_id=%r, video_file_url=%r, link_url=%r, video=%r)' % (
+		return 'TwitchVideo(id=%r, video_id=%r, archive_id=%r, video_file_url=%r, link_url=%r, video=%r)' % (
 				self.id,
-				self.twitch_id,
+				self.video_id,
 				self.archive_id,
 				self.video_file_url,
 				self.link_url,
@@ -389,11 +389,13 @@ def _get_now(now):
 """Adds the given video on Twitch.
 """
 def add_twitch_video(title, length, archive_id, video_file_url, link_url):
+	video = Video(title, length)
 	twitch_video = TwitchVideo(archive_id, video_file_url, link_url)
-	twitch_video.video = Video(title, length)
+	twitch_video.video = video
 	session.add(twitch_video)
 	session.commit()
-	return twitch_video.id
+	# Return the video identifier for referencing by playlists and bookmarks.
+	return video.id
 
 
 """Data for displaying a user.
@@ -849,10 +851,12 @@ class DisplayedVideoBookmark:
 
 """Returns the DisplayedVideo with the given identifier.
 """
-def get_displayed_video(client_id, video_id):
+def get_displayed_twitch_video(client_id, archive_id):
 	try:
 		# Get the video without its bookmarks.
-		video = session.query(Video).filter(Video.id == video_id).one()
+		twitch_video, video = session.query(TwitchVideo, Video)\
+				.join(Video, TwitchVideo.video_id == Video.id)\
+				.filter(TwitchVideo.archive_id == archive_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise ValueError
@@ -863,7 +867,7 @@ def get_displayed_video(client_id, video_id):
 			.outerjoin(BookmarkVote, sa.and_(
 				BookmarkVote.user_id == client_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
-			.filter(Bookmark.video_id == video_id)
+			.filter(Bookmark.video_id == video.id)
 	session.close()
 
 	# Create the displayed bookmarks and video.
@@ -879,8 +883,9 @@ def get_displayed_video(client_id, video_id):
 				author_name=author_name,
 				author_id=bookmark.user_id)
 			for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
-	displayed_video = DisplayedVideo(
-			video.id, video.title, video.length, displayed_video_bookmarks)
+	displayed_video = DisplayedTwitchVideo(
+			video.id, video.title, video.length, displayed_video_bookmarks,
+			twitch_video.archive_id, twitch_video.video_file_url, twitch_video.link_url)
 	return displayed_video
 
 """Adds a bookmark by the given user for the given video.

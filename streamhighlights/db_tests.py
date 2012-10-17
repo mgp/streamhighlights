@@ -10,13 +10,6 @@ class TestBookmarksDb(unittest.TestCase):
 		self.session.commit()
 		return user.id
 
-	"""Utility method for creating a video."""
-	def _create_video(self, title, length):
-		video = db.Video(title, length)
-		self.session.add(video)
-		self.session.commit()
-		return video.id
-
 	"""Utility method for creating a bookmark."""
 	def _create_bookmark(self, user_id, video_id, comment, time):
 		bookmark = db.Bookmark(
@@ -115,6 +108,16 @@ class TestBookmarksDb(unittest.TestCase):
 		self.assertEqual(length, displayed_video.length)
 		# Begin optional arguments.
 		self.assertEqual(num_bookmarks, len(displayed_video.bookmarks))
+
+	"""Utility method to assert the fields in a DisplayedTwitchVideo.
+	"""
+	def _assert_displayed_twitch_video(self,
+			displayed_twitch_video, title, length, archive_id, video_file_url, link_url,
+			num_bookmarks=0):
+		self._assert_displayed_video(displayed_twitch_video, title, length, num_bookmarks)
+		self.assertEqual(archive_id, displayed_twitch_video.archive_id)
+		self.assertEqual(video_file_url, displayed_twitch_video.video_file_url)
+		self.assertEqual(link_url, displayed_twitch_video.link_url)
 
 	"""Utility method to assert the fields in a DisplayedVideoBookmark.
 	"""
@@ -267,10 +270,15 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
-		# Create a video with a bookmark by another user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -295,10 +303,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a user without playlists.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
-		# Create a video with a bookmark by another user.
+		# Create a video with a bookmark.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -347,10 +360,15 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
-		# Create a video with a bookmark by another user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -416,10 +434,15 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
-		# Create a video with a bookmark by another user.
+		# Create a video with a bookmark.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -450,10 +473,15 @@ class TestBookmarksDb(unittest.TestCase):
 		user_id1 = self._create_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
-		# Create a video with a bookmark by another user.
+		# Create a video with a bookmark.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		bookmark_comment = 'comment1'
@@ -729,7 +757,7 @@ class TestBookmarksDb(unittest.TestCase):
 	"""Test that fails to return a displayed video because the video identifier is
 	unknown.
 	"""
-	def test_get_displayed_video_unknown_video(self):
+	def test_get_displayed_twitch_video_unknown_video(self):
 		# TODO: actually, this should implicitly create the video
 		pass
 
@@ -742,7 +770,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
 
 		# Assert that creating a bookmark by a missing user fails.
 		bookmark_comment = 'comment1'
@@ -752,8 +784,9 @@ class TestBookmarksDb(unittest.TestCase):
 			db.add_video_bookmark(missing_user_id, video_id,
 					bookmark_comment, bookmark_time, now=self.now)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_title, video_length)
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url)
 	
 	"""Test that fails to create a bookmark because the video identifier is unknown.
 	"""
@@ -782,7 +815,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
 
 		# Add the bookmark to the video.
 		add_bookmark_time = self.now + timedelta(minutes=10)
@@ -791,11 +828,12 @@ class TestBookmarksDb(unittest.TestCase):
 		bookmark_id = db.add_video_bookmark(
 				user_id, video_id, bookmark_comment, bookmark_time, now=add_bookmark_time)
 		# Assert that the video has a bookmark.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
 		# Assert that the bookmark is correct.
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, add_bookmark_time,
 				user_name, user_id)
@@ -804,8 +842,9 @@ class TestBookmarksDb(unittest.TestCase):
 		remove_bookmark_time = self.now + timedelta(minutes=20)
 		db.remove_video_bookmark(user_id, bookmark_id, now=remove_bookmark_time)
 		# Assert that the video has no bookmarks.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_title, video_length)
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url)
 
 		# Remove the bookmark from the video again.
 		remove_bookmark_again_time = self.now + timedelta(minutes=30)
@@ -813,8 +852,9 @@ class TestBookmarksDb(unittest.TestCase):
 			db.remove_video_bookmark(
 					user_id, bookmark_id, now=remove_bookmark_again_time)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_title, video_length)
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url)
 	
 	"""Test that fails to delete a bookmark that does not exist.
 	"""
@@ -828,7 +868,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
 		# Delete a missing bookmark.
 		remove_bookmark_time = self.now + timedelta(minutes=10)
 		missing_bookmark_id = 'missing_bookmark_id'
@@ -837,8 +881,9 @@ class TestBookmarksDb(unittest.TestCase):
 					user_id, missing_bookmark_id, now=remove_bookmark_time)
 
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video, video_title, video_length)
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url)
 
 	"""Test that fails to delete a bookmark because the user identifier is not
 	the creator.
@@ -847,10 +892,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		# Create a video with a bookmark by a user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -866,10 +916,11 @@ class TestBookmarksDb(unittest.TestCase):
 					user_id2, bookmark_id, now=remove_bookmark_time)
 
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
@@ -884,7 +935,12 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create a video with a bookmark by a user.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
@@ -897,10 +953,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.vote_bookmark_thumb_up(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -909,10 +966,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.vote_bookmark_thumb_down(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -921,10 +979,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.remove_bookmark_vote(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -936,10 +995,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		# Create a video with a bookmark by a user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name = 'user_name1'
 		user_id = self._create_user(user_name)
 		bookmark_comment = 'comment1'
@@ -950,10 +1014,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.vote_bookmark_thumb_up(user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -962,10 +1027,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.vote_bookmark_thumb_down(user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -974,10 +1040,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.remove_bookmark_vote(user_id, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id)
@@ -1010,10 +1077,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		# Create a video with a bookmark by a user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1026,10 +1098,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote up the bookmark.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
 		# Assert that the bookmark has been voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_up=1)
@@ -1037,10 +1110,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote up the bookmark again.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_up=1)
@@ -1048,10 +1122,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that the bookmark is no longer voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
@@ -1060,10 +1135,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
@@ -1074,10 +1150,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		# Create a video with a bookmark by a user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1090,10 +1171,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote down the bookmark.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
 		# Assert that the bookmark has been voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_down=1)
@@ -1101,10 +1183,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote down the bookmark again.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_down=1)
@@ -1112,10 +1195,10 @@ class TestBookmarksDb(unittest.TestCase):
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that the bookmark is no longer voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_video(displayed_twitch_video,
 				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
@@ -1124,10 +1207,11 @@ class TestBookmarksDb(unittest.TestCase):
 		with self.assertRaises(ValueError):
 			db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that this had no effect.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
@@ -1138,10 +1222,15 @@ class TestBookmarksDb(unittest.TestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		# Create a video with a bookmark by a user.
+		# Create a video.
 		video_title = 'video1'
 		video_length = 61
-		video_id = self._create_video(video_title, video_length)
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
 		user_id1 = self._create_user(user_name1)
 		bookmark_comment = 'comment1'
@@ -1154,10 +1243,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote up the bookmark.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
 		# Assert that the bookmark has been voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_up=1)
@@ -1165,10 +1255,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote down the bookmark.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
 		# Assert that the bookmark has been voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_down=1)
@@ -1176,10 +1267,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Vote up the bookmark again.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
 		# Assert that the bookmark has been voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1, num_thumbs_up=1)
@@ -1187,10 +1279,11 @@ class TestBookmarksDb(unittest.TestCase):
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that the bookmark is no longer voted on.
-		displayed_video = db.get_displayed_video(client_id, video_id)
-		self._assert_displayed_video(displayed_video,
-				video_title, video_length, num_bookmarks=1)
-		displayed_video_bookmark = displayed_video.bookmarks[0]
+		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
