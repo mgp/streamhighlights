@@ -1,25 +1,10 @@
-from datetime import datetime, timedelta
+from datetime import timedelta
 import db
+from db_test_case import DbTestCase
 import unittest
 
-class TestBookmarksDb(unittest.TestCase):
-	"""Utility method for creating a user."""
-	def _create_user(self, name):
-		user = db.User(name, self.now)
-		self.session.add(user)
-		self.session.commit()
-		return user.id
 
-	def setUp(self):
-		unittest.TestCase.setUp(self)
-		self.now = datetime(2012, 10, 15, 12, 30, 45)
-		self.session = db.session
-		db.create_all()
-	
-	def tearDown(self):
-		unittest.TestCase.tearDown(self)
-		db.drop_all()
-	
+class TestBookmarksDb(DbTestCase):
 	"""Utility method to assert the fields in a DisplayedUser.
 	"""
 	def _assert_displayed_user(self, displayed_user, user_id, name, num_playlists=0):
