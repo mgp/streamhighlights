@@ -9,6 +9,14 @@ import views
 
 
 class TestViews(DbTestCase):
+	def setUp(self):
+		DbTestCase.setUp(self)
+		self._twitch_video = None
+		self._returned_twitch_video = False
+
+	def tearDown(self):
+		DbTestCase.tearDown(self)
+
 	def _add_client_id(self, client, client_id):
 		with client.session_transaction() as session:
 			session['client_id'] = client_id
@@ -308,6 +316,41 @@ class TestViews(DbTestCase):
 			self._add_client_id(client, client_id)
 			response = client.post('/remove_bookmark_vote')
 			self._assert_ajax_failure(response)
+
+	def _fake_download_twitch_video_by_archive_id(self, archive_id):
+		self.assertFalse(self._returned_twitch_video)
+		self._returned_twitch_video = True
+		return self._twitch_video
+
+	def test_show_twitch_video(self):
+		client_id = self._create_user('client_name')
+		try:
+			prev_download_twitch_video_by_archive_id = views.download_twitch_video_by_archive_id
+			views.download_twitch_video_by_archive_id = self._fake_download_twitch_video_by_archive_id
+
+			self._twitch_video = views.TwitchVideo(
+					456,
+					'title_value',
+					33,
+					'video_file_url_value',
+					'link_url_value')
+			with app.test_client() as client:
+				# 
+				self._add_client_id(client, client_id)
+				response = client.get('/video/twitch/%s' % self._twitch_video.archive_id)
+				# The video should have been returned and added to the database.
+				self.assertTrue(self._returned_twitch_video)
+				displayed_twitch_video = db.get_displayed_twitch_video(
+						client_id, self._twitch_video.archive_id)
+				self._assert_displayed_twitch_video(displayed_twitch_video,
+						self._twitch_video.title,
+						self._twitch_video.length,
+						self._twitch_video.archive_id,
+						self._twitch_video.video_file_url,
+						self._twitch_video.link_url)
+		finally:
+			# TODO: Put this in setUp and tearDown.
+			views.download_twitch_video_by_archive_id = prev_download_twitch_video_by_archive_id
 
 
 class TestRequestTwitchVideo(unittest.TestCase):

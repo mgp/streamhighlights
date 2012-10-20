@@ -12,14 +12,14 @@ def login_required(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		# TODO: Get user from database, assign g.client_id or g.client?
-		f(*pargs, **kwargs)
+		return f(*pargs, **kwargs)
 	return decorated_function
 
 def login_optional(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		# TODO: Get user from database, assign g.client_id or g.client?
-		f(*pargs, **kwargs)
+		return f(*pargs, **kwargs)
 	return decorated_function
 
 @app.route('/')
@@ -97,31 +97,36 @@ def download_twitch_video_by_url(url):
 	archive_id = int(archive_id_match.group('archive_id'))
 	return download_twitch_video_by_archive_id(archive_id)
 
-@app.route('/video/twitch/<video_id>')
+@app.route('/video/twitch/<int:archive_id>')
 @login_optional
-def show_twitch_video(video_id):
+def show_twitch_video(archive_id):
 	try:
-		displayed_video = get_displayed_video(video_id)
+		displayed_video = get_displayed_twitch_video(g.client_id, archive_id)
 		return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 	except Exception as e:
 		# The video was not found, so go retrieve its JSON from Twitch.
 		pass
 	
 	try:
-		twitch_video = download_twitch_video_by_archive_id(video_id)
+		twitch_video = download_twitch_video_by_archive_id(archive_id)
 	except Exception as e:
 		# The video could not be retrieved, so display an error message.
 		return flask.render_template('twitch_video.html', displayed_video=None)
 
 	video_id = db.add_twitch_video(
-			twitch_video.archive_id,
 			twitch_video.title,
 			twitch_video.length,
+			twitch_video.archive_id,
 			twitch_video.video_file_url,
 			twitch_video.link_url)
-	# TODO: return video_file_url, link_url
-	displayed_video = db.DisplayedVideo(
-			video_id, twitch_video.title, twitch_video.length, ())
+	displayed_video = db.DisplayedTwitchVideo(
+			video_id,
+			twitch_video.title,
+			twitch_video.length,
+			(),
+			twitch_video.archive_id,
+			twitch_video.video_file_url,
+			twitch_video.link_url)
 	return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 
 _AJAX_SUCCESS = {'success': True}

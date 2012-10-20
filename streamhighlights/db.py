@@ -234,7 +234,7 @@ class TwitchVideo(_Base):
 
 	id = sa.Column(sa.Integer, primary_key=True)
 	video_id = sa.Column(sa.Integer, sa.ForeignKey('Videos.id'))
-	archive_id = sa.Column(sa.String, nullable=False)
+	archive_id = sa.Column(sa.Integer, nullable=False)
 	video_file_url = sa.Column(sa.String, nullable=False)
 	link_url = sa.Column(sa.String, nullable=False)
 
