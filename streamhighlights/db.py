@@ -577,7 +577,7 @@ def get_displayed_playlist(client_id, playlist_id):
 			.join(User, Bookmark.user_id == User.id)\
 			.join(Video, Bookmark.video_id == Video.id)\
 			.outerjoin(BookmarkVote, sa.and_(
-				BookmarkVote.user_id == Bookmark.user_id,
+				BookmarkVote.user_id == client_id,
 				BookmarkVote.bookmark_id == Bookmark.id))\
 			.filter(PlaylistBookmark.playlist_id == playlist_id)
 	session.close()

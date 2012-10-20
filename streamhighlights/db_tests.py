@@ -765,6 +765,108 @@ class TestBookmarksDb(DbTestCase):
 				user_id, user_name, self.now, playlist_title,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
 
+	"""Test that clients see their own votes for playlists of users.
+	"""
+	def test_client_votes_user_playlist(self):
+		# Create a user with a playlist.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
+		# Create a user to vote up the playlist.
+		client_name1 = 'client_name1'
+		client_id1 = self._create_user(client_name1)
+		db.vote_playlist_thumb_up(client_id1, playlist_id, now=self.now)
+		# Create a user to vote down the playlist.
+		client_name2 = 'client_name2'
+		client_id2 = self._create_user(client_name2)
+		db.vote_playlist_thumb_down(client_id2, playlist_id, now=self.now)
+
+		# Assert that the user sees no vote.
+		displayed_user = db.get_displayed_user(user_id, user_id)
+		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
+		displayed_user_playlist = displayed_user.playlists[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
+				playlist_id, playlist_title, self.now,
+				num_thumbs_up=1, num_thumbs_down=1)
+		# Assert that the first client sees his vote up.
+		displayed_user = db.get_displayed_user(client_id1, user_id)
+		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
+		displayed_user_playlist = displayed_user.playlists[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
+				playlist_id, playlist_title, self.now,
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
+		# Assert that the second client sees his vote down.
+		displayed_user = db.get_displayed_user(client_id2, user_id)
+		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
+		displayed_user_playlist = displayed_user.playlists[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
+				playlist_id, playlist_title, self.now,
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+
+	"""Test that clients see their own votes for bookmarks of playlists.
+	"""
+	def test_client_votes_playlist_bookmark(self):
+		# Create a user with a playlist.
+		user_name = 'user_name1'
+		user_id = self._create_user(user_name)
+		playlist_title = 'playlist1'
+		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
+		# Create a video.
+		video_title = 'video1'
+		video_length = 61
+		archive_id = 'archive_id1'
+		video_file_url = 'video_file_url1'
+		link_url = 'link_url1'
+		video_id = db.add_twitch_video(
+				video_title, video_length, archive_id, video_file_url, link_url)
+		# Create a bookmark for that video.
+		bookmark_comment = 'comment1'
+		bookmark_time = 33
+		bookmark_id = db.add_video_bookmark(
+				user_id, video_id, bookmark_comment, bookmark_time, self.now)
+		# Add the bookmark to the playlist.
+		add_bookmark_time = self.now + timedelta(minutes=10)
+		db.add_playlist_bookmark(user_id, playlist_id, bookmark_id,
+				now=add_bookmark_time)
+		# Create a user to vote up the bookmark.
+		client_name1 = 'client_name1'
+		client_id1 = self._create_user(client_name1)
+		db.vote_bookmark_thumb_up(client_id1, bookmark_id, now=self.now)
+		# Create a user to vote down the bookmark.
+		client_name2 = 'client_name2'
+		client_id2 = self._create_user(client_name2)
+		db.vote_bookmark_thumb_down(client_id2, bookmark_id, now=self.now)
+
+		# Assert that the playlist creator sees no vote.
+		displayed_playlist = db.get_displayed_playlist(user_id, playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_title,
+				time_updated=add_bookmark_time, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				num_thumbs_up=1, num_thumbs_down=1)
+		# Assert that the first client sees his vote up.
+		displayed_playlist = db.get_displayed_playlist(client_id1, playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_title,
+				time_updated=add_bookmark_time, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
+		# Assert that the second client sees his vote down.
+		displayed_playlist = db.get_displayed_playlist(client_id2, playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_title,
+				time_updated=add_bookmark_time, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+		
+
 	# 
 	# Begin tests for videos.
 	# 
@@ -1309,9 +1411,9 @@ class TestBookmarksDb(DbTestCase):
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name1, user_id1)
 
-	"""Test that clients see their own votes for bookmarks.
+	"""Test that clients see their own votes for bookmarks of videos.
 	"""
-	def test_client_votes_bookmark(self):
+	def test_client_votes_video_bookmark(self):
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
