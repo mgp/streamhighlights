@@ -6,19 +6,31 @@ import flask
 import functools
 import re
 import requests
+import urllib
 from urlparse import urlparse
 
 def login_required(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		# TODO: Get user from database, assign g.client_id or g.client?
+		client_id = flask.session.get('client_id', None)
+		if client_id is None:
+			# Return status code 401 if user is not logged in.
+			flask.abort(requests.codes.unauthorized)
+
+		flask.g.client_id = client_id
 		return f(*pargs, **kwargs)
 	return decorated_function
 
 def login_optional(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		# TODO: Get user from database, assign g.client_id or g.client?
+		client_id = flask.session.get('client_id', None)
+		if client_id is None:
+			flask.g.logged_in = False
+		else:
+			flask.g.logged_in = True
+			flask.g.client_id = client_id
+
 		return f(*pargs, **kwargs)
 	return decorated_function
 
@@ -101,7 +113,8 @@ def download_twitch_video_by_url(url):
 @login_optional
 def show_twitch_video(archive_id):
 	try:
-		displayed_video = get_displayed_twitch_video(g.client_id, archive_id)
+		client_id = flask.g.client_id if flask.g.logged_in else None
+		displayed_video = db.get_displayed_twitch_video(client_id, archive_id)
 		return flask.render_template('twitch_video.html', displayed_video=displayed_video)
 	except Exception as e:
 		# The video was not found, so go retrieve its JSON from Twitch.
@@ -128,6 +141,63 @@ def show_twitch_video(archive_id):
 			twitch_video.video_file_url,
 			twitch_video.link_url)
 	return flask.render_template('twitch_video.html', displayed_video=displayed_video)
+
+
+_TWITCH_CLIENT_ID = ''
+_TWITCH_REDIRECT_URI = 'https://streamhighlights.com/complete_twitch_auth'
+_TWITCH_USER_READ_SCOPE = 'user_read'
+
+_TWITCH_OAUTH_AUTHORIZE_URL = ('https://api.twitch.tv/kraken/oauth2/authorize?%s' %
+		urllib.urlencode({
+			'client_id': _TWITCH_CLIENT_ID,
+			'redirect_uri': _TWITCH_REDIRECT_URI,
+			'response_type': 'code',
+			'scope': _TWITCH_USER_READ_SCOPE,
+		})
+)
+
+@app.route('/start_twitch_auth')
+def start_twitch_auth():
+	# Store the URL that the user came from; redirect here when auth completes.
+	next_url = request.args.get('next_url', None)
+	if next_url is not None:
+		flask.session['next_url'] = next_url
+	# Redirect the user.
+	flask.redirect(_TWITCH_OAUTH_AUTHORIZE_URL)
+
+_TWITCH_OAUTH_ACCESS_TOKEN_URL = 'https://api.twitch.tv/kraken/oauth2/token'
+_TWITCH_CLIENT_SECRET = ''
+
+@app.route('/complete_twitch_auth')
+def complete_twitch_auth():
+	code = request.args['code']
+	params = {
+			'client_id': _TWITCH_CLIENT_ID,
+			'redirect_uri': _TWITCH_REDIRECT_URI,
+			'client_secret': _TWITCH_CLIENT_SECRET,
+			'grant_type': 'authorization_code',
+			'code': code
+	}
+	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
+	if _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
+		return None
+	return response.json['access_token']
+
+def _add_twitch_api_header(headers):
+	headers['accept'] = 'application/vnd.twitchtv.v1+json'
+
+def _add_oauth_header(headers, oauth_token):
+	headers['authorization'] = 'OAuth %s' % oauth_token
+
+def _get_authenticated_twitch_user(self):
+	authenticated_user_url = 'https://api.twitch.tv/kraken/user'
+	response = requests.get(authenticated_user_url)
+	status = response.json.get('status', 200)
+	if status != 200:
+		# There was an error; the token is likely invalid or expired.
+		return None
+	return response.json['name']
+
 
 _AJAX_SUCCESS = {'success': True}
 _AJAX_FAILURE = {'success': False}
