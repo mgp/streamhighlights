@@ -38,6 +38,11 @@ class TestViews(DbTestCase):
 		json_response = json.loads(response.data)
 		self.assertTrue(json_response['success'])
 
+	"""Assert that the AJAX request failed because the user was not logged in.
+	"""
+	def _assert_not_authorized(self, response):
+		self.assertEqual(requests.codes.unauthorized, response.status_code)
+
 	"""Assert that the AJAX request failed.
 	"""
 	def _assert_ajax_failure(self, response):
@@ -69,7 +74,7 @@ class TestViews(DbTestCase):
 		with app.test_client() as client:
 			response = client.post('/add_playlist_bookmark',
 					data={'playlist_id': playlist_id, 'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing playlist identifier.
 		with app.test_client() as client:
@@ -109,7 +114,7 @@ class TestViews(DbTestCase):
 		with app.test_client() as client:
 			response = client.post('/remove_playlist_bookmark',
 					data={'playlist_id': playlist_id, 'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing playlist identifier.
 		with app.test_client() as client:
@@ -141,7 +146,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/vote_playlist_thumb_up', data={'playlist_id': playlist_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing playlist identifier.
 		with app.test_client() as client:
@@ -169,7 +174,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/vote_playlist_thumb_down', data={'playlist_id': playlist_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing playlist identifier.
 		with app.test_client() as client:
@@ -197,7 +202,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/remove_playlist_vote', data={'playlist_id': playlist_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing playlist identifier.
 		with app.test_client() as client:
@@ -225,7 +230,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/remove_video_bookmark', data={'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing bookmark identifier.
 		with app.test_client() as client:
@@ -255,7 +260,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/vote_bookmark_thumb_up', data={'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing bookmark identifier.
 		with app.test_client() as client:
@@ -287,7 +292,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/vote_bookmark_thumb_down', data={'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing bookmark identifier.
 		with app.test_client() as client:
@@ -319,7 +324,7 @@ class TestViews(DbTestCase):
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
 			response = client.post('/remove_bookmark_vote', data={'bookmark_id': bookmark_id})
-			self._assert_ajax_failure(response)
+			self._assert_not_authorized(response)
 
 		# Assert that the request fails with a missing bookmark identifier.
 		with app.test_client() as client:

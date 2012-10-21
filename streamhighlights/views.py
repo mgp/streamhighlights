@@ -205,12 +205,18 @@ _AJAX_FAILURE = {'success': False}
 def ajax_request(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
+		# Raise an exception if the session is missing the client identifier.
+		client_id = flask.session.get('client_id')
+		if client_id is None:
+			# Return status code 401 if user is not logged in.
+			flask.abort(requests.codes.unauthorized)
+
 		try:
-			# Raise an exception if the session is missing the client identifier.
-			flask.g.client_id = flask.session['client_id']
+			flask.g.client_id = client_id
 			f(*pargs, **kwargs)
 			return flask.jsonify(_AJAX_SUCCESS)
 		except Exception as e:
+			# Any error is assumed to be from db, return as failure.
 			return flask.jsonify(_AJAX_FAILURE)
 	return decorated_function
 
