@@ -180,8 +180,19 @@ def complete_twitch_auth():
 	}
 	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
 	if _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
-		return None
-	return response.json['access_token']
+		# The client did not grant read-only access for basic information.
+		# TODO
+		return
+
+	twitch_user_json = {
+			'id': response.json['twitch_id'],
+			'name': response.json['name'],
+			'display_name': response.json['display_name'],
+			'logo': response.json['logo'],
+			'access_token': response.json['access_token']
+	}
+	session['twitch_user'] = twitch_user_json
+	# TODO: db.insert_or_update_twitch_user()
 
 def _add_twitch_api_header(headers):
 	headers['accept'] = 'application/vnd.twitchtv.v1+json'
@@ -189,7 +200,7 @@ def _add_twitch_api_header(headers):
 def _add_oauth_header(headers, oauth_token):
 	headers['authorization'] = 'OAuth %s' % oauth_token
 
-def _get_authenticated_twitch_user(self):
+def _get_authenticated_twitch_user(self, ):
 	authenticated_user_url = 'https://api.twitch.tv/kraken/user'
 	response = requests.get(authenticated_user_url)
 	status = response.json.get('status', 200)

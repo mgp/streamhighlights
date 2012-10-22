@@ -53,6 +53,8 @@ class User(_Base):
 
 	id = sa.Column(sa.Integer, primary_key=True)
 	name = sa.Column(sa.String, nullable=False)
+	image_small = sa.Column(sa.String)
+	image_full = sa.Column(sa.String)
 	created = sa.Column(sa.DateTime, nullable=False)
 	last_seen = sa.Column(sa.DateTime)
 
@@ -61,14 +63,20 @@ class User(_Base):
 	playlists = sa_orm.relationship('Playlist', backref='user')
 	bookmarks = sa_orm.relationship('Bookmark', backref='user')
 
-	def __init__(self, name, now):
+	def __init__(self, name, now, image_small=None, image_full=None):
 		self.name = name
+		if image_small:
+			self.image_small=image_small
+		if image_full:
+			self.image_full=image_full
 		self.created = now
 	
 	def __repr__(self):
-		return 'User(id=%r, name=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
+		return 'User(id=%r, name=%r, image_small=%r, image_full=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
 				self.id,
 				self.name,
+				self.image_small,
+				self.image_full,
 				self.created.isoformat(),
 				self.last_seen.isoformat() if self.last_seen else None,
 				self.steam_user,
@@ -77,17 +85,27 @@ class User(_Base):
 				self.bookmarks)
 
 
+"""A mapping between a user identifier and a friendly URL.
+"""
+class FriendlyUserUrl(_Base):
+	__tablename__ = 'FriendlyUserUrls'
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	friendly_url = sa.Column(sa.String, nullable=False)
+
+	def __repr__(self):
+		return 'FriendlyUserUrl(user_id=%r, friendly_url=%r)' % (
+				self.user_id,
+				self.friendly_url)
+
+
 """If the user logged in through Steam, the details of that user on Steam.
 """
 class SteamUser(_Base):
 	__tablename__ = 'SteamUsers'
 
-	# TODO: make (id, user_id) primary key? or user_id primary key and foreign key?
-	id = sa.Column(sa.Integer, primary_key=True)
+	steam_id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-
-	def __init__(self, user_id):
-		self.user_id = user_id
 
 	def __repr__(self):
 		# Has backref: user.
@@ -101,17 +119,19 @@ class SteamUser(_Base):
 class TwitchUser(_Base):
 	__tablename__ = 'TwitchUsers'
 
-	# TODO: make (id, user_id) primary key? or user_id primary key and foreign key?
-	id = sa.Column(sa.Integer, primary_key=True)
+	twitch_id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-
-	def __init__(self):
-		self.user_id = user_id
+	# Used to construct URL to user on Twitch.
+	name = sa.Column(sa.String, nullable=False)
+	access_token = sa.Column(sa.String)
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'TwitchUser(id=%r, user=%r)' % (
-				self.id,
+		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r, access_token=%r, user=%r)' % (
+				self.twitch_id,
+				self.user_id,
+				self.name,
+				self.access_token,
 				self.user)
 
 
@@ -348,6 +368,7 @@ class BookmarkVote(_Base):
 
 def create_all():
 	global Users
+	global FriendlyUserUrls
 	global SteamUsers
 	global TwitchUsers
 	global Playlists
@@ -362,6 +383,7 @@ def create_all():
 
 	# Create aliases for each table.
 	Users = User.__table__
+	FriendlyUserUrls = FriendlyUserUrl.__table__
 	SteamUsers = SteamUser.__table__
 	TwitchUsers = TwitchUser.__table__
 	Playlists = Playlist.__table__
@@ -374,6 +396,7 @@ def create_all():
 
 def drop_all():
 	global Users
+	global FriendlyUserUrls
 	global SteamUsers
 	global TwitchUsers
 	global Playlists
@@ -386,6 +409,7 @@ def drop_all():
 
 	# Clear aliases for each table.
 	Users = None
+	FriendlyUserUrls = None
 	SteamUsers = None
 	TwitchUsers = None
 	Playlists = None
@@ -418,17 +442,62 @@ def add_twitch_video(title, length, archive_id, video_file_url, link_url):
 """Data for displaying a user.
 """
 class DisplayedUser:
-	def __init__(self, id, name, playlists):
+	def __init__(self, id, name, image_small, image_large, site_url, playlists):
 		self.id = id
 		self.name = name
+		self.image_small = image_small
+		self.image_large = image_large
 		# The DisplayedUserPlaylist objects for each playlist.
 		self.playlists = playlists
 	
 	def __repr__(self):
-		return 'DisplayedUser(id=%r, name=%r, playlists=%r)' % (
+		return 'DisplayedUser(id=%r, name=%r, image_small=%r, image_large=%r, playlists=%r)' % (
 				self.id,
 				self.name,
+				self.image_small,
+				self.image_large,
 				self.playlists)
+
+
+"""Data for displaying a user on Twitch.
+"""
+class DisplayedTwitchUser(DisplayedUser):
+	def __init__(self, id, name, image_large, image_small, playlists, twitch_id, link_url):
+		DisplayedUser.__init__(self, id, name, image_large, image_small, playlists)
+		self.twitch_id = twitch_id
+		# The URL to this user on Twitch.
+		self.link_url = link_url
+	
+	def __repr__(self):
+		return 'DisplayedTwitchUser(id=%r, name=%r, image_small=%r, image_large=%r, playlists=%r, twitch_id=%r, link_url=%r)' % (
+				self.id,
+				self.name,
+				self.image_small,
+				self.image_large,
+				self.playlists,
+				self.twitch_id,
+				self.link_url)
+
+
+"""Data for displaying a user on Steam.
+"""
+class DisplayedSteamUser(DisplayedUser):
+	def __init__(self, id, name, image_large, image_small, playlists, steam_id, link_url):
+		DisplayedUser.__init__(self, id, name, image_large, image_small, playlists)
+		# The 64-bit Steam identifier for this user.
+		self.steam_id = steam_id
+		# The URL to this user on Steam Community, either with a Steam ID or persona name.
+		self.link_url = link_url
+	
+	def __repr__(self):
+		return 'DisplayedTwitchUser(id=%r, name=%r, image_small=%r, image_large=%r, playlists=%r, steam_id=%r, link_url=%r)' % (
+				self.id,
+				self.name,
+				self.image_small,
+				self.image_large,
+				self.playlists,
+				self.steam_id,
+				self.link_url)
 
 
 """Data for displaying a playlist on a user page.
@@ -539,9 +608,10 @@ def remove_playlist(client_id, playlist_id, now=None):
 """Data for displaying a playlist.
 """
 class DisplayedPlaylist:
-	def __init__(self, author_id, author_name, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, bookmarks):
-		self.author_id = author_id
+	def __init__(self, author_name, author_image_large, author_site_url, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, bookmarks):
 		self.author_name = author_name
+		self.author_image_large = author_image_large
+		self.author_site_url = author_site_url
 		self.time_created = time_created
 		self.time_updated = time_updated
 		self.num_thumbs_up = num_thumbs_up
@@ -552,9 +622,10 @@ class DisplayedPlaylist:
 		self.bookmarks = bookmarks
 
 	def __repr__(self):
-		return 'DisplayedPlaylist(author_id=%r, author_name=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, bookmarks=%r)' % (
-				self.author_id,
+		return 'DisplayedPlaylist(author_name=%r, author_image_large=%r, author_site_url=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, bookmarks=%r)' % (
 				self.author_name,
+				self.author_image_large,
+				slef.author_site_url,
 				self.time_created,
 				self.time_updated,
 				self.num_thumbs_up,
@@ -567,7 +638,7 @@ class DisplayedPlaylist:
 """Data for displaying a bookmark on a playlist page.
 """
 class DisplayedPlaylistBookmark:
-	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_title, comment, time_added, author_name, author_id):
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_title, comment, time_added, author_name, author_image_small, author_site_url):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -576,10 +647,11 @@ class DisplayedPlaylistBookmark:
 		self.comment = comment
 		self.time_added = time_added
 		self.author_name = author_name
-		self.author_id = author_id
+		self.author_image_small = author_image_small
+		self.author_site_url = author_site_url
 	
 	def __repr__(self):
-		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_title=%r, comment=%r, time_added=%r, author_name=%r, author_id=%r)' % (
+		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_title=%r, comment=%r, time_added=%r, author_name=%r, author_image_small=%r, author_site_url=%r)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -588,8 +660,16 @@ class DisplayedPlaylistBookmark:
 				self.comment,
 				self.time_added,
 				self.author_name,
-				self.author_id)
+				self.author_image_small,
+				self.author_site_url)
 
+
+"""Returns the URL for the user, using the friendly URL if present.
+"""
+def _get_user_url(user_id, friendly_user_url):
+	if friendly_user_url:
+		return friendly_user_url
+	return '/users/%s' % user_id
 
 """Returns the DisplayedPlaylist with the given identifier.
 """
@@ -598,8 +678,10 @@ def get_displayed_playlist(client_id, playlist_id):
 	if client_id is None:
 		try:
 			# Get the playlist.
-			playlist, creator_name = session.query(Playlist, User.name)\
+			playlist, friendly_url, creator_name = session.query(
+						Playlist, User.name, FriendlyUserUrl.friendly_url)\
 					.join(User, Playlist.user_id == User.id)\
+					.outerjoin(FriendlyUserUrl, Playlist.user_id == FriendlyUserUrl.user_id)\
 					.filter(Playlist.id == playlist_id)\
 					.one()
 		except sa_orm.exc.NoResultFound:
@@ -608,9 +690,10 @@ def get_displayed_playlist(client_id, playlist_id):
 
 		# Get the bookmarks.
 		playlist_bookmarks_cursor = session.query(
-					PlaylistBookmark.added, Bookmark, User.name, Video.title)\
+					PlaylistBookmark.added, Bookmark, User.name, FriendlyUserUrl.friendly_url, Video.title)\
 				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 				.join(User, Bookmark.user_id == User.id)\
+				.outerjoin(FriendlyUserUrl, Bookmark.user_id == FriendlyUserUrl.user_id)\
 				.join(Video, Bookmark.video_id == Video.id)\
 				.filter(PlaylistBookmark.playlist_id == playlist_id)
 		session.close()
@@ -626,7 +709,8 @@ def get_displayed_playlist(client_id, playlist_id):
 					comment=bookmark.comment,
 					time_added=added,
 					author_name=author_name,
-					author_id=bookmark.user_id)
+					author_image_small=None,
+					author_site_url=_get_user_url(bookmark.user_id)
 				for added, bookmark, author_name, video_title in playlist_bookmarks_cursor]
 	else:
 		try:
@@ -853,6 +937,7 @@ def remove_playlist_vote(client_id, playlist_id, now=None):
 	session.delete(vote)
 	session.commit()
 
+
 """Data for displaying a video.
 """
 class DisplayedVideo:
@@ -895,7 +980,7 @@ class DisplayedTwitchVideo(DisplayedVideo):
 """
 class DisplayedVideoBookmark:
 	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, comment, time, time_created,
-			author_name, author_id):
+			author_name, author_image_small, author_site_url):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -905,13 +990,13 @@ class DisplayedVideoBookmark:
 		self.time = time
 		# The time to bookmark was created.
 		self.time_created = time_created
-		# The author's name, used for display.
+		# The author's info.
 		self.author_name = author_name
-		# The author's unique identifier, used for linking.
-		self.author_id = author_id
+		self.author_image_small = author_image_small
+		self.author_site_url = author_site_url
 
 	def __repr__(self):
-		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_id=%r)' % (
+		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_image_small=%r, author_site_url)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -920,7 +1005,8 @@ class DisplayedVideoBookmark:
 				self.time,
 				self.time_created,
 				self.author_name,
-				self.author_id)
+				self.author_image_small,
+				self.author_site_url)
 
 
 """Returns the DisplayedVideo with the given identifier.
