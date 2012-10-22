@@ -449,26 +449,46 @@ def get_displayed_user(client_id, user_id):
 		session.close()
 		raise ValueError
 
-	# Get the playlists.
-	playlists_cursor = session.query(Playlist, PlaylistVote.vote)\
-			.outerjoin(PlaylistVote, sa.and_(
-				PlaylistVote.user_id == client_id,
-				PlaylistVote.playlist_id == Playlist.id))\
-			.filter(Playlist.user_id == user_id)
-	session.close()
+	if client_id is None:
+		# Get the playlists.
+		playlists_cursor = session.query(Playlist)\
+				.filter(Playlist.user_id == user_id)
+		session.close()
 
-	# Create the displayed playlist and bookmarks.
-	displayed_user_playlists = [
-			DisplayedUserPlaylist(
-				id=playlist.id,
-				time_created=playlist.created,
-				time_updated=playlist.updated,
-				num_thumbs_up=playlist.num_thumbs_up,
-				num_thumbs_down=playlist.num_thumbs_down,
-				user_vote=playlist_vote,
-				title=playlist.title,
-				num_bookmarks=playlist.num_bookmarks)
-			for playlist, playlist_vote in playlists_cursor]
+		# Create the displayed playlist and number of bookmarks.
+		displayed_user_playlists = [
+				DisplayedUserPlaylist(
+					id=playlist.id,
+					time_created=playlist.created,
+					time_updated=playlist.updated,
+					num_thumbs_up=playlist.num_thumbs_up,
+					num_thumbs_down=playlist.num_thumbs_down,
+					user_vote=None,
+					title=playlist.title,
+					num_bookmarks=playlist.num_bookmarks)
+				for playlist in playlists_cursor]
+	else:
+		# Get the playlists with the client's vote for each one.
+		playlists_cursor = session.query(Playlist, PlaylistVote.vote)\
+				.outerjoin(PlaylistVote, sa.and_(
+					PlaylistVote.user_id == client_id,
+					PlaylistVote.playlist_id == Playlist.id))\
+				.filter(Playlist.user_id == user_id)
+		session.close()
+
+		# Create the displayed playlist and number of bookmarks.
+		displayed_user_playlists = [
+				DisplayedUserPlaylist(
+					id=playlist.id,
+					time_created=playlist.created,
+					time_updated=playlist.updated,
+					num_thumbs_up=playlist.num_thumbs_up,
+					num_thumbs_down=playlist.num_thumbs_down,
+					user_vote=playlist_vote,
+					title=playlist.title,
+					num_bookmarks=playlist.num_bookmarks)
+				for playlist, playlist_vote in playlists_cursor]
+
 	displayed_user = DisplayedUser(user.id, user.name, displayed_user_playlists)
 	return displayed_user
 
@@ -557,44 +577,81 @@ class DisplayedPlaylistBookmark:
 """Returns the DisplayedPlaylist with the given identifier.
 """
 def get_displayed_playlist(client_id, playlist_id):
-	try:
-		# Get the playlist without its bookmarks.
-		playlist, creator_name, playlist_vote = session.query(Playlist, User.name, PlaylistVote.vote)\
-				.join(User, Playlist.user_id == User.id)\
-				.outerjoin(PlaylistVote, sa.and_(
-					PlaylistVote.user_id == client_id,
-					PlaylistVote.playlist_id == Playlist.id))\
-				.filter(Playlist.id == playlist_id)\
-				.one()
-	except sa_orm.exc.NoResultFound:
+	playlist_vote = None
+	if client_id is None:
+		try:
+			# Get the playlist.
+			playlist, creator_name = session.query(Playlist, User.name)\
+					.join(User, Playlist.user_id == User.id)\
+					.filter(Playlist.id == playlist_id)\
+					.one()
+		except sa_orm.exc.NoResultFound:
+			session.close()
+			raise ValueError
+
+		# Get the bookmarks.
+		playlist_bookmarks_cursor = session.query(
+					PlaylistBookmark.added, Bookmark, User.name, Video.title)\
+				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
+				.join(User, Bookmark.user_id == User.id)\
+				.join(Video, Bookmark.video_id == Video.id)\
+				.filter(PlaylistBookmark.playlist_id == playlist_id)
 		session.close()
-		raise ValueError
 
-	# Get the bookmarks.
-	playlist_bookmarks_cursor = session.query(
-				PlaylistBookmark.added, Bookmark, User.name, Video.title, BookmarkVote.vote)\
-			.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
-			.join(User, Bookmark.user_id == User.id)\
-			.join(Video, Bookmark.video_id == Video.id)\
-			.outerjoin(BookmarkVote, sa.and_(
-				BookmarkVote.user_id == client_id,
-				BookmarkVote.bookmark_id == Bookmark.id))\
-			.filter(PlaylistBookmark.playlist_id == playlist_id)
-	session.close()
+		# Create the displayed bookmarks.
+		displayed_playlist_bookmarks = [
+				DisplayedPlaylistBookmark(
+					id=bookmark.id,
+					num_thumbs_up=bookmark.num_thumbs_up,
+					num_thumbs_down=bookmark.num_thumbs_down,
+					user_vote=None,
+					video_title=video_title,
+					comment=bookmark.comment,
+					time_added=added,
+					author_name=author_name,
+					author_id=bookmark.user_id)
+				for added, bookmark, author_name, video_title in playlist_bookmarks_cursor]
+	else:
+		try:
+			# Get the playlist with the client's vote.
+			playlist, creator_name, playlist_vote = session.query(Playlist, User.name, PlaylistVote.vote)\
+					.join(User, Playlist.user_id == User.id)\
+					.outerjoin(PlaylistVote, sa.and_(
+						PlaylistVote.user_id == client_id,
+						PlaylistVote.playlist_id == Playlist.id))\
+					.filter(Playlist.id == playlist_id)\
+					.one()
+		except sa_orm.exc.NoResultFound:
+			session.close()
+			raise ValueError
 
-	# Create the displayed bookmarks and playlist.
-	displayed_playlist_bookmarks = [
-			DisplayedPlaylistBookmark(
-				id=bookmark.id,
-				num_thumbs_up=bookmark.num_thumbs_up,
-				num_thumbs_down=bookmark.num_thumbs_down,
-				user_vote=bookmark_vote,
-				video_title=video_title,
-				comment=bookmark.comment,
-				time_added=added,
-				author_name=author_name,
-				author_id=bookmark.user_id)
-			for added, bookmark, author_name, video_title, bookmark_vote in playlist_bookmarks_cursor]
+		# Get the bookmarks with the client's vote for each one.
+		playlist_bookmarks_cursor = session.query(
+					PlaylistBookmark.added, Bookmark, User.name, Video.title, BookmarkVote.vote)\
+				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
+				.join(User, Bookmark.user_id == User.id)\
+				.join(Video, Bookmark.video_id == Video.id)\
+				.outerjoin(BookmarkVote, sa.and_(
+					BookmarkVote.user_id == client_id,
+					BookmarkVote.bookmark_id == Bookmark.id))\
+				.filter(PlaylistBookmark.playlist_id == playlist_id)
+		session.close()
+
+		# Create the displayed bookmarks.
+		displayed_playlist_bookmarks = [
+				DisplayedPlaylistBookmark(
+					id=bookmark.id,
+					num_thumbs_up=bookmark.num_thumbs_up,
+					num_thumbs_down=bookmark.num_thumbs_down,
+					user_vote=bookmark_vote,
+					video_title=video_title,
+					comment=bookmark.comment,
+					time_added=added,
+					author_name=author_name,
+					author_id=bookmark.user_id)
+				for added, bookmark, author_name, video_title, bookmark_vote in playlist_bookmarks_cursor]
+
+	# Create the displayed playlist.
 	displayed_playlist = DisplayedPlaylist(
 			author_id=playlist.user_id,
 			author_name=creator_name,
@@ -853,7 +910,7 @@ class DisplayedVideoBookmark:
 """
 def get_displayed_twitch_video(client_id, archive_id):
 	try:
-		# Get the video without its bookmarks.
+		# Get the video.
 		twitch_video, video = session.query(TwitchVideo, Video)\
 				.join(Video, TwitchVideo.video_id == Video.id)\
 				.filter(TwitchVideo.archive_id == archive_id).one()
@@ -861,28 +918,51 @@ def get_displayed_twitch_video(client_id, archive_id):
 		session.close()
 		raise ValueError
 
-	# Get the bookmarks.
-	video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
-			.join(User, Bookmark.user_id == User.id)\
-			.outerjoin(BookmarkVote, sa.and_(
-				BookmarkVote.user_id == client_id,
-				BookmarkVote.bookmark_id == Bookmark.id))\
-			.filter(Bookmark.video_id == video.id)
-	session.close()
+	if client_id is None:
+		# Get the bookmarks.
+		video_bookmarks_cursor = session.query(Bookmark, User.name)\
+				.join(User, Bookmark.user_id == User.id)\
+				.filter(Bookmark.video_id == video.id)
+		session.close()
 
-	# Create the displayed bookmarks and video.
-	displayed_video_bookmarks = [
-			DisplayedVideoBookmark(
-				id=bookmark.id,
-				num_thumbs_up=bookmark.num_thumbs_up,
-				num_thumbs_down=bookmark.num_thumbs_down,
-				user_vote=bookmark_vote,
-				comment=bookmark.comment,
-				time=bookmark.time,
-				time_created=bookmark.created,
-				author_name=author_name,
-				author_id=bookmark.user_id)
-			for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
+		# Create the displayed bookmarks.
+		displayed_video_bookmarks = [
+				DisplayedVideoBookmark(
+					id=bookmark.id,
+					num_thumbs_up=bookmark.num_thumbs_up,
+					num_thumbs_down=bookmark.num_thumbs_down,
+					user_vote=None,
+					comment=bookmark.comment,
+					time=bookmark.time,
+					time_created=bookmark.created,
+					author_name=author_name,
+					author_id=bookmark.user_id)
+				for bookmark, author_name in video_bookmarks_cursor]
+	else:
+		# Get the bookmarks with the client's vote for each one.
+		video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
+				.join(User, Bookmark.user_id == User.id)\
+				.outerjoin(BookmarkVote, sa.and_(
+					BookmarkVote.user_id == client_id,
+					BookmarkVote.bookmark_id == Bookmark.id))\
+				.filter(Bookmark.video_id == video.id)
+		session.close()
+
+		# Create the displayed bookmarks.
+		displayed_video_bookmarks = [
+				DisplayedVideoBookmark(
+					id=bookmark.id,
+					num_thumbs_up=bookmark.num_thumbs_up,
+					num_thumbs_down=bookmark.num_thumbs_down,
+					user_vote=bookmark_vote,
+					comment=bookmark.comment,
+					time=bookmark.time,
+					time_created=bookmark.created,
+					author_name=author_name,
+					author_id=bookmark.user_id)
+				for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
+
+	# Create the displayed video.
 	displayed_video = DisplayedTwitchVideo(
 			video.id, video.title, video.length, displayed_video_bookmarks,
 			twitch_video.archive_id, twitch_video.video_file_url, twitch_video.link_url)

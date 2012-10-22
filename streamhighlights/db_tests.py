@@ -655,6 +655,11 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+		# Assert that a logged out client sees no vote.
+		displayed_playlist = db.get_displayed_playlist(None, playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_title,
+				num_thumbs_up=1, num_thumbs_down=1)
 
 	"""Test that clients see their own votes for playlists of users.
 	"""
@@ -694,6 +699,13 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+		# Assert that a logged out client sees no vote.
+		displayed_user = db.get_displayed_user(None, user_id)
+		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
+		displayed_user_playlist = displayed_user.playlists[0]
+		self._assert_displayed_user_playlist(displayed_user_playlist,
+				playlist_id, playlist_title, self.now,
+				num_thumbs_up=1, num_thumbs_down=1)
 
 	"""Test that clients see their own votes for bookmarks of playlists.
 	"""
@@ -756,7 +768,15 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
-		
+		# Assert that a logged out client sees no vote.
+		displayed_playlist = db.get_displayed_playlist(None, playlist_id)
+		self._assert_displayed_playlist(displayed_playlist,
+				user_id, user_name, self.now, playlist_title,
+				time_updated=add_bookmark_time, num_bookmarks=1)
+		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
+		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				num_thumbs_up=1, num_thumbs_down=1)
 
 	# 
 	# Begin tests for videos.
@@ -1358,6 +1378,15 @@ class TestBookmarksDb(DbTestCase):
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1,
 				user_vote=db._THUMB_DOWN_VOTE)
+		# Assert that a logged out client sees no vote.
+		displayed_twitch_video = db.get_displayed_twitch_video(None, archive_id)
+		self._assert_displayed_twitch_video(displayed_twitch_video,
+				video_title, video_length, archive_id, video_file_url, link_url,
+				num_bookmarks=1)
+		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
+		self._assert_displayed_video_bookmark(displayed_video_bookmark,
+				bookmark_id, bookmark_comment, bookmark_time, self.now,
+				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1)
 
 
 if __name__ == '__main__':
