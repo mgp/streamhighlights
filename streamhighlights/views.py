@@ -159,11 +159,11 @@ _TWITCH_OAUTH_AUTHORIZE_URL = ('https://api.twitch.tv/kraken/oauth2/authorize?%s
 @app.route('/start_twitch_auth')
 def start_twitch_auth():
 	# Store the URL that the user came from; redirect here when auth completes.
-	next_url = request.args.get('next_url', None)
+	next_url = flask.request.args.get('next_url', None)
 	if next_url is not None:
 		flask.session['next_url'] = next_url
 	# Redirect the user.
-	flask.redirect(_TWITCH_OAUTH_AUTHORIZE_URL)
+	return flask.redirect(_TWITCH_OAUTH_AUTHORIZE_URL)
 
 _TWITCH_OAUTH_ACCESS_TOKEN_URL = 'https://api.twitch.tv/kraken/oauth2/token'
 _TWITCH_CLIENT_SECRET = ''

@@ -2,6 +2,7 @@ from streamhighlights import app
 
 import db
 from db_test_case import DbTestCase
+import flask
 import json
 import requests
 import unittest
@@ -376,6 +377,25 @@ class TestViews(DbTestCase):
 			response = client.get('/video/twitch/%s' % archive_id)
 		# Assert that only read from the database.
 		self.assertFalse(self._returned_twitch_video)
+
+	def test_start_twitch_auth(self):
+		# Assert that a redirect is issued without a next_url parameter.
+		with app.test_client() as client:
+			response = client.get('/start_twitch_auth')
+			self.assertEqual(requests.codes.found, response.status_code)
+			self.assertEqual(views._TWITCH_OAUTH_AUTHORIZE_URL, response.headers['location'])
+			self.assertNotIn('next_url', flask.session)
+
+		# Assert that a redirect is issued with a next_url parameter.
+		next_url = 'http://www.next-url.com'
+		with app.test_client() as client:
+			with client.session_transaction() as session:
+				session['next_url'] = next_url
+			response = client.get('/start_twitch_auth')
+			self.assertEqual(requests.codes.found, response.status_code)
+			self.assertEqual(views._TWITCH_OAUTH_AUTHORIZE_URL, response.headers['location'])
+			# Assert that the next_url parameter was stored in the session.
+			self.assertEqual(next_url, flask.session['next_url'])
 
 
 class TestRequestTwitchVideo(unittest.TestCase):
