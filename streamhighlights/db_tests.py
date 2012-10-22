@@ -27,7 +27,7 @@ class TestBookmarksDb(DbTestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		missing_user_id = 'missing_user_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.get_displayed_user(client_id, missing_user_id)
 
 	"""Test that fails to create a playlist because the user identifier is unknown.
@@ -35,7 +35,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_create_playlist_unknown_user(self):
 		missing_user_id = 'missing_user_id'
 		playlist_title = 'playlist1'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.create_playlist(missing_user_id, playlist_title, now=self.now)
 
 	"""Test that successfully creates and deletes a bookmark.
@@ -76,7 +76,7 @@ class TestBookmarksDb(DbTestCase):
 		user_id = self._create_user(user_name)
 		# Delete a missing playlist.
 		missing_playlist_id = 'missing_playlist_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist(user_id, missing_playlist_id)
 
 		# Assert that this had no effect.
@@ -100,7 +100,7 @@ class TestBookmarksDb(DbTestCase):
 		user_id2 = self._create_user(user_name2)
 
 		# Attempt to delete the playlist with another user.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist(user_id2, playlist_id)
 
 		# Assert that this had no effect.
@@ -123,7 +123,7 @@ class TestBookmarksDb(DbTestCase):
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
 		missing_playlist_id = 'missing_playlist_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.get_displayed_playlist(client_id, missing_playlist_id)
 
 	"""Test that fails to add a bookmark to a playlist because the user identifier
@@ -157,7 +157,7 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that adding the bookmark by a missing user fails.
 		missing_user_id = 'missing_user_id'
 		add_bookmark_time = self.now + timedelta(minutes=10)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_playlist_bookmark(
 					missing_user_id, playlist_id, bookmark_id, now=add_bookmark_time)
 		# Assert that this had no effect.
@@ -190,7 +190,7 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that adding the bookmark to a missing playlist fails.
 		missing_playlist_id = 'missing_playlist_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_playlist_bookmark(
 					user_id1, missing_playlist_id, bookmark_id, now=self.now)
 	
@@ -210,7 +210,7 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that adding a missing bookmark to a playlist fails.
 		missing_bookmark_id = 'missing_bookmark_id'
 		add_bookmark_time = self.now + timedelta(minutes=10)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_playlist_bookmark(
 					user_id1, playlist_id, missing_bookmark_id, now=add_bookmark_time)
 		# Assert that this had no effect.
@@ -325,7 +325,7 @@ class TestBookmarksDb(DbTestCase):
 		user_name3 = 'user_name3'
 		user_id3 = self._create_user(user_name3)
 		add_bookmark_time = self.now + timedelta(minutes=10)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_playlist_bookmark(user_id3, playlist_id, bookmark_id,
 					now=add_bookmark_time)
 		# Assert that this had no effect.
@@ -370,7 +370,7 @@ class TestBookmarksDb(DbTestCase):
 		user_name3 = 'user_name3'
 		user_id3 = self._create_user(user_name3)
 		remove_bookmark_time = self.now + timedelta(minutes=20)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_bookmark(user_id3, playlist_id, bookmark_id,
 					now=remove_bookmark_time)
 		# Assert that this had no effect.
@@ -398,7 +398,7 @@ class TestBookmarksDb(DbTestCase):
 		missing_user_id = 'missing_user_id'
 
 		# Assert that voting up the playlist with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_up(missing_user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -406,7 +406,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id, user_name, self.now, playlist_title)
 
 		# Assert that voting down the playlist with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_down(missing_user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -414,7 +414,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id, user_name, self.now, playlist_title)
 
 		# Assert that removing the playlist vote with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_vote(missing_user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -435,7 +435,7 @@ class TestBookmarksDb(DbTestCase):
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 			
 		# Assert that the creator voting up the playlist fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_up(user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -443,7 +443,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id, user_name, self.now, playlist_title)
 
 		# Assert that the creator voting down the playlist fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_down(user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -451,7 +451,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id, user_name, self.now, playlist_title)
 
 		# Assert that the creator removing the playlist vote fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_vote(user_id, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -472,24 +472,24 @@ class TestBookmarksDb(DbTestCase):
 		missing_playlist_id = 'missing_playlist_id'
 
 		# Assert that voting up a missing playlist fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_up(user_id, missing_playlist_id)
 		# Assert that this had no effect.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.get_displayed_playlist(client_id, missing_playlist_id)
 
 		# Assert that voting down a missing playlist fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_playlist_thumb_down(user_id, missing_playlist_id)
 		# Assert that this had no effect.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.get_displayed_playlist(client_id, missing_playlist_id)
 
 		# Assert that removing the vote for a missing playlist fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_vote(user_id, missing_playlist_id)
 		# Assert that this had no effect.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.get_displayed_playlist(client_id, missing_playlist_id)
 
 	"""Test that successfully votes up a playlist.
@@ -529,7 +529,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id1, user_name1, self.now, playlist_title)
 
 		# Remove the vote for the playlist again.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -573,7 +573,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id1, user_name1, self.now, playlist_title)
 
 		# Remove the vote for the playlist again.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
@@ -808,7 +808,7 @@ class TestBookmarksDb(DbTestCase):
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		missing_user_id = 'missing_user_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_video_bookmark(missing_user_id, video_id,
 					bookmark_comment, bookmark_time, now=self.now)
 		# Assert that this had no effect.
@@ -827,7 +827,7 @@ class TestBookmarksDb(DbTestCase):
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		missing_video_id = 'missing_video_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.add_video_bookmark(user_id, missing_video_id,
 					bookmark_comment, bookmark_time, now=self.now)
 
@@ -876,7 +876,7 @@ class TestBookmarksDb(DbTestCase):
 
 		# Remove the bookmark from the video again.
 		remove_bookmark_again_time = self.now + timedelta(minutes=30)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_video_bookmark(
 					user_id, bookmark_id, now=remove_bookmark_again_time)
 		# Assert that this had no effect.
@@ -904,7 +904,7 @@ class TestBookmarksDb(DbTestCase):
 		# Delete a missing bookmark.
 		remove_bookmark_time = self.now + timedelta(minutes=10)
 		missing_bookmark_id = 'missing_bookmark_id'
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_video_bookmark(
 					user_id, missing_bookmark_id, now=remove_bookmark_time)
 
@@ -940,7 +940,7 @@ class TestBookmarksDb(DbTestCase):
 		user_name2 = 'user_name2'
 		user_id2 = self._create_user(user_name2)
 		remove_bookmark_time = self.now + timedelta(minutes=10)
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_video_bookmark(
 					user_id2, bookmark_id, now=remove_bookmark_time)
 
@@ -980,7 +980,7 @@ class TestBookmarksDb(DbTestCase):
 		missing_user_id = 'missing_user_id'
 
 		# Assert that voting up the bookmark with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_up(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -993,7 +993,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name, user_id)
 
 		# Assert that voting up the bookmark with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_down(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1006,7 +1006,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name, user_id)
 
 		# Assert that removing the bookmark vote with a missing user fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_bookmark_vote(missing_user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1042,7 +1042,7 @@ class TestBookmarksDb(DbTestCase):
 				user_id, video_id, bookmark_comment, bookmark_time, self.now)
 
 		# Assert that the creator voting up the bookmark fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_up(user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1055,7 +1055,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name, user_id)
 
 		# Assert that the creator voting up the bookmark fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_down(user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1068,7 +1068,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name, user_id)
 
 		# Assert that the creator removing the bookmark vote fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_bookmark_vote(user_id, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1091,15 +1091,15 @@ class TestBookmarksDb(DbTestCase):
 		missing_bookmark_id = 'missing_bookmark_id'
 
 		# Assert that voting up a missing bookmark fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_up(user_id, missing_bookmark_id)
 
 		# Assert that voting down a missing bookmark fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.vote_bookmark_thumb_down(user_id, missing_bookmark_id)
 
 		# Assert that removing the vote for a missing bookmark fails.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_bookmark_vote(user_id, missing_bookmark_id)
 
 	"""Test that successfully votes up a bookmark.
@@ -1164,7 +1164,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name1, user_id1)
 
 		# Remove the vote for the bookmark again.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)
@@ -1237,7 +1237,7 @@ class TestBookmarksDb(DbTestCase):
 				user_name1, user_id1)
 
 		# Remove the vote for the bookmark again.
-		with self.assertRaises(ValueError):
+		with self.assertRaises(db.DbException):
 			db.remove_bookmark_vote(user_id2, bookmark_id)
 		# Assert that this had no effect.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id, archive_id)

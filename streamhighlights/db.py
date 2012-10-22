@@ -4,6 +4,23 @@ import sqlalchemy.engine as sa_engine
 import sqlalchemy.ext.declarative as sa_ext_declarative
 import sqlalchemy.orm as sa_orm
 import sqlalchemy.schema as sa_schema
+import sys
+
+
+"""Exception class raised by the database.
+"""
+class DbException(Exception):
+	def __init__(self, reason):
+		Exception.__init__(self)
+		self.reason = reason
+	
+	def __str__(self):
+		return str(self.reason)
+
+	@staticmethod
+	def _chain():
+		exception_type, exception_value, traceback = sys.exc_info()
+		raise DbException(exception_value), None, traceback
 
 
 def get_engine(testing=True):
@@ -447,7 +464,7 @@ def get_displayed_user(client_id, user_id):
 		user = session.query(User).filter(User.id == user_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	if client_id is None:
 		# Get the playlists.
@@ -498,7 +515,7 @@ def get_displayed_user(client_id, user_id):
 def create_playlist(client_id, title, now=None):
 	if session.query(User).filter(User.id == client_id).count() == 0:
 		session.close()
-		raise ValueError
+		raise DbException('User not found: %s' % client_id)
 
 	now = _get_now(now)
 	playlist = Playlist('public', title, now, user_id=client_id)
@@ -516,7 +533,7 @@ def remove_playlist(client_id, playlist_id, now=None):
 		session.commit()
 	else:
 		session.rollback()
-		raise ValueError
+		raise DbException('Playlist not found: %s, User not found: %s' % (playlist_id, client_id))
 
 
 """Data for displaying a playlist.
@@ -587,7 +604,7 @@ def get_displayed_playlist(client_id, playlist_id):
 					.one()
 		except sa_orm.exc.NoResultFound:
 			session.close()
-			raise ValueError
+			raise DbException._chain()
 
 		# Get the bookmarks.
 		playlist_bookmarks_cursor = session.query(
@@ -623,7 +640,7 @@ def get_displayed_playlist(client_id, playlist_id):
 					.one()
 		except sa_orm.exc.NoResultFound:
 			session.close()
-			raise ValueError
+			raise DbException._chain()
 
 		# Get the bookmarks with the client's vote for each one.
 		playlist_bookmarks_cursor = session.query(
@@ -673,7 +690,7 @@ def add_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 			.count() == 0
 	if missing:
 		session.close()
-		raise ValueError
+		raise DbException('Playlist not found: %s, User not found: %s' % (playlist_id, client_id))
 	
 	try:
 		now = _get_now(now)
@@ -699,7 +716,7 @@ def remove_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 			.count() == 0
 	if missing:
 		session.close()
-		raise ValueError
+		raise DbException('Playlist not found: %s, User not found: %s' % (playlist_id, client_id))
 
 	# Remove the bookmark from the playlist.
 	result = session.execute(PlaylistBookmarks.delete().where(sa.and_(
@@ -729,11 +746,11 @@ def vote_playlist_thumb_up(client_id, playlist_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	# Do not allow the creator to vote up his own playlist.
 	if playlist_user_id == client_id:
-		raise ValueError
+		raise DbException('Client is playlist owner: %s' % client_id)
 
 	now = _get_now(now)
 	if vote is None:
@@ -762,7 +779,7 @@ def vote_playlist_thumb_up(client_id, playlist_id, now=None):
 		session.commit()
 	except sa.exc.IntegrityError:
 		session.rollback()
-		raise ValueError
+		raise DbException._chain()
 
 """Votes down the playlist with the given identifier.
 """
@@ -776,11 +793,11 @@ def vote_playlist_thumb_down(client_id, playlist_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	# Do not allow the creator to vote down his own playlist.
 	if playlist_user_id == client_id:
-		raise ValueError
+		raise DbException('Client is playlist owner: %s' % client_id)
 
 	now = _get_now(now)
 	if vote is None:
@@ -809,7 +826,7 @@ def vote_playlist_thumb_down(client_id, playlist_id, now=None):
 		session.commit()
 	except sa.exc.IntegrityError:
 		session.rollback()
-		raise ValueError
+		raise DbException._chain()
 
 """Removes the vote for the playlist with the given identifier.
 """
@@ -820,7 +837,7 @@ def remove_playlist_vote(client_id, playlist_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	if vote.vote == _THUMB_UP_VOTE:
 		# Update the count of thumbs up for the playlist.
@@ -916,7 +933,7 @@ def get_displayed_twitch_video(client_id, archive_id):
 				.filter(TwitchVideo.archive_id == archive_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	if client_id is None:
 		# Get the bookmarks.
@@ -979,7 +996,7 @@ def add_video_bookmark(client_id, video_id, comment, time, now=None):
 		return bookmark.id
 	except sa.exc.IntegrityError: 
 		session.rollback()
-		raise ValueError
+		raise DbException._chain()
 
 """Removes the bookmark with the given identifier for the given video.
 """
@@ -991,7 +1008,7 @@ def remove_video_bookmark(client_id, bookmark_id, now=None):
 		session.commit()
 	else:
 		session.rollback()
-		raise ValueError
+		raise DbException('Bookmark not found: %s, User not found: %s' % (bookmark_id, client_id))
 
 """Votes up the bookmark with the given identifier.
 """
@@ -1005,11 +1022,11 @@ def vote_bookmark_thumb_up(client_id, bookmark_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	# Do not allow the creator to vote up his own bookmark.
 	if bookmark_user_id == client_id:
-		raise ValueError
+		raise DbException('Client is bookmark owner: %s' % client_id)
 
 	now = _get_now(now)
 	if vote is None:
@@ -1038,7 +1055,7 @@ def vote_bookmark_thumb_up(client_id, bookmark_id, now=None):
 		session.commit()
 	except sa.exc.IntegrityError:
 		session.rollback()
-		raise ValueError
+		raise DbException._chain()
 
 """Votes down the bookmark with the given identifier.
 """
@@ -1052,11 +1069,11 @@ def vote_bookmark_thumb_down(client_id, bookmark_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	# Do not allow the creator to vote down his own bookmark.
 	if bookmark_user_id == client_id:
-		raise ValueError
+		raise DbException('Client is bookmark owner: %s' % client_id)
 
 	now = _get_now(now)
 	if vote is None:
@@ -1085,7 +1102,7 @@ def vote_bookmark_thumb_down(client_id, bookmark_id, now=None):
 		session.commit()
 	except sa.exc.IntegrityError:
 		session.rollback()
-		raise ValueError
+		raise DbException._chain()
 
 """Removes the vote for the bookmark with the given identifier.
 """
@@ -1096,7 +1113,7 @@ def remove_bookmark_vote(client_id, bookmark_id, now=None):
 				.one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
-		raise ValueError
+		raise DbException._chain()
 
 	if vote.vote == _THUMB_UP_VOTE:
 		# Update the count of thumbs up for the bookmark.
