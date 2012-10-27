@@ -63,14 +63,6 @@ class User(_Base):
 	playlists = sa_orm.relationship('Playlist', backref='user')
 	bookmarks = sa_orm.relationship('Bookmark', backref='user')
 
-	def __init__(self, name, now, image_small=None, image_full=None):
-		self.name = name
-		if image_small:
-			self.image_small=image_small
-		if image_full:
-			self.image_full=image_full
-		self.created = now
-	
 	def __repr__(self):
 		return 'User(id=%r, name=%r, image_small=%r, image_full=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
 				self.id,
@@ -146,11 +138,6 @@ class PlaylistBookmark(_Base):
 
 	bookmark = sa_orm.relationship('Bookmark')
 
-	def __init__(self, playlist_id, bookmark_id, now):
-		self.playlist_id = playlist_id
-		self.bookmark_id = bookmark_id
-		self.added = now
-
 	def __repr__(self):
 		return 'PlaylistBookmark(playlist_id=%r, bookmark_id=%r, added=%r)' % (
 				self.playlist_id,
@@ -167,26 +154,15 @@ class Playlist(_Base):
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	visibility = sa.Column(sa.Enum('public', 'private'), nullable=False)
 	title = sa.Column(sa.String, nullable=False)
-	num_thumbs_up = sa.Column(sa.Integer, nullable=False)
-	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
+	num_thumbs_up = sa.Column(sa.Integer, default=0, nullable=False)
+	num_thumbs_down = sa.Column(sa.Integer, default=0, nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
 	updated = sa.Column(sa.DateTime, nullable=False)
-	num_bookmarks = sa.Column(sa.Integer, nullable=False)
+	num_bookmarks = sa.Column(sa.Integer, default=0, nullable=False)
 
 	votes = sa_orm.relationship('PlaylistVote', backref='playlist')
 	bookmarks = sa_orm.relationship('PlaylistBookmark', backref='Playlist')
 
-	def __init__(self, visibility, title, now, user_id=None):
-		if user_id:
-			self.user_id = user_id
-		self.visibility = visibility
-		self.title = title
-		self.num_thumbs_up = 0
-		self.num_thumbs_down = 0
-		self.created = now
-		self.updated = now
-		self.num_bookmarks = 0
-	
 	def __repr__(self):
 		# Has backref: user.
 		return 'Playlist(id=%r, visibility=%r, title=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r, user=%r)' % (
@@ -221,14 +197,6 @@ class PlaylistVote(_Base):
 
 	user = sa_orm.relationship('User')
 
-	def __init__(self, vote, now, user_id=None, playlist_id=None):
-		if user_id:
-			self.user_id = user_id
-		if playlist_id:
-			self.playlist_id = playlist_id
-		self.vote = vote
-		self.created = now
-	
 	def __repr__(self):
 		# Has backref: playlist.
 		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r, playlist=%r)' % (
@@ -251,10 +219,6 @@ class Video(_Base):
 
 	twitch_video = sa_orm.relationship('TwitchVideo', uselist=False, backref='video')
 
-	def __init__(self, title, length):
-		self.title = title
-		self.length = length
-
 	def __repr__(self):
 		return 'Video(id=%r, title=%r, length=%r, bookmarks=%r, twitch_video=%r)' % (
 				self.id,
@@ -274,13 +238,6 @@ class TwitchVideo(_Base):
 	archive_id = sa.Column(sa.Integer, nullable=False)
 	video_file_url = sa.Column(sa.String, nullable=False)
 	link_url = sa.Column(sa.String, nullable=False)
-
-	def __init__(self, archive_id, video_file_url, link_url, video_id=None):
-		if video_id is not None:
-			self.video_id = video_id
-		self.archive_id = archive_id
-		self.video_file_url = video_file_url
-		self.link_url = link_url
 
 	def __repr__(self):
 		# Has backref: video.
@@ -304,21 +261,10 @@ class Bookmark(_Base):
 	comment = sa.Column(sa.String, nullable=False)
 	time = sa.Column(sa.Integer, nullable=False)
 	created = sa.Column(sa.DateTime, nullable=False)
-	num_thumbs_up = sa.Column(sa.Integer, nullable=False)
-	num_thumbs_down = sa.Column(sa.Integer, nullable=False)
+	num_thumbs_up = sa.Column(sa.Integer, default=0, nullable=False)
+	num_thumbs_down = sa.Column(sa.Integer, default=0, nullable=False)
 
 	votes = sa_orm.relationship('BookmarkVote', backref='bookmark')
-
-	def __init__(self, comment, time, now, user_id=None, video_id=None):
-		if user_id:
-			self.user_id = user_id
-		if video_id:
-			self.video_id = video_id
-		self.comment = comment
-		self.time = time
-		self.created = now
-		self.num_thumbs_up = 0
-		self.num_thumbs_down = 0
 
 	def __repr__(self):
 		# Has backrefs: user, video.
@@ -348,14 +294,6 @@ class BookmarkVote(_Base):
 
 	user = sa_orm.relationship('User')
 
-	def __init__(self, vote, now, user_id=None, bookmark_id=None):
-		if user_id:
-			self.user_id = user_id
-		if bookmark_id:
-			self.bookmark_id = bookmark_id
-		self.vote = vote
-		self.created = now
-	
 	def __repr__(self):
 		# Has backref: bookmark.
 		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r, bookmark=%r)' % (
@@ -430,8 +368,9 @@ def _get_now(now):
 """Adds the given video on Twitch.
 """
 def add_twitch_video(title, length, archive_id, video_file_url, link_url):
-	video = Video(title, length)
-	twitch_video = TwitchVideo(archive_id, video_file_url, link_url)
+	video = Video(title=title, length=length)
+	twitch_video = TwitchVideo(
+			archive_id=archive_id, video_file_url=video_file_url, link_url=link_url)
 	twitch_video.video = video
 	session.add(twitch_video)
 	session.commit()
@@ -590,7 +529,8 @@ def create_playlist(client_id, title, now=None):
 		raise DbException('User not found: %s' % client_id)
 
 	now = _get_now(now)
-	playlist = Playlist('public', title, now, user_id=client_id)
+	playlist = Playlist(
+			user_id=client_id, visibility='public', title=title, created=now, updated=now)
 	session.add(playlist)
 	session.commit()
 	return playlist.id
@@ -789,7 +729,8 @@ def add_playlist_bookmark(client_id, playlist_id, bookmark_id, now=None):
 	try:
 		now = _get_now(now)
 		# Add the bookmark to the playlist.
-		playlist_bookmark = PlaylistBookmark(playlist_id, bookmark_id, now)
+		playlist_bookmark = PlaylistBookmark(
+				playlist_id=playlist_id, bookmark_id=bookmark_id, added=now)
 		session.add(playlist_bookmark)
 		# Increment the count of bookmarks for the playlist.
 		session.execute(Playlists.update()
@@ -850,7 +791,7 @@ def vote_playlist_thumb_up(client_id, playlist_id, now=None):
 	if vote is None:
 		# Create the vote by the user.
 		vote = PlaylistVote(
-				vote=_THUMB_UP_VOTE, now=now, user_id=client_id, playlist_id=playlist_id)
+				user_id=client_id, playlist_id=playlist_id, vote=_THUMB_UP_VOTE, created=now)
 		# Update the count of thumbs up for the playlist.
 		session.execute(Playlists.update()
 				.where(Playlist.id == playlist_id)
@@ -897,7 +838,7 @@ def vote_playlist_thumb_down(client_id, playlist_id, now=None):
 	if vote is None:
 		# Create the vote by the user.
 		vote = PlaylistVote(
-				vote=_THUMB_DOWN_VOTE, now=now, user_id=client_id, playlist_id=playlist_id)
+				user_id=client_id, playlist_id=playlist_id, vote=_THUMB_DOWN_VOTE, created=now)
 		# Update the count of thumbs down for the playlist.
 		session.execute(Playlists.update()
 				.where(Playlist.id == playlist_id)
@@ -1093,7 +1034,8 @@ def get_displayed_twitch_video(client_id, archive_id):
 def add_video_bookmark(client_id, video_id, comment, time, now=None):
 	now = _get_now(now)
 	try:
-		bookmark = Bookmark(comment, time, now, user_id=client_id, video_id=video_id)
+		bookmark = Bookmark(
+				user_id=client_id, video_id=video_id, comment=comment, time=time, created=now)
 		session.add(bookmark)
 		session.commit()
 		return bookmark.id
@@ -1135,7 +1077,7 @@ def vote_bookmark_thumb_up(client_id, bookmark_id, now=None):
 	if vote is None:
 		# Create the vote by the user.
 		vote = BookmarkVote(
-				vote=_THUMB_UP_VOTE, now=now, user_id=client_id, bookmark_id=bookmark_id)
+				user_id=client_id, bookmark_id=bookmark_id, vote=_THUMB_UP_VOTE, created=now)
 		# Update the count of thumbs up for the bookmark.
 		session.execute(Bookmarks.update()
 				.where(Bookmark.id == bookmark_id)
@@ -1182,7 +1124,7 @@ def vote_bookmark_thumb_down(client_id, bookmark_id, now=None):
 	if vote is None:
 		# Create the vote by the user.
 		vote = BookmarkVote(
-				vote=_THUMB_DOWN_VOTE, now=now, user_id=client_id, bookmark_id=bookmark_id)
+				user_id=client_id, bookmark_id=bookmark_id, vote=_THUMB_DOWN_VOTE, created=now)
 		# Update the count of thumbs down for the bookmark.
 		session.execute(Bookmarks.update()
 				.where(Bookmark.id == bookmark_id)

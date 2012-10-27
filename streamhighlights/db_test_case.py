@@ -8,7 +8,7 @@ import unittest
 class DbTestCase(unittest.TestCase):
 	"""Utility method for creating a user."""
 	def _create_user(self, name):
-		user = db.User(name, self.now)
+		user = db.User(name=name, created=self.now)
 		self.session.add(user)
 		self.session.commit()
 		return user.id
