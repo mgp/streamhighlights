@@ -35,7 +35,7 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the created Twitch user was returned.
 		expected_link_url = 'http://www.twitch.tv/%s' % name
 		self._assert_displayed_twitch_user(displayed_twitch_user,
-				user_id, display_name, twitch_id, expected_link_url, image_large_url=logo)
+				user_id, display_name, twitch_id, expected_link_url, image_url_large=logo)
 
 		# TODO: Read from DB, assert created, last_seen
 
@@ -56,7 +56,7 @@ class TestBookmarksDb(DbTestCase):
 		updated_expected_link_url = 'http://www.twitch.tv/%s' % updated_name
 		self._assert_displayed_twitch_user(displayed_twitch_user,
 				user_id, updated_display_name, twitch_id,
-				updated_expected_link_url, image_large_url=updated_logo)
+				updated_expected_link_url, image_url_large=updated_logo)
 
 		# TODO: Read from DB, assert created, last_seen
 
@@ -76,7 +76,7 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the created Steam user was returned.
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, personaname, steam_id, profile_url,
-				image_small_url=avatar, image_large_url=avatar_full)
+				image_url_small=avatar, image_url_large=avatar_full)
 
 		# TODO: Read from DB, assert created, last_seen
 
@@ -96,7 +96,7 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the updated Steam user was returned.
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, updated_personaname, steam_id, updated_profile_url,
-				image_small_url=updated_avatar, image_large_url=updated_avatar_full)
+				image_url_small=updated_avatar, image_url_large=updated_avatar_full)
 
 		# TODO: Read from DB, assert created, last_seen
 
