@@ -100,16 +100,27 @@ class TestBookmarksDb(DbTestCase):
 
 		# TODO: Read from DB, assert created, last_seen
 
-	"""Test that fails to return a displayed user because the user identifier is
-	unknown.
+	"""Test that fails to return a displayed Twitch user because the Twitch user
+	identifier is unknown.
 	"""
-	def test_get_displayed_user_unknown_user(self):
+	def test_get_displayed_twitch_user_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
 		client_id = self._create_user(client_name)
-		missing_user_id = 'missing_user_id'
+		missing_twitch_id = 'missing_twitch_id'
 		with self.assertRaises(db.DbException):
-			db.get_displayed_user(client_id, missing_user_id)
+			db.get_displayed_twitch_user(client_id, missing_twitch_id)
+
+	"""Test that fails to return a displayed Steam user because the Steam user
+	identifier is unknown.
+	"""
+	def test_get_displayed_steam_user_unknown_user(self):
+		# Create the client.
+		client_name = 'client_name1'
+		client_id = self._create_user(client_name)
+		missing_steam_id = 'missing_steam_id'
+		with self.assertRaises(db.DbException):
+			db.get_displayed_steam_user(client_id, missing_steam_id)
 
 	"""Test that fails to create a playlist because the user identifier is unknown.
 	"""
