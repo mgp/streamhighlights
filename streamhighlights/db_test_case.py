@@ -49,8 +49,11 @@ class DbTestCase(unittest.TestCase):
 	"""Utility method to assert the fields in a DisplayedSteamUser.
 	"""
 	def _assert_displayed_steam_user(self, displayed_steam_user,
-			user_id, name, steam_id, link_url,
+			user_id, name, steam_id, link_url=None,
 			image_url_small=None, image_url_large=None, num_playlists=0):
+		if link_url is None:
+			link_url = 'http://steamcommunity.com/profiles/%s' % steam_id
+
 		self._assert_displayed_user(displayed_steam_user, user_id, name,
 				image_url_small, image_url_large, num_playlists)
 		self.assertEqual(steam_id, displayed_steam_user.steam_id)

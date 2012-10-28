@@ -563,25 +563,6 @@ def _get_displayed_user_playlists(client_id, user_id):
 
 	return displayed_user_playlists
 
-# TODO: Remove this?
-"""Returns the DisplayedUser with the given identifier.
-"""
-def get_displayed_user(client_id, user_id):
-	try:
-		# Get the user.
-		user, friendly_user_url = session.query(User, FriendlyUserUrl.friendly_url)\
-				.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
-				.filter(User.id == user_id).one()
-	except sa_orm.exc.NoResultFound:
-		session.close()
-		raise DbException._chain()
-
-	displayed_user_playlists = _get_displayed_user_playlists(client_id, user_id)
-	# TODO: pass in friendly_user_url
-	displayed_user = DisplayedUser(user.id, user.name,
-			user.image_url_small, user.image_url_large, displayed_user_playlists)
-	return displayed_user
-
 """Returns the DisplayedTwitchUser with the given Twitch identifier.
 """
 def get_displayed_twitch_user(client_id, twitch_id):

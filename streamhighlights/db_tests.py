@@ -176,10 +176,11 @@ class TestBookmarksDb(DbTestCase):
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 
 		# Get the displayed user.
-		displayed_user = db.get_displayed_user(client_id, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
+		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id, num_playlists=1)
 		# Assert that the created playlist was returned.
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now)
 
@@ -187,8 +188,9 @@ class TestBookmarksDb(DbTestCase):
 		db.remove_playlist(user_id, playlist_id)
 
 		# Assert that the playlist is no longer returned.
-		displayed_user = db.get_displayed_user(client_id, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name)
+		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id)
 
 	"""Test that fails to delete a playlist that does not exist.
 	"""
@@ -205,8 +207,9 @@ class TestBookmarksDb(DbTestCase):
 			db.remove_playlist(user_id, missing_playlist_id)
 
 		# Assert that this had no effect.
-		displayed_user = db.get_displayed_user(client_id, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name)
+		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id)
 
 	"""Test that fails to delete a playlist because the user identifier is not the
 	creator.
@@ -229,9 +232,10 @@ class TestBookmarksDb(DbTestCase):
 			db.remove_playlist(user_id2, playlist_id)
 
 		# Assert that this had no effect.
-		displayed_user = db.get_displayed_user(client_id, user_id1)
-		self._assert_displayed_user(displayed_user, user_id1, user_name1, num_playlists=1)
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id1)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id1, user_name1, user_steam_id1, num_playlists=1)
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now)
 
@@ -807,30 +811,34 @@ class TestBookmarksDb(DbTestCase):
 		db.vote_playlist_thumb_down(client_id2, playlist_id, now=self.now)
 
 		# Assert that the user sees no vote.
-		displayed_user = db.get_displayed_user(user_id, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_steam_user = db.get_displayed_steam_user(user_id, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id, num_playlists=1)
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1)
 		# Assert that the first client sees his vote up.
-		displayed_user = db.get_displayed_user(client_id1, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_steam_user = db.get_displayed_steam_user(client_id1, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id, num_playlists=1)
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
 		# Assert that the second client sees his vote down.
-		displayed_user = db.get_displayed_user(client_id2, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_steam_user = db.get_displayed_steam_user(client_id2, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id, num_playlists=1)
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
 		# Assert that a logged out client sees no vote.
-		displayed_user = db.get_displayed_user(None, user_id)
-		self._assert_displayed_user(displayed_user, user_id, user_name, num_playlists=1)
-		displayed_user_playlist = displayed_user.playlists[0]
+		displayed_steam_user = db.get_displayed_steam_user(None, user_steam_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, user_name, user_steam_id, num_playlists=1)
+		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1)
