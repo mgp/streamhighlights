@@ -565,7 +565,7 @@ def _get_displayed_user_playlists(client_id, user_id):
 
 """Returns the DisplayedTwitchUser with the given Twitch identifier.
 """
-def get_displayed_twitch_user(client_id, twitch_id):
+def get_displayed_twitch_user_by_id(client_id, twitch_id):
 	try:
 		# Get the Twitch user.
 		twitch_user, user, friendly_user_url = session.query(
@@ -591,7 +591,7 @@ def get_displayed_twitch_user(client_id, twitch_id):
 
 """Returns the DisplayedSteamUser with the given Steam identifier.
 """
-def get_displayed_steam_user(client_id, steam_id):
+def get_displayed_steam_user_by_id(client_id, steam_id):
 	try:
 		# Get the Steam user.
 		steam_user, user, friendly_user_url = session.query(

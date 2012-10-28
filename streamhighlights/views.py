@@ -39,24 +39,35 @@ def login_optional(f):
 def show_home():
 	return flask.render_template('home.html')
 
-@app.route('/user/steam/<user_id>')
+@app.route('/user/steam/<name>')
+def show_steam_user_by_name(name):
+	# TODO
+	pass
+
+@app.route('/user/steam_id/<steam_id>')
 @login_optional
-def show_steam_user(user_id):
+def show_steam_user_by_id(steam_id):
 	displayed_user = None
 	try:
-		displayed_user = db.get_displayed_steam_user(flask.g.client_id, user_id)
+		displayed_user = db.get_displayed_steam_user_by_id(flask.g.client_id, steam_id)
 	except Exception as e:
 		# If displayed_user is None then the template will show an error message.
 		pass
 
 	return flask.render_template('steam_user.html', displayed_user=displayed_user)
 
-@app.route('/user/twitch/<user_id>')
+@app.route('/user/twitch/<name>')
 @login_optional
-def show_twitch_user(user_id):
+def show_twitch_user_by_name(name):
+	# TODO
+	pass
+
+@app.route('/user/twitch_id/<twitch_id>')
+@login_optional
+def show_twitch_user_by_id(twitch_id):
 	displayed_user = None
 	try:
-		displayed_user = db.get_displayed_twitch_user(flask.g.client_id, user_id)
+		displayed_user = db.get_displayed_twitch_user(flask.g.client_id, twitch_id)
 	except Exception as e:
 		# If displayed_user is None then the template will show an error message.
 		pass

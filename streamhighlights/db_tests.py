@@ -41,7 +41,7 @@ class TestBookmarksDb(DbTestCase):
 		self.assertIsNotNone(user_id)
 
 		# Get the Twitch user.
-		displayed_twitch_user = db.get_displayed_twitch_user(None, twitch_id)
+		displayed_twitch_user = db.get_displayed_twitch_user_by_id(None, twitch_id)
 		# Assert that the created Twitch user was returned.
 		expected_link_url = 'http://www.twitch.tv/%s' % name
 		self._assert_displayed_twitch_user(displayed_twitch_user,
@@ -65,7 +65,7 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(updated_user_id, user_id)
 
 		# Get the Twitch user.
-		displayed_twitch_user = db.get_displayed_twitch_user(None, twitch_id)
+		displayed_twitch_user = db.get_displayed_twitch_user_by_id(None, twitch_id)
 		# Assert that the updated Twitch user was returned.
 		updated_expected_link_url = 'http://www.twitch.tv/%s' % updated_name
 		self._assert_displayed_twitch_user(displayed_twitch_user,
@@ -99,7 +99,7 @@ class TestBookmarksDb(DbTestCase):
 		self.assertIsNotNone(user_id)
 
 		# Get the Steam user.
-		displayed_steam_user = db.get_displayed_steam_user(None, steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(None, steam_id)
 		# Assert that the created Steam user was returned.
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, personaname, steam_id, profile_url,
@@ -122,7 +122,7 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(updated_user_id, user_id)
 
 		# Get the Steam user.
-		displayed_steam_user = db.get_displayed_steam_user(None, steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(None, steam_id)
 		# Assert that the updated Steam user was returned.
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, updated_personaname, steam_id, updated_profile_url,
@@ -142,7 +142,7 @@ class TestBookmarksDb(DbTestCase):
 		client_steam_id, client_id = self._create_steam_user(client_name)
 		missing_twitch_id = 'missing_twitch_id'
 		with self.assertRaises(db.DbException):
-			db.get_displayed_twitch_user(client_id, missing_twitch_id)
+			db.get_displayed_twitch_user_by_id(client_id, missing_twitch_id)
 
 	"""Test that fails to return a displayed Steam user because the Steam user
 	identifier is unknown.
@@ -153,7 +153,7 @@ class TestBookmarksDb(DbTestCase):
 		client_steam_id, client_id = self._create_steam_user(client_name)
 		missing_steam_id = 'missing_steam_id'
 		with self.assertRaises(db.DbException):
-			db.get_displayed_steam_user(client_id, missing_steam_id)
+			db.get_displayed_steam_user_by_id(client_id, missing_steam_id)
 
 	"""Test that fails to create a playlist because the user identifier is unknown.
 	"""
@@ -176,7 +176,7 @@ class TestBookmarksDb(DbTestCase):
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 
 		# Get the displayed user.
-		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id, num_playlists=1)
 		# Assert that the created playlist was returned.
@@ -188,7 +188,7 @@ class TestBookmarksDb(DbTestCase):
 		db.remove_playlist(user_id, playlist_id)
 
 		# Assert that the playlist is no longer returned.
-		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id)
 
@@ -207,7 +207,7 @@ class TestBookmarksDb(DbTestCase):
 			db.remove_playlist(user_id, missing_playlist_id)
 
 		# Assert that this had no effect.
-		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id)
 
@@ -232,7 +232,7 @@ class TestBookmarksDb(DbTestCase):
 			db.remove_playlist(user_id2, playlist_id)
 
 		# Assert that this had no effect.
-		displayed_steam_user = db.get_displayed_steam_user(client_id, user_steam_id1)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id, user_steam_id1)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id1, user_name1, user_steam_id1, num_playlists=1)
 		displayed_user_playlist = displayed_steam_user.playlists[0]
@@ -811,7 +811,7 @@ class TestBookmarksDb(DbTestCase):
 		db.vote_playlist_thumb_down(client_id2, playlist_id, now=self.now)
 
 		# Assert that the user sees no vote.
-		displayed_steam_user = db.get_displayed_steam_user(user_id, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(user_id, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id, num_playlists=1)
 		displayed_user_playlist = displayed_steam_user.playlists[0]
@@ -819,7 +819,7 @@ class TestBookmarksDb(DbTestCase):
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1)
 		# Assert that the first client sees his vote up.
-		displayed_steam_user = db.get_displayed_steam_user(client_id1, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id1, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id, num_playlists=1)
 		displayed_user_playlist = displayed_steam_user.playlists[0]
@@ -827,7 +827,7 @@ class TestBookmarksDb(DbTestCase):
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
 		# Assert that the second client sees his vote down.
-		displayed_steam_user = db.get_displayed_steam_user(client_id2, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(client_id2, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id, num_playlists=1)
 		displayed_user_playlist = displayed_steam_user.playlists[0]
@@ -835,7 +835,7 @@ class TestBookmarksDb(DbTestCase):
 				playlist_id, playlist_title, self.now,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
 		# Assert that a logged out client sees no vote.
-		displayed_steam_user = db.get_displayed_steam_user(None, user_steam_id)
+		displayed_steam_user = db.get_displayed_steam_user_by_id(None, user_steam_id)
 		self._assert_displayed_steam_user(displayed_steam_user,
 				user_id, user_name, user_steam_id, num_playlists=1)
 		displayed_user_playlist = displayed_steam_user.playlists[0]
