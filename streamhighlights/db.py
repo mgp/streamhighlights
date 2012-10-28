@@ -98,11 +98,15 @@ class SteamUser(_Base):
 
 	steam_id = sa.Column(sa.Integer, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	# Used to construct URL to user on Steam.
+	profile_url = sa.Column(sa.String)
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'SteamUser(id=%r, user=%r)' % (
-				self.id,
+		return 'SteamUser(steam_id=%r, user_id=%r, profile_url=%r, user=%r)' % (
+				self.steam_id,
+				self.user_id,
+				self.profile_url,
 				self.user)
 
 
@@ -381,7 +385,8 @@ def add_twitch_video(title, length, archive_id, video_file_url, link_url):
 """Data for displaying a user.
 """
 class DisplayedUser:
-	def __init__(self, id, name, image_small_url, image_large_url, site_url, playlists):
+	# TODO: Add in site_url?
+	def __init__(self, id, name, image_small_url, image_large_url, playlists):
 		self.id = id
 		self.name = name
 		self.image_small_url = image_small_url
@@ -401,8 +406,8 @@ class DisplayedUser:
 """Data for displaying a user on Twitch.
 """
 class DisplayedTwitchUser(DisplayedUser):
-	def __init__(self, id, name, image_large_url, image_small_url, playlists, twitch_id, link_url):
-		DisplayedUser.__init__(self, id, name, image_large, image_small, playlists)
+	def __init__(self, id, name, image_small_url, image_large_url, playlists, twitch_id, link_url):
+		DisplayedUser.__init__(self, id, name, image_small_url, image_large_url, playlists)
 		self.twitch_id = twitch_id
 		# The URL to this user on Twitch.
 		self.link_url = link_url
@@ -429,7 +434,7 @@ class DisplayedSteamUser(DisplayedUser):
 		self.link_url = link_url
 	
 	def __repr__(self):
-		return 'DisplayedTwitchUser(id=%r, name=%r, image_small_url=%r, image_large_url=%r, playlists=%r, steam_id=%r, link_url=%r)' % (
+		return 'DisplayedSteamUser(id=%r, name=%r, image_small_url=%r, image_large_url=%r, playlists=%r, steam_id=%r, link_url=%r)' % (
 				self.id,
 				self.name,
 				self.image_small_url,
@@ -464,18 +469,58 @@ class DisplayedUserPlaylist:
 				self.num_bookmarks)
 
 
-"""Returns the DisplayedUser with the given identifier.
+"""Called whenever a Twitch user has been authenticated and logged in.
 """
-def get_displayed_user(client_id, user_id):
+def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token, now=None):
+	now = _get_now(now)
 	try:
-		# Get the user.
-		user, friendly_user_url = session.query(User, FriendlyUserUrl.friendly_url)\
-				.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
-				.filter(User.id == user_id).one()
+		twitch_user = session.query(TwitchUser)\
+				.options(sa_orm.joinedload(TwitchUser.user))\
+				.filter(TwitchUser.twitch_id == twitch_id).one()
 	except sa_orm.exc.NoResultFound:
-		session.close()
-		raise DbException._chain()
+		twitch_user = TwitchUser(twitch_id=twitch_id)
+		twitch_user.user = User(created=now)
+		session.add(twitch_user)
 
+	# Update the User.
+	twitch_user.user.name = display_name
+	twitch_user.user.image_large_url = logo
+	twitch_user.user.last_seen = now
+	# Update the TwitchUser.
+	twitch_user.name = name
+	twitch_user.access_token = access_token
+	# TODO: Update the friendly URL
+
+	session.commit()
+	return twitch_user.user.id
+
+"""Called whenever a Steam user has been authenticated and logged in.
+"""
+def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full, now=None):
+	now = _get_now(now)
+	try:
+		steam_user = session.query(SteamUser)\
+				.options(sa_orm.joinedload(SteamUser.user))\
+				.filter(SteamUser.steam_id == steam_id).one()
+	except sa_orm.exc.NoResultFound:
+		steam_user = SteamUser(steam_id=steam_id)
+		steam_user.user = User(created=now)
+		session.add(steam_user)
+	
+	# Update the User.
+	steam_user.user.name = personaname
+	steam_user.user.image_small_url = avatar
+	steam_user.user.image_large_url = avatar_full
+	steam_user.user.last_seen = now
+	# Update the SteamUser.
+	steam_user.profile_url = profile_url
+	# TODO: Update the friendly URL
+
+	session.commit()
+	return steam_user.user.id
+
+
+def _get_displayed_user_playlists(client_id, user_id):
 	if client_id is None:
 		# Get the playlists.
 		playlists_cursor = session.query(Playlist)\
@@ -516,9 +561,80 @@ def get_displayed_user(client_id, user_id):
 					num_bookmarks=playlist.num_bookmarks)
 				for playlist, playlist_vote in playlists_cursor]
 
+	return displayed_user_playlists
+
+# TODO: Remove this?
+"""Returns the DisplayedUser with the given identifier.
+"""
+def get_displayed_user(client_id, user_id):
+	try:
+		# Get the user.
+		user, friendly_user_url = session.query(User, FriendlyUserUrl.friendly_url)\
+				.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
+				.filter(User.id == user_id).one()
+	except sa_orm.exc.NoResultFound:
+		session.close()
+		raise DbException._chain()
+
+	displayed_user_playlists = _get_displayed_user_playlists(client_id, user_id)
 	displayed_user = DisplayedUser(user.id, user.name,
 			user.image_small_url, user.image_large_url, friendly_user_url, displayed_user_playlists)
 	return displayed_user
+
+"""Returns the DisplayedTwitchUser with the given Twitch identifier.
+"""
+def get_displayed_twitch_user(client_id, twitch_id):
+	try:
+		# Get the Twitch user.
+		twitch_user, user, friendly_user_url = session.query(
+					TwitchUser, User, FriendlyUserUrl.friendly_url)\
+				.join(User, TwitchUser.user_id == User.id)\
+				.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
+				.filter(TwitchUser.twitch_id == twitch_id).one()
+	except sa_orm.exc.NoResultFound:
+		session.close()
+		raise DbException._chain()
+
+	displayed_user_playlists = _get_displayed_user_playlists(client_id, user.id)
+	link_url = 'http://www.twitch.tv/%s' % twitch_user.name
+	displayed_twitch_user = DisplayedTwitchUser(
+			user.id,
+			user.name,
+			user.image_small_url,
+			user.image_large_url,
+			displayed_user_playlists,
+			twitch_id,
+			link_url)
+	return displayed_twitch_user
+
+"""Returns the DisplayedSteamUser with the given Steam identifier.
+"""
+def get_displayed_steam_user(client_id, steam_id):
+	try:
+		# Get the Steam user.
+		steam_user, user, friendly_user_url = session.query(
+				SteamUser, User, FriendlyUserUrl.friendly_url)\
+			.join(User, SteamUser.user_id == User.id)\
+			.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
+			.filter(SteamUser.steam_id == steam_id).one()
+	except sa_orm.exc.NoResultFound:
+		session.close()
+		raise DbException._chain()
+
+	displayed_user_playlists = _get_displayed_user_playlists(client_id, user.id)
+	if steam_user.profile_url:
+		link_url = steam_user.profile_url
+	else:
+		link_url = 'http://steamcommunity.com/profiles/%s' % steam_user.steam_id
+	displayed_steam_user = DisplayedSteamUser(
+			user.id,
+			user.name,
+			user.image_small_url,
+			user.image_large_url,
+			displayed_user_playlists,
+			steam_id,
+			link_url)
+	return displayed_steam_user
 
 
 """Creates a playlist by the given user.
@@ -589,6 +705,7 @@ class DisplayedPlaylistBookmark:
 		self.video_title = video_title
 		self.comment = comment
 		self.time_added = time_added
+		# The author's info.
 		self.author_name = author_name
 		self.author_image_small_url = author_image_small_url
 		self.author_site_url = author_site_url

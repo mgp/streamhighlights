@@ -19,6 +19,87 @@ class TestBookmarksDb(DbTestCase):
 	# Begin tests for users.
 	# 
 
+	def test_twitch_user_logged_in(self):
+		# Create a new Twitch user.
+		twitch_id = 123
+		name = 'name'
+		display_name = 'display_name'
+		logo = 'logo_url'
+		access_token = 'access_token'
+		user_id = db.twitch_user_logged_in(
+				twitch_id, name, display_name, logo, access_token, self.now)
+		self.assertIsNotNone(user_id)
+
+		# Get the Twitch user.
+		displayed_twitch_user = db.get_displayed_twitch_user(None, twitch_id)
+		# Assert that the created Twitch user was returned.
+		expected_link_url = 'http://www.twitch.tv/%s' % name
+		self._assert_displayed_twitch_user(displayed_twitch_user,
+				user_id, display_name, twitch_id, expected_link_url, image_large_url=logo)
+
+		# TODO: Read from DB, assert created, last_seen
+
+		# Update the Twitch user.
+		updated_name = 'updated_name'
+		updated_display_name = 'updated_display_name'
+		updated_logo = 'updated_logo_url'
+		updated_access_token = 'updated_access_token'
+		updated_time = self.now + timedelta(minutes=10)
+		updated_user_id = db.twitch_user_logged_in(
+				twitch_id, updated_name, updated_display_name,
+				updated_logo, updated_access_token, updated_time)
+		self.assertEqual(updated_user_id, user_id)
+
+		# Get the Twitch user.
+		displayed_twitch_user = db.get_displayed_twitch_user(None, twitch_id)
+		# Assert that the updated Twitch user was returned.
+		updated_expected_link_url = 'http://www.twitch.tv/%s' % updated_name
+		self._assert_displayed_twitch_user(displayed_twitch_user,
+				user_id, updated_display_name, twitch_id,
+				updated_expected_link_url, image_large_url=updated_logo)
+
+		# TODO: Read from DB, assert created, last_seen
+
+	def test_steam_user_logged_in(self):
+		# Create a new Steam user.
+		steam_id = 456
+		personaname = 'personaname'
+		profile_url = 'profile_url'
+		avatar = 'avatar'
+		avatar_full = 'avatar_full'
+		user_id = db.steam_user_logged_in(
+				steam_id, personaname, profile_url, avatar, avatar_full, self.now)
+		self.assertIsNotNone(user_id)
+
+		# Get the Steam user.
+		displayed_steam_user = db.get_displayed_steam_user(None, steam_id)
+		# Assert that the created Steam user was returned.
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, personaname, steam_id, profile_url,
+				image_small_url=avatar, image_large_url=avatar_full)
+
+		# TODO: Read from DB, assert created, last_seen
+
+		# Update the Steam user.
+		updated_personaname = 'updated_personaname'
+		updated_profile_url = 'updated_profile_url'
+		updated_avatar = 'updated_avatar'
+		updated_avatar_full = 'updated_avatar_full'
+		updated_time = self.now + timedelta(minutes=10)
+		updated_user_id = db.steam_user_logged_in(
+				steam_id, updated_personaname,
+				updated_profile_url, updated_avatar, updated_avatar_full, updated_time)
+		self.assertEqual(updated_user_id, user_id)
+
+		# Get the Steam user.
+		displayed_steam_user = db.get_displayed_steam_user(None, steam_id)
+		# Assert that the updated Steam user was returned.
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id, updated_personaname, steam_id, updated_profile_url,
+				image_small_url=updated_avatar, image_large_url=updated_avatar_full)
+
+		# TODO: Read from DB, assert created, last_seen
+
 	"""Test that fails to return a displayed user because the user identifier is
 	unknown.
 	"""
