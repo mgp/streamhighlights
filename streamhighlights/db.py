@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
 import sqlalchemy.ext.declarative as sa_ext_declarative
@@ -58,19 +59,24 @@ class User(_Base):
 	created = sa.Column(sa.DateTime, nullable=False)
 	last_seen = sa.Column(sa.DateTime)
 
+	url_by_id = sa.Column(sa.String, nullable=False)
+	url_by_name = sa.Column(sa.String)
+
 	steam_user = sa_orm.relationship('SteamUser', uselist=False, backref='user')
 	twitch_user = sa_orm.relationship('TwitchUser', uselist=False, backref='user')
 	playlists = sa_orm.relationship('Playlist', backref='user')
 	bookmarks = sa_orm.relationship('Bookmark', backref='user')
 
 	def __repr__(self):
-		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
+		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, steam_user=%r, twitch_user=%r, playlists=%r, bookmarks=%r)' % (
 				self.id,
 				self.name,
 				self.image_url_small,
 				self.image_url_large,
 				self.created.isoformat(),
 				self.last_seen.isoformat() if self.last_seen else None,
+				self.url_by_id,
+				self.url_by_name,
 				self.steam_user,
 				self.twitch_user,
 				self.playlists,
@@ -443,6 +449,66 @@ class DisplayedUserPlaylist:
 				self.title,
 				self.num_bookmarks)
 
+_USER_URL_SEPARATOR = ':'
+_USER_URL_STEAM_PREFIX = 's'
+_USER_URL_TWITCH_PREFIX = 't'
+
+"""Returns the url_by_id value for a User from Steam.
+"""
+def _get_steam_url_by_id(steam_id):
+	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, str(steam_id)))
+
+"""Returns the url_by_id value for a User from Twitch.
+"""
+def _get_twitch_url_by_id(twitch_id):
+	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, str(twitch_id)))
+
+_GET_COMMUNITY_ID_REGEX = re.compile('steamcommunity\.com/id/(?P<community_id>\w+)$')
+
+"""Returns the url_by_name value for a User from Steam, or None if one cannot
+be created.
+"""
+def _get_steam_url_by_name(profile_url):
+	if profile_url is None:
+		return None
+	community_id_match = _GET_COMMUNITY_ID_REGEX.search(profile_url)
+	if not community_id_match:
+		return None
+	community_id = community_id_match.group('community_id')
+	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, community_id))
+
+"""Returns the url_by_name value for a User from Twitch.
+"""
+def _get_twitch_url_by_name(name):
+	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, name))
+
+"""Returns the best URL for a given User.
+"""
+def _get_user_url(user):
+	if user.url_by_name is not None:
+		prefix, remainder = user.url_by_name.split(_USER_URL_SEPARATOR, 1)
+		if prefix == _USER_URL_STEAM_PREFIX:
+			# The remainder is the Steam community identifier.
+			return '/user/steam/%s' % remainder
+		elif prefix == _USER_URL_TWITCH_PREFIX:
+			# The remainder is the Twitch user name.
+			return '/user/twitch/%s' % remainder
+	
+	prefix, remainder = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
+	if prefix == _USER_URL_STEAM_PREFIX:
+		# The remainder is the Steam identifier.
+		return '/user/steam_id/%s' % remainder
+	elif prefix == _USER_URL_TWITCH_PREFIX:
+		# The remainder is the Twitch identifier.
+		return '/user/twitch_id/%s' % remainder
+
+	raise ValueError('Invalid url_by_id=%s, url_by_name=%s' % (url_by_id, url_by_name))
+
+def _get_twitch_url(user):
+	if user.url_by_name is not None:
+		return '/user/twitch/%s' % name
+	prefix, twitch_id = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
+	return '/user/twitch_id/%s' % twitch_id
 
 """Called whenever a Twitch user has been authenticated and logged in.
 """
@@ -454,17 +520,18 @@ def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token, now
 				.filter(TwitchUser.twitch_id == twitch_id).one()
 	except sa_orm.exc.NoResultFound:
 		twitch_user = TwitchUser(twitch_id=twitch_id)
-		twitch_user.user = User(created=now)
+		twitch_user.user = User(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
 		session.add(twitch_user)
 
 	# Update the User.
 	twitch_user.user.name = display_name
 	twitch_user.user.image_url_large = logo
 	twitch_user.user.last_seen = now
+	twitch_user.user.url_by_name = _get_twitch_url_by_name(name)
 	# Update the TwitchUser.
 	twitch_user.name = name
 	twitch_user.access_token = access_token
-	# TODO: Update the friendly URL
+	# TODO: Clear url_by_name value for other User if found.
 
 	session.commit()
 	return twitch_user.user.id
@@ -479,7 +546,7 @@ def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full
 				.filter(SteamUser.steam_id == steam_id).one()
 	except sa_orm.exc.NoResultFound:
 		steam_user = SteamUser(steam_id=steam_id)
-		steam_user.user = User(created=now)
+		steam_user.user = User(created=now, url_by_id=_get_steam_url_by_id(steam_id))
 		session.add(steam_user)
 	
 	# Update the User.
@@ -487,9 +554,10 @@ def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full
 	steam_user.user.image_url_small = avatar
 	steam_user.user.image_url_large = avatar_full
 	steam_user.user.last_seen = now
+	steam_user.user.url_by_name = _get_steam_url_by_name(profile_url)
 	# Update the SteamUser.
 	steam_user.profile_url = profile_url
-	# TODO: Update the friendly URL
+	# TODO: If url_by_name is not None, clear value for other User if found.
 
 	session.commit()
 	return steam_user.user.id
