@@ -77,20 +77,6 @@ class User(_Base):
 				self.bookmarks)
 
 
-"""A mapping between a user identifier and a friendly URL.
-"""
-class FriendlyUserUrl(_Base):
-	__tablename__ = 'FriendlyUserUrls'
-
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
-	friendly_url = sa.Column(sa.String, nullable=False)
-
-	def __repr__(self):
-		return 'FriendlyUserUrl(user_id=%r, friendly_url=%r)' % (
-				self.user_id,
-				self.friendly_url)
-
-
 """If the user logged in through Steam, the details of that user on Steam.
 """
 class SteamUser(_Base):
@@ -310,7 +296,6 @@ class BookmarkVote(_Base):
 
 def create_all():
 	global Users
-	global FriendlyUserUrls
 	global SteamUsers
 	global TwitchUsers
 	global Playlists
@@ -325,7 +310,6 @@ def create_all():
 
 	# Create aliases for each table.
 	Users = User.__table__
-	FriendlyUserUrls = FriendlyUserUrl.__table__
 	SteamUsers = SteamUser.__table__
 	TwitchUsers = TwitchUser.__table__
 	Playlists = Playlist.__table__
@@ -338,7 +322,6 @@ def create_all():
 
 def drop_all():
 	global Users
-	global FriendlyUserUrls
 	global SteamUsers
 	global TwitchUsers
 	global Playlists
@@ -351,7 +334,6 @@ def drop_all():
 
 	# Clear aliases for each table.
 	Users = None
-	FriendlyUserUrls = None
 	SteamUsers = None
 	TwitchUsers = None
 	Playlists = None
@@ -568,10 +550,8 @@ def _get_displayed_user_playlists(client_id, user_id):
 def get_displayed_twitch_user_by_id(client_id, twitch_id):
 	try:
 		# Get the Twitch user.
-		twitch_user, user, friendly_user_url = session.query(
-					TwitchUser, User, FriendlyUserUrl.friendly_url)\
+		twitch_user, user = session.query(TwitchUser, User)\
 				.join(User, TwitchUser.user_id == User.id)\
-				.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
@@ -594,10 +574,8 @@ def get_displayed_twitch_user_by_id(client_id, twitch_id):
 def get_displayed_steam_user_by_id(client_id, steam_id):
 	try:
 		# Get the Steam user.
-		steam_user, user, friendly_user_url = session.query(
-				SteamUser, User, FriendlyUserUrl.friendly_url)\
+		steam_user, user = session.query(SteamUser, User)\
 			.join(User, SteamUser.user_id == User.id)\
-			.outerjoin(FriendlyUserUrl, User.id == FriendlyUserUrl.user_id)\
 			.filter(SteamUser.steam_id == steam_id).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
@@ -706,13 +684,6 @@ class DisplayedPlaylistBookmark:
 				self.author_site_url)
 
 
-"""Returns the URL for the user, using the friendly URL if present.
-"""
-def _get_user_url(user_id, friendly_user_url):
-	if friendly_user_url:
-		return friendly_user_url
-	return '/users/%s' % user_id
-
 """Returns the DisplayedPlaylist with the given identifier.
 """
 def get_displayed_playlist(client_id, playlist_id):
@@ -720,10 +691,8 @@ def get_displayed_playlist(client_id, playlist_id):
 	if client_id is None:
 		try:
 			# Get the playlist.
-			playlist, creator_name, friendly_playlist_user_url = session.query(
-						Playlist, User.name, FriendlyUserUrl.friendly_url)\
+			playlist, creator_name = session.query(Playlist, User.name)\
 					.join(User, Playlist.user_id == User.id)\
-					.outerjoin(FriendlyUserUrl, Playlist.user_id == FriendlyUserUrl.user_id)\
 					.filter(Playlist.id == playlist_id)\
 					.one()
 		except sa_orm.exc.NoResultFound:
@@ -732,10 +701,9 @@ def get_displayed_playlist(client_id, playlist_id):
 
 		# Get the bookmarks.
 		playlist_bookmarks_cursor = session.query(
-					PlaylistBookmark.added, Bookmark, User.name, FriendlyUserUrl.friendly_url, Video.title)\
+					PlaylistBookmark.added, Bookmark, User.name, Video.title)\
 				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 				.join(User, Bookmark.user_id == User.id)\
-				.outerjoin(FriendlyUserUrl, Bookmark.user_id == FriendlyUserUrl.user_id)\
 				.join(Video, Bookmark.video_id == Video.id)\
 				.filter(PlaylistBookmark.playlist_id == playlist_id)
 		session.close()
@@ -752,16 +720,14 @@ def get_displayed_playlist(client_id, playlist_id):
 					time_added=added,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=_get_user_url(bookmark.user_id, friendly_bookmark_user_url))
-				for added, bookmark, author_name, friendly_bookmark_user_url, video_title
-					in playlist_bookmarks_cursor]
+					author_site_url=None) # TODO
+				for added, bookmark, author_name, video_title in playlist_bookmarks_cursor]
 	else:
 		try:
 			# Get the playlist with the client's vote.
-			playlist, creator_name, friendly_playlist_user_url, playlist_vote = session.query(
-						Playlist, User.name, FriendlyUserUrl.friendly_url, PlaylistVote.vote)\
+			playlist, creator_name, playlist_vote = session.query(
+						Playlist, User.name, PlaylistVote.vote)\
 					.join(User, Playlist.user_id == User.id)\
-					.outerjoin(FriendlyUserUrl, Playlist.user_id == FriendlyUserUrl.user_id)\
 					.outerjoin(PlaylistVote, sa.and_(
 						PlaylistVote.user_id == client_id,
 						PlaylistVote.playlist_id == Playlist.id))\
@@ -773,10 +739,9 @@ def get_displayed_playlist(client_id, playlist_id):
 
 		# Get the bookmarks with the client's vote for each one.
 		playlist_bookmarks_cursor = session.query(
-					PlaylistBookmark.added, Bookmark, User.name, FriendlyUserUrl.friendly_url, Video.title, BookmarkVote.vote)\
+					PlaylistBookmark.added, Bookmark, User.name, Video.title, BookmarkVote.vote)\
 				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 				.join(User, Bookmark.user_id == User.id)\
-				.outerjoin(FriendlyUserUrl, Bookmark.user_id == FriendlyUserUrl.user_id)\
 				.join(Video, Bookmark.video_id == Video.id)\
 				.outerjoin(BookmarkVote, sa.and_(
 					BookmarkVote.user_id == client_id,
@@ -796,15 +761,15 @@ def get_displayed_playlist(client_id, playlist_id):
 					time_added=added,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=_get_user_url(bookmark.user_id, friendly_bookmark_user_url))
-				for added, bookmark, author_name, friendly_bookmark_user_url, video_title, bookmark_vote
+					author_site_url=None) # TODO
+				for added, bookmark, author_name, video_title, bookmark_vote
 					in playlist_bookmarks_cursor]
 
 	# Create the displayed playlist.
 	displayed_playlist = DisplayedPlaylist(
 			author_name=creator_name,
 			author_image_url_large=None,
-			author_site_url=_get_user_url(playlist.user_id, friendly_playlist_user_url), 
+			author_site_url=None, # TODO
 			time_created=playlist.created,
 			time_updated=playlist.updated,
 			num_thumbs_up=playlist.num_thumbs_up,
@@ -1073,10 +1038,8 @@ def get_displayed_twitch_video(client_id, archive_id):
 
 	if client_id is None:
 		# Get the bookmarks.
-		video_bookmarks_cursor = session.query(
-					Bookmark, User.name, FriendlyUserUrl.friendly_url)\
+		video_bookmarks_cursor = session.query(Bookmark, User.name)\
 				.join(User, Bookmark.user_id == User.id)\
-				.outerjoin(FriendlyUserUrl, Bookmark.user_id == FriendlyUserUrl.user_id)\
 				.filter(Bookmark.video_id == video.id)
 		session.close()
 
@@ -1092,14 +1055,12 @@ def get_displayed_twitch_video(client_id, archive_id):
 					time_created=bookmark.created,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=_get_user_url(bookmark.user_id, friendly_bookmark_user_url))
-				for bookmark, author_name, friendly_bookmark_user_url in video_bookmarks_cursor]
+					author_site_url=None) # TODO
+				for bookmark, author_name in video_bookmarks_cursor]
 	else:
 		# Get the bookmarks with the client's vote for each one.
-		video_bookmarks_cursor = session.query(
-					Bookmark, User.name, FriendlyUserUrl.friendly_url, BookmarkVote.vote)\
+		video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
 				.join(User, Bookmark.user_id == User.id)\
-				.outerjoin(FriendlyUserUrl, Bookmark.user_id == FriendlyUserUrl.user_id)\
 				.outerjoin(BookmarkVote, sa.and_(
 					BookmarkVote.user_id == client_id,
 					BookmarkVote.bookmark_id == Bookmark.id))\
@@ -1118,9 +1079,8 @@ def get_displayed_twitch_video(client_id, archive_id):
 					time_created=bookmark.created,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=_get_user_url(bookmark.user_id, friendly_bookmark_user_url))
-				for bookmark, author_name, friendly_bookmark_user_url, bookmark_vote
-					in video_bookmarks_cursor]
+					author_site_url=None) # TODO
+				for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
 
 	# Create the displayed video.
 	displayed_video = DisplayedTwitchVideo(
