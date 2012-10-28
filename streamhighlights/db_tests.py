@@ -106,7 +106,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_get_displayed_twitch_user_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		missing_twitch_id = 'missing_twitch_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_twitch_user(client_id, missing_twitch_id)
@@ -117,7 +117,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_get_displayed_steam_user_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		missing_steam_id = 'missing_steam_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_steam_user(client_id, missing_steam_id)
@@ -135,10 +135,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_create_remove_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a playlist for a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 
@@ -162,10 +162,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_delete_missing_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		# Delete a missing playlist.
 		missing_playlist_id = 'missing_playlist_id'
 		with self.assertRaises(db.DbException):
@@ -181,15 +181,15 @@ class TestBookmarksDb(DbTestCase):
 	def test_remove_playlist_wrong_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a playlist for a user.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Attempt to delete the playlist with another user.
 		with self.assertRaises(db.DbException):
@@ -213,7 +213,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_get_displayed_playlist_unknown_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		missing_playlist_id = 'missing_playlist_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_playlist(client_id, missing_playlist_id)
@@ -224,10 +224,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_add_playlist_bookmark_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video.
@@ -240,7 +240,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -263,7 +263,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_add_playlist_bookmark_unknown_playlist(self):
 		# Create a user without playlists.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		# Create a video with a bookmark.
 		video_title = 'video1'
 		video_length = 61
@@ -274,7 +274,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -292,10 +292,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_add_playlist_bookmark_unknown_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 
@@ -316,10 +316,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_add_remove_playlist_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video.
@@ -332,7 +332,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -393,10 +393,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_add_playlist_bookmark_wrong_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark.
@@ -409,7 +409,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -417,7 +417,7 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that adding the bookmark by a user not the playlist creator fails.
 		user_name3 = 'user_name3'
-		user_id3 = self._create_user(user_name3)
+		user_steam_id3, user_id3 = self._create_steam_user(user_name3)
 		add_bookmark_time = self.now + timedelta(minutes=10)
 		with self.assertRaises(db.DbException):
 			db.add_playlist_bookmark(user_id3, playlist_id, bookmark_id,
@@ -433,10 +433,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_remove_playlist_bookmark_wrong_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create a video with a bookmark.
@@ -449,7 +449,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by another user.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -462,7 +462,7 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that removing the bookmark by a user not the playlist creator fails.
 		user_name3 = 'user_name3'
-		user_id3 = self._create_user(user_name3)
+		user_steam_id3, user_id3 = self._create_steam_user(user_name3)
 		remove_bookmark_time = self.now + timedelta(minutes=20)
 		with self.assertRaises(db.DbException):
 			db.remove_playlist_bookmark(user_id3, playlist_id, bookmark_id,
@@ -483,10 +483,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_playlist_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 		
@@ -522,10 +522,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_playlist_by_creator(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 			
@@ -559,10 +559,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_playlist_unknown_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 
 		missing_playlist_id = 'missing_playlist_id'
 
@@ -592,15 +592,15 @@ class TestBookmarksDb(DbTestCase):
 	def test_up_vote_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote up the playlist.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote up the playlist.
 		db.vote_playlist_thumb_up(user_id2, playlist_id, now=self.now)
@@ -636,15 +636,15 @@ class TestBookmarksDb(DbTestCase):
 	def test_down_vote_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote down the playlist.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote down the playlist.
 		db.vote_playlist_thumb_down(user_id2, playlist_id, now=self.now)
@@ -680,15 +680,15 @@ class TestBookmarksDb(DbTestCase):
 	def test_change_vote_playlist(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user with a playlist.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id1, playlist_title, now=self.now)
 		# Create another user to vote on the playlist.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote up the playlist.
 		db.vote_playlist_thumb_up(user_id2, playlist_id, now=self.now)
@@ -723,16 +723,16 @@ class TestBookmarksDb(DbTestCase):
 	def test_client_votes_playlist(self):
 		# Create a user with a playlist.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 		# Create a user to vote up the playlist.
 		client_name1 = 'client_name1'
-		client_id1 = self._create_user(client_name1)
+		client_steam_id1, client_id1 = self._create_steam_user(client_name1)
 		db.vote_playlist_thumb_up(client_id1, playlist_id, now=self.now)
 		# Create a user to vote down the playlist.
 		client_name2 = 'client_name2'
-		client_id2 = self._create_user(client_name2)
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
 		db.vote_playlist_thumb_down(client_id2, playlist_id, now=self.now)
 
 		# Assert that the playlist creator sees no vote.
@@ -761,16 +761,16 @@ class TestBookmarksDb(DbTestCase):
 	def test_client_votes_user_playlist(self):
 		# Create a user with a playlist.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 		# Create a user to vote up the playlist.
 		client_name1 = 'client_name1'
-		client_id1 = self._create_user(client_name1)
+		client_steam_id1, client_id1 = self._create_steam_user(client_name1)
 		db.vote_playlist_thumb_up(client_id1, playlist_id, now=self.now)
 		# Create a user to vote down the playlist.
 		client_name2 = 'client_name2'
-		client_id2 = self._create_user(client_name2)
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
 		db.vote_playlist_thumb_down(client_id2, playlist_id, now=self.now)
 
 		# Assert that the user sees no vote.
@@ -807,7 +807,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_client_votes_playlist_bookmark(self):
 		# Create a user with a playlist.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		playlist_title = 'playlist1'
 		playlist_id = db.create_playlist(user_id, playlist_title, now=self.now)
 		# Create a video.
@@ -829,11 +829,11 @@ class TestBookmarksDb(DbTestCase):
 				now=add_bookmark_time)
 		# Create a user to vote up the bookmark.
 		client_name1 = 'client_name1'
-		client_id1 = self._create_user(client_name1)
+		client_steam_id1, client_id1 = self._create_steam_user(client_name1)
 		db.vote_bookmark_thumb_up(client_id1, bookmark_id, now=self.now)
 		# Create a user to vote down the bookmark.
 		client_name2 = 'client_name2'
-		client_id2 = self._create_user(client_name2)
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
 		db.vote_bookmark_thumb_down(client_id2, bookmark_id, now=self.now)
 
 		# Assert that the playlist creator sees no vote.
@@ -893,7 +893,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_create_bookmark_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -920,7 +920,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_create_bookmark_unknown_video(self):
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 
 		# Assert that creating a bookmark for a missing video fails.
 		bookmark_comment = 'comment1'
@@ -935,10 +935,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_create_delete_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -988,10 +988,10 @@ class TestBookmarksDb(DbTestCase):
 	def test_delete_missing_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1018,7 +1018,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_delete_bookmark_wrong_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1029,7 +1029,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -1037,7 +1037,7 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that a user removing the bookmark who is not the creator fails.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 		remove_bookmark_time = self.now + timedelta(minutes=10)
 		with self.assertRaises(db.DbException):
 			db.remove_video_bookmark(
@@ -1059,7 +1059,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_bookmark_unknown_user(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video with a bookmark by a user.
 		video_title = 'video1'
 		video_length = 61
@@ -1070,7 +1070,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -1123,7 +1123,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_bookmark_by_creator(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1134,7 +1134,7 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
@@ -1185,7 +1185,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_vote_bookmark_unknown_bookmark(self):
 		# Create a user.
 		user_name = 'user_name1'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 
 		missing_bookmark_id = 'missing_bookmark_id'
 
@@ -1206,7 +1206,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_up_vote_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1217,14 +1217,14 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
 				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote up the bookmark.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote up the bookmark.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -1280,7 +1280,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_down_vote_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1291,14 +1291,14 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
 				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote down the bookmark.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote down the bookmark.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
@@ -1353,7 +1353,7 @@ class TestBookmarksDb(DbTestCase):
 	def test_change_vote_bookmark(self):
 		# Create the client.
 		client_name = 'client_name1'
-		client_id = self._create_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create a video.
 		video_title = 'video1'
 		video_length = 61
@@ -1364,14 +1364,14 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name1 = 'user_name1'
-		user_id1 = self._create_user(user_name1)
+		user_steam_id1, user_id1 = self._create_steam_user(user_name1)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
 				user_id1, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create another user to vote on the bookmark.
 		user_name2 = 'user_name2'
-		user_id2 = self._create_user(user_name2)
+		user_steam_id2, user_id2 = self._create_steam_user(user_name2)
 
 		# Vote up the bookmark.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -1434,18 +1434,18 @@ class TestBookmarksDb(DbTestCase):
 				video_title, video_length, archive_id, video_file_url, link_url)
 		# Create a bookmark for that video by a user.
 		user_name = 'user_name'
-		user_id = self._create_user(user_name)
+		user_steam_id, user_id = self._create_steam_user(user_name)
 		bookmark_comment = 'comment1'
 		bookmark_time = 33
 		bookmark_id = db.add_video_bookmark(
 				user_id, video_id, bookmark_comment, bookmark_time, self.now)
 		# Create a user to vote up the bookmark.
 		client_name1 = 'client_name1'
-		client_id1 = self._create_user(client_name1)
+		client_steam_id1, client_id1 = self._create_steam_user(client_name1)
 		db.vote_bookmark_thumb_up(client_id1, bookmark_id, now=self.now)
 		# Create a user to vote down the bookmark.
 		client_name2 = 'client_name2'
-		client_id2 = self._create_user(client_name2)
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
 		db.vote_bookmark_thumb_down(client_id2, bookmark_id, now=self.now)
 
 		# Assert that the bookmark creator sees no vote.

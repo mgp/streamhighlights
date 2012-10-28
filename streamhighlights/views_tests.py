@@ -52,7 +52,7 @@ class TestViews(DbTestCase):
 		self.assertFalse(json_response['success'])
 
 	def test_add_playlist_bookmark(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -65,7 +65,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_add_playlist_bookmark_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -90,7 +90,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_remove_playlist_bookmark(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -104,7 +104,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_remove_playlist_bookmark_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -130,9 +130,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_vote_playlist_thumb_up(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 
 		with app.test_client() as client:
 			self._add_client_id(client, client_id)
@@ -140,9 +140,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_vote_playlist_thumb_up_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
@@ -156,9 +156,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_vote_playlist_thumb_down(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_playlist_thumb_up(client_id, playlist_id)
 
 		with app.test_client() as client:
@@ -167,9 +167,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_vote_playlist_thumb_down_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_playlist_thumb_up(client_id, playlist_id)
 
 		# Assert that the request fails with a missing client identifier.
@@ -184,9 +184,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_remove_playlist_vote(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_playlist_thumb_up(client_id, playlist_id)
 
 		with app.test_client() as client:
@@ -195,9 +195,9 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_remove_playlist_vote_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_playlist_thumb_up(client_id, playlist_id)
 
 		# Assert that the request fails with a missing client identifier.
@@ -212,7 +212,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_remove_video_bookmark(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -223,7 +223,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_remove_video_bookmark_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
@@ -240,11 +240,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_vote_bookmark_thumb_up(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 
 		with app.test_client() as client:
 			self._add_client_id(client, client_id)
@@ -252,11 +252,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_vote_bookmark_thumb_up_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 
 		# Assert that the request fails with a missing client identifier.
 		with app.test_client() as client:
@@ -270,11 +270,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_vote_bookmark_thumb_down(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_bookmark_thumb_up(client_id, bookmark_id)
 
 		with app.test_client() as client:
@@ -283,11 +283,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_vote_bookmark_thumb_down_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_bookmark_thumb_up(client_id, bookmark_id)
 
 		# Assert that the request fails with a missing client identifier.
@@ -302,11 +302,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_remove_bookmark_vote(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_bookmark_thumb_up(client_id, bookmark_id)
 
 		with app.test_client() as client:
@@ -315,11 +315,11 @@ class TestViews(DbTestCase):
 			self._assert_ajax_success(response)
 
 	def test_remove_bookmark_vote_bad_request(self):
-		user_id = self._create_user('user_name')
+		user_steam_id, user_id = self._create_steam_user('user_name')
 		video_id = db.add_twitch_video(
 				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
 		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		db.vote_bookmark_thumb_up(client_id, bookmark_id)
 
 		# Assert that the request fails with a missing client identifier.
@@ -334,7 +334,7 @@ class TestViews(DbTestCase):
 			self._assert_ajax_failure(response)
 
 	def test_show_twitch_video(self):
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		self._twitch_video = views.TwitchVideo(
 				456,
 				'title_value',
@@ -357,7 +357,7 @@ class TestViews(DbTestCase):
 					self._twitch_video.link_url)
 
 	def test_show_known_twitch_video(self):
-		client_id = self._create_user('client_name')
+		client_steam_id, client_id = self._create_steam_user('client_name')
 		archive_id = 456
 		self._twitch_video = views.TwitchVideo(
 				archive_id,

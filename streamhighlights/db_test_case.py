@@ -6,17 +6,18 @@ import unittest
 """Base class for test cases that use the database.
 """
 class DbTestCase(unittest.TestCase):
-	"""Utility method for creating a user."""
-	def _create_user(self, name):
-		user = db.User(name=name, created=self.now)
-		self.session.add(user)
-		self.session.commit()
-		return user.id
+	"""Utility method for creating a Steam user."""
+	def _create_steam_user(self, name):
+		steam_id = self._next_steam_id
+		self._next_steam_id += 1
+		user_id = db.steam_user_logged_in(steam_id, name, None, None, None)
+		return steam_id, user_id
 
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
 		self.session = db.session
+		self._next_steam_id = 0
 		db.create_all()
 	
 	def tearDown(self):
@@ -59,7 +60,8 @@ class DbTestCase(unittest.TestCase):
 	"""
 	def _assert_displayed_user_playlist(self,
 			displayed_user_playlist, playlist_id, title, time_created,
-			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None, num_bookmarks=0):
+			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
+			num_bookmarks=0):
 		if time_updated is None:
 			time_updated = time_created
 
@@ -153,7 +155,8 @@ class DbTestCase(unittest.TestCase):
 	"""Utility method to assert the fields in a DisplayedVideoBookmark.
 	"""
 	def _assert_displayed_video_bookmark(self,
-			displayed_video_bookmark, bookmark_id, comment, time, time_created, author_name, author_id, 
+			displayed_video_bookmark, bookmark_id, comment, time, time_created,
+			author_name, author_id, 
 			num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
 			author_image_url_small=None, author_site_url=None):
 		author_site_url = self._get_author_site_url(author_site_url, author_id)
