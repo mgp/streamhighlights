@@ -339,7 +339,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the bookmark is correct.
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name2, user_id2)
 
 		# Add the bookmark to the playlist again.
 		add_bookmark_again_time = self.now + timedelta(minutes=20)
@@ -352,7 +353,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name2, user_id2)
 
 		# Remove the bookmark from the playlist.
 		remove_bookmark_time = self.now + timedelta(minutes=30)
@@ -461,7 +463,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name2, user_id2)
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name2, user_id2)
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
@@ -829,7 +832,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name, user_id,
 				num_thumbs_up=1, num_thumbs_down=1)
 		# Assert that the first client sees his vote up.
 		displayed_playlist = db.get_displayed_playlist(client_id1, playlist_id)
@@ -838,7 +842,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name, user_id,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
 		# Assert that the second client sees his vote down.
 		displayed_playlist = db.get_displayed_playlist(client_id2, playlist_id)
@@ -847,7 +852,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name, user_id,
 				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
 		# Assert that a logged out client sees no vote.
 		displayed_playlist = db.get_displayed_playlist(None, playlist_id)
@@ -856,7 +862,8 @@ class TestBookmarksDb(DbTestCase):
 				time_updated=add_bookmark_time, num_bookmarks=1)
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
-				bookmark_id, video_title, bookmark_comment, add_bookmark_time, user_name, user_id,
+				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
+				user_name, user_id,
 				num_thumbs_up=1, num_thumbs_down=1)
 
 	# 
