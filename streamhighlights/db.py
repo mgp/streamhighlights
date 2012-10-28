@@ -502,7 +502,8 @@ def _get_user_url(user):
 		# The remainder is the Twitch identifier.
 		return '/user/twitch_id/%s' % remainder
 
-	raise ValueError('Invalid url_by_id=%s, url_by_name=%s' % (url_by_id, url_by_name))
+	raise ValueError('Invalid url_by_id=%s, url_by_name=%s' % (
+			user.url_by_id, user.url_by_name))
 
 def _get_twitch_url(user):
 	if user.url_by_name is not None:

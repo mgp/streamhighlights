@@ -20,6 +20,89 @@ class TestBookmarksDb(DbTestCase):
 	# Begin tests for users.
 	# 
 
+	"""Test that creates user URLs by id.
+	"""
+	def test_get_url_by_id(self):
+		# Assert the URL by name given a Steam identifier.
+		steam_id = 456
+		steam_url_by_id = db._get_steam_url_by_id(steam_id)
+		self.assertEqual('s:456', steam_url_by_id)
+
+		# Assert the URL by name given a Twitch identifier.
+		twitch_id = 123
+		twitch_url_by_id = db._get_twitch_url_by_id(twitch_id)
+		self.assertEqual('t:123', twitch_url_by_id)
+
+	def _assert_get_community_id_regex_success(self, url, community_id):
+		community_id_match = db._GET_COMMUNITY_ID_REGEX.search(url)
+		self.assertIsNotNone(community_id_match)
+		self.assertEqual(community_id, community_id_match.group('community_id'))
+
+	def _assert_get_community_id_regex_failure(self, url):
+		self.assertFalse(db._GET_COMMUNITY_ID_REGEX.search(url))
+
+	"""Test that extracts community IDs from profile URLs.
+	"""
+	def test_get_community_id_regex_success(self):
+		self._assert_get_community_id_regex_success('steamcommunity.com/id/foo', 'foo')
+		self._assert_get_community_id_regex_success(
+				'http://www.steamcommunity.com/id/b4z', 'b4z')
+		self._assert_get_community_id_regex_success(
+				'https://www.steamcommunity.com/id/456', '456')
+
+	"""Test that fails to extract community IDs from invalid profile URLs.
+	"""
+	def test_get_community_id_regex_failure(self):
+		self._assert_get_community_id_regex_failure('/id/foo')
+		self._assert_get_community_id_regex_failure('steampowered.com/id/foo')
+		self._assert_get_community_id_regex_failure('steamcommunity.net/id/bar')
+		self._assert_get_community_id_regex_failure('steamcommunity.com/profile/123456')
+
+	"""Test that creates user URLs by name.
+	"""
+	def test_get_url_by_name(self):
+		# Assert no URL by name for a missing Steam profile URL.
+		profile_url = None
+		self.assertIsNone(db._get_steam_url_by_name(profile_url))
+		# Assert no URL by name for a Steam profile URL without a community identifier.
+		profile_url = 'http://steamcommunity.com/profiles/123'
+		self.assertIsNone(db._get_steam_url_by_name(profile_url))
+		# Assert the URL by name for a Steam profile URL with a community identifier.
+		profile_url = 'http://steamcommunity.com/id/mgp'
+		steam_url_by_name = db._get_steam_url_by_name(profile_url)
+		self.assertEqual('s:mgp', steam_url_by_name)
+
+		# Assert the URL by name for a Twitch name.
+		twitch_name = 'mgp'
+		twitch_url_by_name = db._get_twitch_url_by_name(twitch_name)
+		self.assertEqual('t:mgp', twitch_url_by_name)
+
+	def test_get_user_url(self):
+		# Assert that a URL can be built from a Steam name.
+		user = db.User(name='name', created=self.now, url_by_name='s:mgp1', url_by_id='s:123')
+		user_url = db._get_user_url(user)
+		self.assertEqual('/user/steam/mgp1', user_url)
+
+		# Assert that a URL can be built from a Steam identifier.
+		user = db.User(url_by_id='s:456')
+		user_url = db._get_user_url(user)
+		self.assertEqual('/user/steam_id/456', user_url)
+
+		# Assert that a URL can be built from a Twitch name.
+		user = db.User(name='name', created=self.now, url_by_name='t:mgp2', url_by_id='t:234')
+		user_url = db._get_user_url(user)
+		self.assertEqual('/user/twitch/mgp2', user_url)
+
+		# Assert that a URL can be built from a Twitch identifier.
+		user = db.User(url_by_id='t:567')
+		user_url = db._get_user_url(user)
+		self.assertEqual('/user/twitch_id/567', user_url)
+
+		# Assert that an URL cannot be built from an invalid identifier.
+		user = db.User(url_by_id='z:007')
+		with self.assertRaises(ValueError):
+			user_url = db._get_user_url(user)
+
 	def _get_twitch_user(self, twitch_id):
 		twitch_user = self.session.query(db.TwitchUser)\
 				.options(sa_orm.joinedload(db.TwitchUser.user))\
