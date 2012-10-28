@@ -109,12 +109,11 @@ class TwitchUser(_Base):
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r, access_token=%r, user=%r)' % (
+		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r, access_token=%r)' % (
 				self.twitch_id,
 				self.user_id,
 				self.name,
-				self.access_token,
-				self.user)
+				self.access_token)
 
 
 """The association from playlists to their contained bookmarks.
@@ -155,7 +154,7 @@ class Playlist(_Base):
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'Playlist(id=%r, visibility=%r, title=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r, user=%r)' % (
+		return 'Playlist(id=%r, visibility=%r, title=%r, num_thumbs_up=%r, num_thumbs_down=%r, created=%r, updated=%r, num_bookmarks=%r, votes=%r, bookmarks=%r)' % (
 				self.id,
 				self.visibility,
 				self.title,
@@ -165,8 +164,7 @@ class Playlist(_Base):
 				self.updated,
 				self.num_bookmarks,
 				self.votes,
-				self.bookmarks,
-				self.user)
+				self.bookmarks)
 
 
 """Enums for thumbs up and thumbs down votes by the user."""
@@ -189,12 +187,11 @@ class PlaylistVote(_Base):
 
 	def __repr__(self):
 		# Has backref: playlist.
-		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r, playlist=%r)' % (
+		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r)' % (
 				self.id,
 				self.vote,
 				self.created,
-				self.user,
-				self.playlist)
+				self.user)
 
 
 """A video.
@@ -231,13 +228,12 @@ class TwitchVideo(_Base):
 
 	def __repr__(self):
 		# Has backref: video.
-		return 'TwitchVideo(id=%r, video_id=%r, archive_id=%r, video_file_url=%r, link_url=%r, video=%r)' % (
+		return 'TwitchVideo(id=%r, video_id=%r, archive_id=%r, video_file_url=%r, link_url=%r)' % (
 				self.id,
 				self.video_id,
 				self.archive_id,
 				self.video_file_url,
-				self.link_url,
-				self.video)
+				self.link_url)
 
 
 """A bookmark for a video.
@@ -258,16 +254,14 @@ class Bookmark(_Base):
 
 	def __repr__(self):
 		# Has backrefs: user, video.
-		return 'Bookmark(id=%r, comment=%r, time=%r, created=%r, num_thumbs_up=%r, num_thumbs_down=%r, votes=%r, user=%r, video=%r)' % (
+		return 'Bookmark(id=%r, comment=%r, time=%r, created=%r, num_thumbs_up=%r, num_thumbs_down=%r, votes=%r)' % (
 				self.id,
 				self.comment,
 				self.time,
 				self.created.isoformat(),
 				self.num_thumbs_up,
 				self.num_thumbs_down,
-				self.votes,
-				self.user,
-				self.video)
+				self.votes)
 
 
 """A vote by a user for a bookmark.
@@ -286,12 +280,11 @@ class BookmarkVote(_Base):
 
 	def __repr__(self):
 		# Has backref: bookmark.
-		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r, bookmark=%r)' % (
+		return 'PlaylistVote(id=%r, vote=%r, created=%r, user=%r)' % (
 				self.id,
 				self.vote,
 				self.created,
-				self.user,
-				self.bookmark)
+				self.user)
 
 
 def create_all():
