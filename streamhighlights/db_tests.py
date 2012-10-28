@@ -1,6 +1,7 @@
 from datetime import timedelta
 import db
 from db_test_case import DbTestCase
+import sqlalchemy.orm as sa_orm
 import unittest
 
 
@@ -19,6 +20,15 @@ class TestBookmarksDb(DbTestCase):
 	# Begin tests for users.
 	# 
 
+	def _get_twitch_user(self, twitch_id):
+		twitch_user = self.session.query(db.TwitchUser)\
+				.options(sa_orm.joinedload(db.TwitchUser.user))\
+				.filter(db.TwitchUser.twitch_id == twitch_id).one()
+		self.session.close()
+		return twitch_user
+
+	"""Test that creates and updates a Twitch user.
+	"""
 	def test_twitch_user_logged_in(self):
 		# Create a new Twitch user.
 		twitch_id = 123
@@ -37,7 +47,11 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_twitch_user(displayed_twitch_user,
 				user_id, display_name, twitch_id, expected_link_url, image_url_large=logo)
 
-		# TODO: Read from DB, assert created, last_seen
+		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
+		twitch_user = self._get_twitch_user(twitch_id)
+		self.assertEqual(self.now, twitch_user.user.created)
+		self.assertEqual(self.now, twitch_user.user.last_seen)
+		self.assertEqual(access_token, twitch_user.access_token)
 
 		# Update the Twitch user.
 		updated_name = 'updated_name'
@@ -58,8 +72,21 @@ class TestBookmarksDb(DbTestCase):
 				user_id, updated_display_name, twitch_id,
 				updated_expected_link_url, image_url_large=updated_logo)
 
-		# TODO: Read from DB, assert created, last_seen
+		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
+		twitch_user = self._get_twitch_user(twitch_id)
+		self.assertEqual(self.now, twitch_user.user.created)
+		self.assertEqual(updated_time, twitch_user.user.last_seen)
+		self.assertEqual(updated_access_token, twitch_user.access_token)
 
+	def _get_steam_user(self, steam_id):
+		steam_user = self.session.query(db.SteamUser)\
+				.options(sa_orm.joinedload(db.SteamUser.user))\
+				.filter(db.SteamUser.steam_id == steam_id).one()
+		self.session.close()
+		return steam_user
+
+	"""Test that creates and updates a Steam user.
+	"""
 	def test_steam_user_logged_in(self):
 		# Create a new Steam user.
 		steam_id = 456
@@ -78,7 +105,10 @@ class TestBookmarksDb(DbTestCase):
 				user_id, personaname, steam_id, profile_url,
 				image_url_small=avatar, image_url_large=avatar_full)
 
-		# TODO: Read from DB, assert created, last_seen
+		# Assert that the fields not returned in a DisplayedSteamUser are correct.
+		steam_user = self._get_steam_user(steam_id)
+		self.assertEqual(self.now, steam_user.user.created)
+		self.assertEqual(self.now, steam_user.user.last_seen)
 
 		# Update the Steam user.
 		updated_personaname = 'updated_personaname'
@@ -98,7 +128,10 @@ class TestBookmarksDb(DbTestCase):
 				user_id, updated_personaname, steam_id, updated_profile_url,
 				image_url_small=updated_avatar, image_url_large=updated_avatar_full)
 
-		# TODO: Read from DB, assert created, last_seen
+		# Assert that the fields not returned in a DisplayedSteamUser are correct.
+		steam_user = self._get_steam_user(steam_id)
+		self.assertEqual(self.now, steam_user.user.created)
+		self.assertEqual(updated_time, steam_user.user.last_seen)
 
 	"""Test that fails to return a displayed Twitch user because the Twitch user
 	identifier is unknown.
