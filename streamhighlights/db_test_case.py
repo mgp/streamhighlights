@@ -6,13 +6,6 @@ import unittest
 """Base class for test cases that use the database.
 """
 class DbTestCase(unittest.TestCase):
-	"""Utility method for creating a Steam user."""
-	def _create_steam_user(self, name):
-		steam_id = self._next_steam_id
-		self._next_steam_id += 1
-		user_id = db.steam_user_logged_in(steam_id, name, None, None, None)
-		return steam_id, user_id
-
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
@@ -23,6 +16,18 @@ class DbTestCase(unittest.TestCase):
 	def tearDown(self):
 		db.drop_all()
 		unittest.TestCase.tearDown(self)
+
+	"""Utility method for creating a Steam user."""
+	def _create_steam_user(self, name):
+		steam_id = self._next_steam_id
+		self._next_steam_id += 1
+		user_id = db.steam_user_logged_in(steam_id, name, None, None, None)
+		return steam_id, user_id
+
+	"""Utility method to create a URL for a user given its Steam identifier.
+	"""
+	def _get_steam_user_url(self, steam_id):
+		return '/user/steam_id/%s' % steam_id
 
 	"""Utility method to assert the fields in a DisplayedUser.
 	"""
@@ -85,7 +90,7 @@ class DbTestCase(unittest.TestCase):
 	def _assert_displayed_playlist(self,
 			displayed_playlist, author_id, author_name, time_created, title,
 			time_updated=None, num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
-			author_image_url_large=None, author_site_url=None, num_bookmarks=0):
+			author_image_url_large=None, author_url=None, num_bookmarks=0):
 		if time_updated is None:
 			time_updated = time_created
 
@@ -101,7 +106,7 @@ class DbTestCase(unittest.TestCase):
 		self.assertEqual(user_vote, displayed_playlist.user_vote)
 		self.assertEqual(
 				author_image_url_large, displayed_playlist.author_image_url_large)
-		# TODO self.assertEqual(author_site_url, displayed_playlist.author_site_url)
+		self.assertEqual(author_url, displayed_playlist.author_url)
 		self.assertEqual(num_bookmarks, len(displayed_playlist.bookmarks))
 
 	"""Utility method to assert the fields in a DisplayedPlaylistBookmark.
@@ -110,8 +115,7 @@ class DbTestCase(unittest.TestCase):
 			displayed_playlist_bookmark, bookmark_id, video_title, comment,
 			time_added, author_name, author_id,
 			num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
-			author_image_url_small=None, author_site_url=None):
-
+			author_image_url_small=None, author_url=None):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_playlist_bookmark)
 		self.assertEqual(bookmark_id, displayed_playlist_bookmark.id)
@@ -125,7 +129,7 @@ class DbTestCase(unittest.TestCase):
 		self.assertEqual(user_vote, displayed_playlist_bookmark.user_vote)
 		self.assertEqual(
 				author_image_url_small, displayed_playlist_bookmark.author_image_url_small)
-		# TODO self.assertEqual(author_site_url, displayed_playlist_bookmark.author_site_url)
+		self.assertEqual(author_url, displayed_playlist_bookmark.author_url)
 
 	"""Utility method to assert the fields in a DisplayedVideo.
 	"""
@@ -154,8 +158,7 @@ class DbTestCase(unittest.TestCase):
 			displayed_video_bookmark, bookmark_id, comment, time, time_created,
 			author_name, author_id, 
 			num_thumbs_up=0, num_thumbs_down=0, user_vote=None,
-			author_image_url_small=None, author_site_url=None):
-
+			author_image_url_small=None, author_url=None):
 		# Begin required arguments.
 		self.assertIsNotNone(displayed_video_bookmark)
 		self.assertEqual(bookmark_id, displayed_video_bookmark.id)
@@ -169,5 +172,5 @@ class DbTestCase(unittest.TestCase):
 		self.assertEqual(user_vote, displayed_video_bookmark.user_vote)
 		self.assertEqual(
 				author_image_url_small, displayed_video_bookmark.author_image_url_small)
-		# TODO self.assertEqual(author_site_url, displayed_video_bookmark.author_site_url)
+		self.assertEqual(author_url, displayed_video_bookmark.author_url)
 

@@ -79,29 +79,24 @@ class TestBookmarksDb(DbTestCase):
 
 	def test_get_user_url(self):
 		# Assert that a URL can be built from a Steam name.
-		user = db.User(name='name', created=self.now, url_by_name='s:mgp1', url_by_id='s:123')
-		user_url = db._get_user_url(user)
+		user_url = db._get_user_url(url_by_id='s:123', url_by_name='s:mgp1')
 		self.assertEqual('/user/steam/mgp1', user_url)
 
 		# Assert that a URL can be built from a Steam identifier.
-		user = db.User(url_by_id='s:456')
-		user_url = db._get_user_url(user)
+		user_url = db._get_user_url(url_by_id='s:456', url_by_name=None)
 		self.assertEqual('/user/steam_id/456', user_url)
 
 		# Assert that a URL can be built from a Twitch name.
-		user = db.User(name='name', created=self.now, url_by_name='t:mgp2', url_by_id='t:234')
-		user_url = db._get_user_url(user)
+		user_url = db._get_user_url(url_by_id='t:234', url_by_name='t:mgp2')
 		self.assertEqual('/user/twitch/mgp2', user_url)
 
 		# Assert that a URL can be built from a Twitch identifier.
-		user = db.User(url_by_id='t:567')
-		user_url = db._get_user_url(user)
+		user_url = db._get_user_url(url_by_id='t:567', url_by_name=None)
 		self.assertEqual('/user/twitch_id/567', user_url)
 
 		# Assert that an URL cannot be built from an invalid identifier.
-		user = db.User(url_by_id='z:007')
 		with self.assertRaises(ValueError):
-			user_url = db._get_user_url(user)
+			user_url = db._get_user_url(url_by_id='z:007', url_by_name=None)
 
 	def _get_twitch_user(self, twitch_id):
 		twitch_user = self.session.query(db.TwitchUser)\
@@ -375,7 +370,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that fails to add a bookmark to a playlist because the playlist identifier
 	is unknown.
@@ -428,7 +424,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 	
 	"""Test that successfully adds a bookmark to and removes a bookmark from a
 	playlist.
@@ -466,12 +463,13 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 		# Assert that the bookmark is correct.
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
-				user_name2, user_id2)
+				user_name2, user_id2, author_url=self._get_steam_user_url(user_steam_id2))
 
 		# Add the bookmark to the playlist again.
 		add_bookmark_again_time = self.now + timedelta(minutes=20)
@@ -481,11 +479,12 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
-				user_name2, user_id2)
+				user_name2, user_id2, author_url=self._get_steam_user_url(user_steam_id2))
 
 		# Remove the bookmark from the playlist.
 		remove_bookmark_time = self.now + timedelta(minutes=30)
@@ -495,7 +494,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_title,
-				time_updated=remove_bookmark_time, num_bookmarks=0)
+				time_updated=remove_bookmark_time, num_bookmarks=0,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the bookmark from the playlist again.
 		remove_bookmark_again_time = self.now + timedelta(minutes=40)
@@ -505,7 +505,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_title,
-				time_updated=remove_bookmark_time, num_bookmarks=0)
+				time_updated=remove_bookmark_time, num_bookmarks=0,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that fails to add a bookmark to a playlist because the user identifier is
 	not the playlist creator.
@@ -545,7 +546,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that fails to remove a bookmark from a playlist because the user identifier
 	is not the playlist creator.
@@ -591,11 +593,12 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id1, user_name1, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
-				user_name2, user_id2)
+				user_name2, user_id2, author_url=self._get_steam_user_url(user_steam_id2))
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
@@ -618,7 +621,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that voting down the playlist with a missing user fails.
 		with self.assertRaises(db.DbException):
@@ -626,7 +630,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that removing the playlist vote with a missing user fails.
 		with self.assertRaises(db.DbException):
@@ -634,7 +639,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	the creator.
@@ -655,7 +661,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that the creator voting down the playlist fails.
 		with self.assertRaises(db.DbException):
@@ -663,7 +670,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that the creator removing the playlist vote fails.
 		with self.assertRaises(db.DbException):
@@ -671,7 +679,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id, user_name, self.now, playlist_title)
+				user_id, user_name, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 	"""Test that fails to vote a playlist up or down because the playlist identifier
 	is unknown.
@@ -727,21 +736,24 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote up the playlist again.
 		db.vote_playlist_thumb_up(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the playlist again.
 		with self.assertRaises(db.DbException):
@@ -749,7 +761,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that successfully votes down a playlist.
 	"""
@@ -771,21 +784,24 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote down the playlist again.
 		db.vote_playlist_thumb_down(user_id2, playlist_id)
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the playlist again.
 		with self.assertRaises(db.DbException):
@@ -793,7 +809,8 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that successfully changes the vote of a playlist.
 	"""
@@ -815,28 +832,32 @@ class TestBookmarksDb(DbTestCase):
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote down the playlist.
 		db.vote_playlist_thumb_down(user_id2, playlist_id, now=self.now)
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote up the playlist again.
 		db.vote_playlist_thumb_up(user_id2, playlist_id, now=self.now)
 		# Assert that the playlist has been voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1)
+				user_id1, user_name1, self.now, playlist_title, num_thumbs_up=1,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the playlist.
 		db.remove_playlist_vote(user_id2, playlist_id)
 		# Assert that the playlist is no longer voted on.
 		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
-				user_id1, user_name1, self.now, playlist_title)
+				user_id1, user_name1, self.now, playlist_title,
+				author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that clients see their own votes for playlists.
 	"""
@@ -859,22 +880,26 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(user_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				num_thumbs_up=1, num_thumbs_down=1)
+				num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the first client sees his vote up.
 		displayed_playlist = db.get_displayed_playlist(client_id1, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the second client sees his vote down.
 		displayed_playlist = db.get_displayed_playlist(client_id2, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that a logged out client sees no vote.
 		displayed_playlist = db.get_displayed_playlist(None, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				num_thumbs_up=1, num_thumbs_down=1)
+				num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 	"""Test that clients see their own votes for playlists of users.
 	"""
@@ -964,42 +989,50 @@ class TestBookmarksDb(DbTestCase):
 		displayed_playlist = db.get_displayed_playlist(user_id, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
 				user_name, user_id,
-				num_thumbs_up=1, num_thumbs_down=1)
+				num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the first client sees his vote up.
 		displayed_playlist = db.get_displayed_playlist(client_id1, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
 				user_name, user_id,
-				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE)
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_UP_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the second client sees his vote down.
 		displayed_playlist = db.get_displayed_playlist(client_id2, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
 				user_name, user_id,
-				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE)
+				num_thumbs_up=1, num_thumbs_down=1, user_vote=db._THUMB_DOWN_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that a logged out client sees no vote.
 		displayed_playlist = db.get_displayed_playlist(None, playlist_id)
 		self._assert_displayed_playlist(displayed_playlist,
 				user_id, user_name, self.now, playlist_title,
-				time_updated=add_bookmark_time, num_bookmarks=1)
+				time_updated=add_bookmark_time, num_bookmarks=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		displayed_playlist_bookmark = displayed_playlist.bookmarks[0]
 		self._assert_displayed_playlist_bookmark(displayed_playlist_bookmark,
 				bookmark_id, video_title, bookmark_comment, add_bookmark_time,
 				user_name, user_id,
-				num_thumbs_up=1, num_thumbs_down=1)
+				num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 	# 
 	# Begin tests for videos.
@@ -1087,7 +1120,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, add_bookmark_time,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 		# Remove the bookmark from the video.
 		remove_bookmark_time = self.now + timedelta(minutes=20)
@@ -1175,7 +1208,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	unknown.
@@ -1213,7 +1246,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that voting up the bookmark with a missing user fails.
 		with self.assertRaises(db.DbException):
@@ -1226,7 +1259,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that removing the bookmark vote with a missing user fails.
 		with self.assertRaises(db.DbException):
@@ -1239,7 +1272,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 	
 	"""Test that fails to vote a bookmark up or down because the user identifier is
 	the creator.
@@ -1275,7 +1308,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that the creator voting up the bookmark fails.
 		with self.assertRaises(db.DbException):
@@ -1288,7 +1321,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 		# Assert that the creator removing the bookmark vote fails.
 		with self.assertRaises(db.DbException):
@@ -1301,7 +1334,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id)
+				user_name, user_id, author_url=self._get_steam_user_url(user_steam_id))
 
 	"""Test that fails to vote a bookmark up or down because the bookmark identifier is
 	unknown.
@@ -1360,7 +1393,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_up=1)
+				user_name1, user_id1,
+				num_thumbs_up=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote up the bookmark again.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -1372,7 +1406,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_up=1)
+				user_name1, user_id1,
+				num_thumbs_up=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1384,7 +1419,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the bookmark again.
 		with self.assertRaises(db.DbException):
@@ -1397,7 +1432,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that successfully votes down a bookmark.
 	"""
@@ -1434,7 +1469,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_down=1)
+				user_name1, user_id1,
+				num_thumbs_down=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote down the bookmark again.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
@@ -1446,7 +1482,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_down=1)
+				user_name1, user_id1,
+				num_thumbs_down=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1457,7 +1494,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the bookmark again.
 		with self.assertRaises(db.DbException):
@@ -1470,7 +1507,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that successfully changes the vote of a bookmark.
 	"""
@@ -1507,7 +1544,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_up=1)
+				user_name1, user_id1,
+				num_thumbs_up=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote down the bookmark.
 		db.vote_bookmark_thumb_down(user_id2, bookmark_id, now=self.now)
@@ -1519,7 +1557,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_down=1)
+				user_name1, user_id1,
+				num_thumbs_down=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Vote up the bookmark again.
 		db.vote_bookmark_thumb_up(user_id2, bookmark_id, now=self.now)
@@ -1531,7 +1570,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1, num_thumbs_up=1)
+				user_name1, user_id1,
+				num_thumbs_up=1, author_url=self._get_steam_user_url(user_steam_id1))
 
 		# Remove the vote for the bookmark.
 		db.remove_bookmark_vote(user_id2, bookmark_id)
@@ -1543,7 +1583,7 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name1, user_id1)
+				user_name1, user_id1, author_url=self._get_steam_user_url(user_steam_id1))
 
 	"""Test that clients see their own votes for bookmarks of videos.
 	"""
@@ -1580,7 +1620,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1)
+				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the first client sees his vote up.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id1, archive_id)
 		self._assert_displayed_twitch_video(displayed_twitch_video,
@@ -1590,7 +1631,8 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1,
-				user_vote=db._THUMB_UP_VOTE)
+				user_vote=db._THUMB_UP_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that the second client sees his vote down.
 		displayed_twitch_video = db.get_displayed_twitch_video(client_id2, archive_id)
 		self._assert_displayed_twitch_video(displayed_twitch_video,
@@ -1600,7 +1642,8 @@ class TestBookmarksDb(DbTestCase):
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
 				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1,
-				user_vote=db._THUMB_DOWN_VOTE)
+				user_vote=db._THUMB_DOWN_VOTE,
+				author_url=self._get_steam_user_url(user_steam_id))
 		# Assert that a logged out client sees no vote.
 		displayed_twitch_video = db.get_displayed_twitch_video(None, archive_id)
 		self._assert_displayed_twitch_video(displayed_twitch_video,
@@ -1609,7 +1652,8 @@ class TestBookmarksDb(DbTestCase):
 		displayed_video_bookmark = displayed_twitch_video.bookmarks[0]
 		self._assert_displayed_video_bookmark(displayed_video_bookmark,
 				bookmark_id, bookmark_comment, bookmark_time, self.now,
-				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1)
+				user_name, user_id, num_thumbs_up=1, num_thumbs_down=1,
+				author_url=self._get_steam_user_url(user_steam_id))
 
 
 if __name__ == '__main__':

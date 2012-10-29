@@ -484,26 +484,27 @@ def _get_twitch_url_by_name(name):
 
 """Returns the best URL for a given User.
 """
-def _get_user_url(user):
-	if user.url_by_name is not None:
-		prefix, remainder = user.url_by_name.split(_USER_URL_SEPARATOR, 1)
+def _get_user_url(url_by_id, url_by_name):
+	if url_by_name is not None:
+		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
 		if prefix == _USER_URL_STEAM_PREFIX:
 			# The remainder is the Steam community identifier.
 			return '/user/steam/%s' % remainder
 		elif prefix == _USER_URL_TWITCH_PREFIX:
 			# The remainder is the Twitch user name.
 			return '/user/twitch/%s' % remainder
-	
-	prefix, remainder = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
+		else:
+			raise ValueError('Invalid url_by_name=%s' % url_by_name)
+
+	prefix, remainder = url_by_id.split(_USER_URL_SEPARATOR, 1)
 	if prefix == _USER_URL_STEAM_PREFIX:
 		# The remainder is the Steam identifier.
 		return '/user/steam_id/%s' % remainder
 	elif prefix == _USER_URL_TWITCH_PREFIX:
 		# The remainder is the Twitch identifier.
 		return '/user/twitch_id/%s' % remainder
-
-	raise ValueError('Invalid url_by_id=%s, url_by_name=%s' % (
-			user.url_by_id, user.url_by_name))
+	else:
+		raise ValueError('Invalid url_by_id=%s' % url_by_id)
 
 def _get_twitch_url(user):
 	if user.url_by_name is not None:
@@ -689,10 +690,10 @@ def remove_playlist(client_id, playlist_id, now=None):
 """Data for displaying a playlist.
 """
 class DisplayedPlaylist:
-	def __init__(self, author_name, author_image_url_large, author_site_url, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, bookmarks):
+	def __init__(self, author_name, author_image_url_large, author_url, time_created, time_updated, num_thumbs_up, num_thumbs_down, user_vote, title, bookmarks):
 		self.author_name = author_name
 		self.author_image_url_large = author_image_url_large
-		self.author_site_url = author_site_url
+		self.author_url = author_url
 		self.time_created = time_created
 		self.time_updated = time_updated
 		self.num_thumbs_up = num_thumbs_up
@@ -703,10 +704,10 @@ class DisplayedPlaylist:
 		self.bookmarks = bookmarks
 
 	def __repr__(self):
-		return 'DisplayedPlaylist(author_name=%r, author_image_url_large=%r, author_site_url=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, bookmarks=%r)' % (
+		return 'DisplayedPlaylist(author_name=%r, author_image_url_large=%r, author_url=%r, time_created=%r, time_updated=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, title=%r, bookmarks=%r)' % (
 				self.author_name,
 				self.author_image_url_large,
-				slef.author_site_url,
+				slef.author_url,
 				self.time_created,
 				self.time_updated,
 				self.num_thumbs_up,
@@ -719,7 +720,7 @@ class DisplayedPlaylist:
 """Data for displaying a bookmark on a playlist page.
 """
 class DisplayedPlaylistBookmark:
-	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_title, comment, time_added, author_name, author_image_url_small, author_site_url):
+	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, video_title, comment, time_added, author_name, author_image_url_small, author_url):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -730,10 +731,10 @@ class DisplayedPlaylistBookmark:
 		# The author's info.
 		self.author_name = author_name
 		self.author_image_url_small = author_image_url_small
-		self.author_site_url = author_site_url
+		self.author_url = author_url
 	
 	def __repr__(self):
-		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_title=%r, comment=%r, time_added=%r, author_name=%r, author_image_url_small=%r, author_site_url=%r)' % (
+		return 'DisplayedPlaylistBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, video_title=%r, comment=%r, time_added=%r, author_name=%r, author_image_url_small=%r, author_url=%r)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -743,7 +744,7 @@ class DisplayedPlaylistBookmark:
 				self.time_added,
 				self.author_name,
 				self.author_image_url_small,
-				self.author_site_url)
+				self.author_url)
 
 
 """Returns the DisplayedPlaylist with the given identifier.
@@ -753,7 +754,8 @@ def get_displayed_playlist(client_id, playlist_id):
 	if client_id is None:
 		try:
 			# Get the playlist.
-			playlist, creator_name = session.query(Playlist, User.name)\
+			playlist, creator_name, creator_url_by_id, creator_url_by_name = session.query(
+						Playlist, User.name, User.url_by_id, User.url_by_name)\
 					.join(User, Playlist.user_id == User.id)\
 					.filter(Playlist.id == playlist_id)\
 					.one()
@@ -763,7 +765,8 @@ def get_displayed_playlist(client_id, playlist_id):
 
 		# Get the bookmarks.
 		playlist_bookmarks_cursor = session.query(
-					PlaylistBookmark.added, Bookmark, User.name, Video.title)\
+					PlaylistBookmark.added, Bookmark,
+					User.name, User.url_by_id, User.url_by_name, Video.title)\
 				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 				.join(User, Bookmark.user_id == User.id)\
 				.join(Video, Bookmark.video_id == Video.id)\
@@ -782,13 +785,15 @@ def get_displayed_playlist(client_id, playlist_id):
 					time_added=added,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=None) # TODO
-				for added, bookmark, author_name, video_title in playlist_bookmarks_cursor]
+					author_url=_get_user_url(author_url_by_id, author_url_by_name))
+				for added, bookmark, author_name, author_url_by_id, author_url_by_name, video_title
+					in playlist_bookmarks_cursor]
 	else:
 		try:
 			# Get the playlist with the client's vote.
-			playlist, creator_name, playlist_vote = session.query(
-						Playlist, User.name, PlaylistVote.vote)\
+			(playlist, creator_name,
+					creator_url_by_id, creator_url_by_name, playlist_vote) = session.query(
+						Playlist, User.name, User.url_by_id, User.url_by_name, PlaylistVote.vote)\
 					.join(User, Playlist.user_id == User.id)\
 					.outerjoin(PlaylistVote, sa.and_(
 						PlaylistVote.user_id == client_id,
@@ -801,7 +806,8 @@ def get_displayed_playlist(client_id, playlist_id):
 
 		# Get the bookmarks with the client's vote for each one.
 		playlist_bookmarks_cursor = session.query(
-					PlaylistBookmark.added, Bookmark, User.name, Video.title, BookmarkVote.vote)\
+					PlaylistBookmark.added, Bookmark,
+					User.name, User.url_by_id, User.url_by_name, Video.title, BookmarkVote.vote)\
 				.join(Bookmark, PlaylistBookmark.bookmark_id == Bookmark.id)\
 				.join(User, Bookmark.user_id == User.id)\
 				.join(Video, Bookmark.video_id == Video.id)\
@@ -823,15 +829,16 @@ def get_displayed_playlist(client_id, playlist_id):
 					time_added=added,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=None) # TODO
-				for added, bookmark, author_name, video_title, bookmark_vote
-					in playlist_bookmarks_cursor]
+					author_url=_get_user_url(author_url_by_id, author_url_by_name))
+				for added, bookmark,
+					author_name, author_url_by_id, author_url_by_name, video_title, bookmark_vote
+						in playlist_bookmarks_cursor]
 
 	# Create the displayed playlist.
 	displayed_playlist = DisplayedPlaylist(
 			author_name=creator_name,
 			author_image_url_large=None,
-			author_site_url=None, # TODO
+			author_url=_get_user_url(creator_url_by_id, creator_url_by_name),
 			time_created=playlist.created,
 			time_updated=playlist.updated,
 			num_thumbs_up=playlist.num_thumbs_up,
@@ -1057,7 +1064,7 @@ class DisplayedTwitchVideo(DisplayedVideo):
 """
 class DisplayedVideoBookmark:
 	def __init__(self, id, num_thumbs_up, num_thumbs_down, user_vote, comment, time, time_created,
-			author_name, author_image_url_small, author_site_url):
+			author_name, author_image_url_small, author_url):
 		self.id = id
 		self.num_thumbs_up = num_thumbs_up
 		self.num_thumbs_down = num_thumbs_down
@@ -1070,10 +1077,10 @@ class DisplayedVideoBookmark:
 		# The author's info.
 		self.author_name = author_name
 		self.author_image_url_small = author_image_url_small
-		self.author_site_url = author_site_url
+		self.author_url = author_url
 
 	def __repr__(self):
-		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_image_url_small=%r, author_site_url)' % (
+		return 'DisplayedBookmark(id=%r, num_thumbs_up=%r, num_thumbs_down=%r, user_vote=%r, comment=%r, time=%r, time_created=%r, author_name=%r, author_image_url_small=%r, author_url)' % (
 				self.id,
 				self.num_thumbs_up,
 				self.num_thumbs_down,
@@ -1083,7 +1090,7 @@ class DisplayedVideoBookmark:
 				self.time_created,
 				self.author_name,
 				self.author_image_url_small,
-				self.author_site_url)
+				self.author_url)
 
 
 """Returns the DisplayedVideo with the given identifier.
@@ -1100,7 +1107,8 @@ def get_displayed_twitch_video(client_id, archive_id):
 
 	if client_id is None:
 		# Get the bookmarks.
-		video_bookmarks_cursor = session.query(Bookmark, User.name)\
+		video_bookmarks_cursor = session.query(
+					Bookmark, User.name, User.url_by_id, User.url_by_name)\
 				.join(User, Bookmark.user_id == User.id)\
 				.filter(Bookmark.video_id == video.id)
 		session.close()
@@ -1117,11 +1125,13 @@ def get_displayed_twitch_video(client_id, archive_id):
 					time_created=bookmark.created,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=None) # TODO
-				for bookmark, author_name in video_bookmarks_cursor]
+					author_url=_get_user_url(author_url_by_id, author_url_by_name))
+				for bookmark, author_name, author_url_by_id, author_url_by_name
+					in video_bookmarks_cursor]
 	else:
 		# Get the bookmarks with the client's vote for each one.
-		video_bookmarks_cursor = session.query(Bookmark, User.name, BookmarkVote.vote)\
+		video_bookmarks_cursor = session.query(
+					Bookmark, User.name, User.url_by_id, User.url_by_name, BookmarkVote.vote)\
 				.join(User, Bookmark.user_id == User.id)\
 				.outerjoin(BookmarkVote, sa.and_(
 					BookmarkVote.user_id == client_id,
@@ -1141,8 +1151,9 @@ def get_displayed_twitch_video(client_id, archive_id):
 					time_created=bookmark.created,
 					author_name=author_name,
 					author_image_url_small=None,
-					author_site_url=None) # TODO
-				for bookmark, author_name, bookmark_vote in video_bookmarks_cursor]
+					author_url=_get_user_url(author_url_by_id, author_url_by_name))
+				for bookmark, author_name, author_url_by_id, author_url_by_name, bookmark_vote
+					in video_bookmarks_cursor]
 
 	# Create the displayed video.
 	displayed_video = DisplayedTwitchVideo(
