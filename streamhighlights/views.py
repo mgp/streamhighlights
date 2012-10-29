@@ -39,40 +39,42 @@ def login_optional(f):
 def show_home():
 	return flask.render_template('home.html')
 
+def _show_user(getter, getter_arg, template_filename):
+	displayed_user = None
+	try:
+		displayed_user = user_getter(flask.g.client_id, getter_arg)
+	except Exception as e:
+		# If displayed_user is None then the template will show an error message.
+		# TODO: Log Exception.
+		pass
+
+	return flask.render_template(template_filename, displayed_user=displayed_user)
+
+_STEAM_USER_TEMPLATE_FILENAME = 'steam_user.html'
+_TWITCH_USER_TEMPLATE_FILENAME = 'twitch_user.html'
+
 @app.route('/user/steam/<name>')
 def show_steam_user_by_name(name):
-	# TODO
-	pass
+	return _show_user(
+			db.get_displayed_steam_user_by_name, name, _STEAM_USER_TEMPLATE_FILENAME)
 
 @app.route('/user/steam_id/<steam_id>')
 @login_optional
 def show_steam_user_by_id(steam_id):
-	displayed_user = None
-	try:
-		displayed_user = db.get_displayed_steam_user_by_id(flask.g.client_id, steam_id)
-	except Exception as e:
-		# If displayed_user is None then the template will show an error message.
-		pass
-
-	return flask.render_template('steam_user.html', displayed_user=displayed_user)
+	return _show_user(
+			db.get_displayed_steam_user_by_id, steam_id, _STEAM_USER_TEMPLATE_FILENAME)
 
 @app.route('/user/twitch/<name>')
 @login_optional
 def show_twitch_user_by_name(name):
-	# TODO
-	pass
+	return _show_user(
+			db.get_displayed_twitch_user_by_name, name, _TWITCH_USER_TEMPLATE_FILENAME)
 
 @app.route('/user/twitch_id/<twitch_id>')
 @login_optional
 def show_twitch_user_by_id(twitch_id):
-	displayed_user = None
-	try:
-		displayed_user = db.get_displayed_twitch_user(flask.g.client_id, twitch_id)
-	except Exception as e:
-		# If displayed_user is None then the template will show an error message.
-		pass
-	
-	return flask.render_template('twitch_user.html', displayed_user=displayed_user)
+	return _show_user(
+			db.get_displayed_twitch_user_by_id, twitch_id, _TWITCH_USER_TEMPLATE_FILENAME)
 
 @app.route('/playlist/<playlist_id>')
 @login_optional
