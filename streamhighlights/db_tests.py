@@ -63,13 +63,13 @@ class TestBookmarksDb(DbTestCase):
 	def test_get_url_by_name(self):
 		# Assert no URL by name for a missing Steam profile URL.
 		profile_url = None
-		self.assertIsNone(db._get_steam_url_by_name(profile_url))
+		self.assertIsNone(db._get_steam_url_by_name_from_profile_url(profile_url))
 		# Assert no URL by name for a Steam profile URL without a community identifier.
 		profile_url = 'http://steamcommunity.com/profiles/123'
-		self.assertIsNone(db._get_steam_url_by_name(profile_url))
+		self.assertIsNone(db._get_steam_url_by_name_from_profile_url(profile_url))
 		# Assert the URL by name for a Steam profile URL with a community identifier.
 		profile_url = 'http://steamcommunity.com/id/mgp'
-		steam_url_by_name = db._get_steam_url_by_name(profile_url)
+		steam_url_by_name = db._get_steam_url_by_name_from_profile_url(profile_url)
 		self.assertEqual('s:mgp', steam_url_by_name)
 
 		# Assert the URL by name for a Twitch name.
@@ -118,12 +118,14 @@ class TestBookmarksDb(DbTestCase):
 				twitch_id, name, display_name, logo, access_token, self.now)
 		self.assertIsNotNone(user_id)
 
-		# Get the Twitch user.
-		displayed_twitch_user = db.get_displayed_twitch_user_by_id(None, twitch_id)
-		# Assert that the created Twitch user was returned.
+		# Get the Twitch user by both ID and by name.
 		expected_link_url = 'http://www.twitch.tv/%s' % name
-		self._assert_displayed_twitch_user(displayed_twitch_user,
-				user_id, display_name, twitch_id, expected_link_url, image_url_large=logo)
+		for displayed_twitch_user in (
+				db.get_displayed_twitch_user_by_id(None, twitch_id),
+				db.get_displayed_twitch_user_by_name(None, name)):
+			# Assert that the created Twitch user was returned.
+			self._assert_displayed_twitch_user(displayed_twitch_user,
+					user_id, display_name, twitch_id, expected_link_url, image_url_large=logo)
 
 		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
 		twitch_user = self._get_twitch_user(twitch_id)
@@ -133,7 +135,7 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(self.now, twitch_user.user.last_seen)
 		self.assertEqual(access_token, twitch_user.access_token)
 
-		# Update the Twitch user.
+		# Update the Twitch user by both ID and by updated name.
 		updated_name = 'updated_name'
 		updated_display_name = 'updated_display_name'
 		updated_logo = 'updated_logo_url'
@@ -145,12 +147,14 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(updated_user_id, user_id)
 
 		# Get the Twitch user.
-		displayed_twitch_user = db.get_displayed_twitch_user_by_id(None, twitch_id)
-		# Assert that the updated Twitch user was returned.
 		updated_expected_link_url = 'http://www.twitch.tv/%s' % updated_name
-		self._assert_displayed_twitch_user(displayed_twitch_user,
-				user_id, updated_display_name, twitch_id,
-				updated_expected_link_url, image_url_large=updated_logo)
+		for displayed_twitch_user in (
+				db.get_displayed_twitch_user_by_id(None, twitch_id),
+				db.get_displayed_twitch_user_by_name(None, updated_name)):
+			# Assert that the updated Twitch user was returned.
+			self._assert_displayed_twitch_user(displayed_twitch_user,
+					user_id, updated_display_name, twitch_id,
+					updated_expected_link_url, image_url_large=updated_logo)
 
 		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
 		twitch_user = self._get_twitch_user(twitch_id)
@@ -181,12 +185,14 @@ class TestBookmarksDb(DbTestCase):
 				steam_id, personaname, profile_url, avatar, avatar_full, self.now)
 		self.assertIsNotNone(user_id)
 
-		# Get the Steam user.
-		displayed_steam_user = db.get_displayed_steam_user_by_id(None, steam_id)
-		# Assert that the created Steam user was returned.
-		self._assert_displayed_steam_user(displayed_steam_user,
-				user_id, personaname, steam_id, profile_url,
-				image_url_small=avatar, image_url_large=avatar_full)
+		# Get the Steam user by both Steam ID and by name.
+		for displayed_steam_user in (
+				db.get_displayed_steam_user_by_id(None, steam_id),
+				db.get_displayed_steam_user_by_name(None, community_id)):
+			# Assert that the created Steam user was returned.
+			self._assert_displayed_steam_user(displayed_steam_user,
+					user_id, personaname, steam_id, profile_url,
+					image_url_small=avatar, image_url_large=avatar_full)
 
 		# Assert that the fields not returned in a DisplayedSteamUser are correct.
 		steam_user = self._get_steam_user(steam_id)
@@ -207,12 +213,14 @@ class TestBookmarksDb(DbTestCase):
 				updated_profile_url, updated_avatar, updated_avatar_full, updated_time)
 		self.assertEqual(updated_user_id, user_id)
 
-		# Get the Steam user.
-		displayed_steam_user = db.get_displayed_steam_user_by_id(None, steam_id)
-		# Assert that the updated Steam user was returned.
-		self._assert_displayed_steam_user(displayed_steam_user,
-				user_id, updated_personaname, steam_id, updated_profile_url,
-				image_url_small=updated_avatar, image_url_large=updated_avatar_full)
+		# Get the Steam user by both Steam ID and by updated name.
+		for displayed_steam_user in (
+				db.get_displayed_steam_user_by_id(None, steam_id),
+				db.get_displayed_steam_user_by_name(None, updated_community_id)):
+			# Assert that the updated Steam user was returned.
+			self._assert_displayed_steam_user(displayed_steam_user,
+					user_id, updated_personaname, steam_id, updated_profile_url,
+					image_url_small=updated_avatar, image_url_large=updated_avatar_full)
 
 		# Assert that the fields not returned in a DisplayedSteamUser are correct.
 		steam_user = self._get_steam_user(steam_id)
@@ -228,9 +236,14 @@ class TestBookmarksDb(DbTestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_steam_id, client_id = self._create_steam_user(client_name)
+		# Attempt to return a missing Twitch user by an identifier.
 		missing_twitch_id = 'missing_twitch_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_twitch_user_by_id(client_id, missing_twitch_id)
+		# Attempt to return a missing Twitch user by a name.
+		missing_twitch_name = 'missing_twitch_name'
+		with self.assertRaises(db.DbException):
+			db.get_displayed_twitch_user_by_name(client_id, missing_twitch_name)
 
 	"""Test that fails to return a displayed Steam user because the Steam user
 	identifier is unknown.
@@ -239,9 +252,14 @@ class TestBookmarksDb(DbTestCase):
 		# Create the client.
 		client_name = 'client_name1'
 		client_steam_id, client_id = self._create_steam_user(client_name)
+		# Attempt to return a missing Steam user by a Steam identifier.
 		missing_steam_id = 'missing_steam_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_steam_user_by_id(client_id, missing_steam_id)
+		# Attempt to return a missing Steam user by a community identifier.
+		missing_community_id = 'missing_community_id'
+		with self.assertRaises(db.DbException):
+			db.get_displayed_steam_user_by_name(client_id, missing_community_id)
 
 	"""Test that fails to create a playlist because the user identifier is unknown.
 	"""

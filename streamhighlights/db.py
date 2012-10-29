@@ -465,17 +465,20 @@ def _get_twitch_url_by_id(twitch_id):
 
 _GET_COMMUNITY_ID_REGEX = re.compile('steamcommunity\.com/id/(?P<community_id>\w+)$')
 
+def _get_steam_url_by_name_from_community_id(community_id):
+	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, community_id))
+
 """Returns the url_by_name value for a User from Steam, or None if one cannot
-be created.
+be created from the profile URL.
 """
-def _get_steam_url_by_name(profile_url):
+def _get_steam_url_by_name_from_profile_url(profile_url):
 	if profile_url is None:
 		return None
 	community_id_match = _GET_COMMUNITY_ID_REGEX.search(profile_url)
 	if not community_id_match:
 		return None
 	community_id = community_id_match.group('community_id')
-	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, community_id))
+	return _get_steam_url_by_name_from_community_id(community_id)
 
 """Returns the url_by_name value for a User from Twitch.
 """
@@ -556,7 +559,7 @@ def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full
 	steam_user.user.image_url_small = avatar
 	steam_user.user.image_url_large = avatar_full
 	steam_user.user.last_seen = now
-	steam_user.user.url_by_name = _get_steam_url_by_name(profile_url)
+	steam_user.user.url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
 	# Update the SteamUser.
 	steam_user.profile_url = profile_url
 	# TODO: If url_by_name is not None, clear value for other User if found.
@@ -608,14 +611,13 @@ def _get_displayed_user_playlists(client_id, user_id):
 
 	return displayed_user_playlists
 
-"""Returns the DisplayedTwitchUser with the given Twitch identifier.
-"""
-def get_displayed_twitch_user_by_id(client_id, twitch_id):
+
+def _get_displayed_twitch_user(client_id, filter_expression):
 	try:
 		# Get the Twitch user.
 		twitch_user, user = session.query(TwitchUser, User)\
 				.join(User, TwitchUser.user_id == User.id)\
-				.filter(TwitchUser.twitch_id == twitch_id).one()
+				.filter(filter_expression).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise DbException._chain()
@@ -628,18 +630,30 @@ def get_displayed_twitch_user_by_id(client_id, twitch_id):
 			user.image_url_small,
 			user.image_url_large,
 			displayed_user_playlists,
-			twitch_id,
+			twitch_user.twitch_id,
 			link_url)
 	return displayed_twitch_user
 
-"""Returns the DisplayedSteamUser with the given Steam identifier.
+"""Returns the DisplayedTwitchUser with the given name.
 """
-def get_displayed_steam_user_by_id(client_id, steam_id):
+def get_displayed_twitch_user_by_name(client_id, name):
+	url_by_name = _get_twitch_url_by_name(name)
+	filter_expression = (User.url_by_name == url_by_name)
+	return _get_displayed_twitch_user(client_id, filter_expression)
+
+"""Returns the DisplayedTwitchUser with the given Twitch identifier.
+"""
+def get_displayed_twitch_user_by_id(client_id, twitch_id):
+	filter_expression = (TwitchUser.twitch_id == twitch_id)
+	return _get_displayed_twitch_user(client_id, filter_expression)
+
+
+def _get_displayed_steam_user(client_id, filter_expression):
 	try:
 		# Get the Steam user.
 		steam_user, user = session.query(SteamUser, User)\
 			.join(User, SteamUser.user_id == User.id)\
-			.filter(SteamUser.steam_id == steam_id).one()
+			.filter(filter_expression).one()
 	except sa_orm.exc.NoResultFound:
 		session.close()
 		raise DbException._chain()
@@ -655,9 +669,22 @@ def get_displayed_steam_user_by_id(client_id, steam_id):
 			user.image_url_small,
 			user.image_url_large,
 			displayed_user_playlists,
-			steam_id,
+			steam_user.steam_id,
 			link_url)
 	return displayed_steam_user
+
+"""Returns the DisplayedSteamUser with the given name.
+"""
+def get_displayed_steam_user_by_name(client_id, name):
+	url_by_name = _get_steam_url_by_name_from_community_id(name)
+	filter_expression = (User.url_by_name == url_by_name)
+	return _get_displayed_steam_user(client_id, filter_expression)
+
+"""Returns the DisplayedSteamUser with the given Steam identifier.
+"""
+def get_displayed_steam_user_by_id(client_id, steam_id):
+	filter_expression = (SteamUser.steam_id == steam_id)
+	return _get_displayed_steam_user(client_id, filter_expression)
 
 
 """Creates a playlist by the given user.
