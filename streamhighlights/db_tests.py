@@ -127,6 +127,8 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
 		twitch_user = self._get_twitch_user(twitch_id)
+		self.assertEqual('t:%s' % twitch_id, twitch_user.user.url_by_id)
+		self.assertEqual('t:%s' % name, twitch_user.user.url_by_name)
 		self.assertEqual(self.now, twitch_user.user.created)
 		self.assertEqual(self.now, twitch_user.user.last_seen)
 		self.assertEqual(access_token, twitch_user.access_token)
@@ -152,6 +154,8 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that the fields not returned in a DisplayedTwitchUser are correct.
 		twitch_user = self._get_twitch_user(twitch_id)
+		self.assertEqual('t:%s' % twitch_id, twitch_user.user.url_by_id)
+		self.assertEqual('t:%s' % updated_name, twitch_user.user.url_by_name)
 		self.assertEqual(self.now, twitch_user.user.created)
 		self.assertEqual(updated_time, twitch_user.user.last_seen)
 		self.assertEqual(updated_access_token, twitch_user.access_token)
@@ -169,7 +173,8 @@ class TestBookmarksDb(DbTestCase):
 		# Create a new Steam user.
 		steam_id = 456
 		personaname = 'personaname'
-		profile_url = 'profile_url'
+		community_id = 'community_id'
+		profile_url = 'steamcommunity.com/id/%s' % community_id
 		avatar = 'avatar'
 		avatar_full = 'avatar_full'
 		user_id = db.steam_user_logged_in(
@@ -185,12 +190,15 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that the fields not returned in a DisplayedSteamUser are correct.
 		steam_user = self._get_steam_user(steam_id)
+		self.assertEqual('s:%s' % steam_id, steam_user.user.url_by_id)
+		self.assertEqual('s:%s' % community_id, steam_user.user.url_by_name)
 		self.assertEqual(self.now, steam_user.user.created)
 		self.assertEqual(self.now, steam_user.user.last_seen)
 
 		# Update the Steam user.
 		updated_personaname = 'updated_personaname'
-		updated_profile_url = 'updated_profile_url'
+		updated_community_id = 'updated_community_id'
+		updated_profile_url = 'steamcommunity.com/id/%s' % updated_community_id
 		updated_avatar = 'updated_avatar'
 		updated_avatar_full = 'updated_avatar_full'
 		updated_time = self.now + timedelta(minutes=10)
@@ -208,6 +216,8 @@ class TestBookmarksDb(DbTestCase):
 
 		# Assert that the fields not returned in a DisplayedSteamUser are correct.
 		steam_user = self._get_steam_user(steam_id)
+		self.assertEqual('s:%s' % steam_id, steam_user.user.url_by_id)
+		self.assertEqual('s:%s' % updated_community_id, steam_user.user.url_by_name)
 		self.assertEqual(self.now, steam_user.user.created)
 		self.assertEqual(updated_time, steam_user.user.last_seen)
 
