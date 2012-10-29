@@ -33,28 +33,94 @@ class TestViews(DbTestCase):
 			session['client_id'] = client_id
 
 	def test_show_steam_user(self):
-		# TODO
-		pass
+		# Create a new Steam user.
+		steam_id = 456
+		personaname = 'personaname'
+		community_id = 'community_id'
+		profile_url = 'steamcommunity.com/id/%s' % community_id
+		avatar = 'avatar'
+		avatar_full = 'avatar_full'
+		user_id = db.steam_user_logged_in(
+				steam_id, personaname, profile_url, avatar, avatar_full, self.now)
+
+		# Get the user by its Steam identifier.
+		with app.test_client() as client:
+			response = client.get('/user/steam_id/%s' % steam_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
+
+		# Get the user by its Steam name.
+		with app.test_client() as client:
+			response = client.get('/user/steam/%s' % community_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	def test_show_missing_steam_user(self):
-		# TODO
-		pass
+		missing_steam_id = 456
+		missing_community_id = 'missing_community_id'
+
+		# Get the missing user by its Steam identifier.
+		with app.test_client() as client:
+			response = client.get('/user/steam_id/%s' % missing_steam_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
+
+		# Get the missing user by its Steam name.
+		with app.test_client() as client:
+			response = client.get('/user/steam/%s' % missing_community_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	def test_show_twitch_user(self):
-		# TODO
-		pass
+		# Create a new Twitch user.
+		twitch_id = 123
+		name = 'name'
+		display_name = 'display_name'
+		logo = 'logo_url'
+		access_token = 'access_token'
+		user_id = db.twitch_user_logged_in(
+				twitch_id, name, display_name, logo, access_token, self.now)
+
+		# Get the user by its Twitch identifier.
+		with app.test_client() as client:
+			response = client.get('/user/twitch_id/%s' % twitch_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
+
+		# Get the user by its Twitch name.
+		with app.test_client() as client:
+			response = client.get('/user/twitch/%s' % name)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	def test_show_missing_twitch_user(self):
-		# TODO
-		pass
+		missing_twitch_id = 123
+		missing_name = 'missing_name'
+
+		# Get the missing user by its Twitch identifier.
+		with app.test_client() as client:
+			response = client.get('/user/twitch_id/%s' % missing_twitch_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
+
+		# Get the missing user by its Twitch name.
+		with app.test_client() as client:
+			response = client.get('/user/twitch/%s' % missing_name)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	def test_show_playlist(self):
-		# TODO
-		pass
+		user_steam_id, user_id = self._create_steam_user('user_name')
+		video_id = db.add_twitch_video(
+				'video_name', 99, 'archive_id', 'video_file_url', 'link_url')
+		bookmark_id = db.add_video_bookmark(user_id, video_id, 'comment', 33)
+		playlist_id = db.create_playlist(user_id, 'playlist_name', now=self.now)
+		db.add_playlist_bookmark(user_id, playlist_id, bookmark_id, now=self.now)
+
+		# Get the playlist.
+		with app.test_client() as client:
+			response = client.get('/playlist/%s' % playlist_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	def test_show_missing_playlist(self):
-		# TODO
-		pass
+		missing_playlist_id = 789
+
+		# Get the missing playlist.
+		with app.test_client() as client:
+			response = client.get('/playlist/%s' % missing_playlist_id)
+			self.assertEqual(requests.codes.ok, response.status_code)
 
 	"""Assert that the AJAX request succeeded.
 	"""

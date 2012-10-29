@@ -34,6 +34,11 @@ def login_optional(f):
 		return f(*pargs, **kwargs)
 	return decorated_function
 
+def _get_client_id():
+	if flask.g.logged_in:
+		return flask.g.client_id
+	return None
+
 @app.route('/')
 @login_optional
 def show_home():
@@ -42,8 +47,9 @@ def show_home():
 def _show_user(getter, getter_arg, template_filename):
 	displayed_user = None
 	try:
-		displayed_user = user_getter(flask.g.client_id, getter_arg)
-	except Exception as e:
+		client_id = _get_client_id()
+		displayed_user = getter(client_id, getter_arg)
+	except db.DbException as e:
 		# If displayed_user is None then the template will show an error message.
 		# TODO: Log Exception.
 		pass
@@ -54,6 +60,7 @@ _STEAM_USER_TEMPLATE_FILENAME = 'steam_user.html'
 _TWITCH_USER_TEMPLATE_FILENAME = 'twitch_user.html'
 
 @app.route('/user/steam/<name>')
+@login_optional
 def show_steam_user_by_name(name):
 	return _show_user(
 			db.get_displayed_steam_user_by_name, name, _STEAM_USER_TEMPLATE_FILENAME)
@@ -81,8 +88,9 @@ def show_twitch_user_by_id(twitch_id):
 def show_playlist(playlist_id):
 	displayed_playlist = None
 	try:
-		displayed_playlist = db.get_displayed_playlist(flask.g.client_id, playlist_id)
-	except Exception as e:
+		client_id = _get_client_id()
+		displayed_playlist = db.get_displayed_playlist(client_id, playlist_id)
+	except db.DbException as e:
 		# If displayed_playlist is None then the template will show an error message.
 		pass
 	
@@ -126,10 +134,10 @@ def download_twitch_video_by_url(url):
 @login_optional
 def show_twitch_video(archive_id):
 	try:
-		client_id = flask.g.client_id if flask.g.logged_in else None
+		client_id = _get_client_id()
 		displayed_video = db.get_displayed_twitch_video(client_id, archive_id)
 		return flask.render_template('twitch_video.html', displayed_video=displayed_video)
-	except Exception as e:
+	except db.DbException as e:
 		# The video was not found, so go retrieve its JSON from Twitch.
 		pass
 	
@@ -230,7 +238,7 @@ def ajax_request(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		# Raise an exception if the session is missing the client identifier.
-		client_id = flask.session.get('client_id')
+		client_id = flask.session.get('client_id', None)
 		if client_id is None:
 			# Return status code 401 if user is not logged in.
 			flask.abort(requests.codes.unauthorized)
