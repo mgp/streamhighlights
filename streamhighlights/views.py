@@ -58,7 +58,7 @@ def show_steam_user_by_name(name):
 	return _show_user(
 			db.get_displayed_steam_user_by_name, name, _STEAM_USER_TEMPLATE_FILENAME)
 
-@app.route('/user/steam_id/<steam_id>')
+@app.route('/user/steam_id/<int:steam_id>')
 @login_optional
 def show_steam_user_by_id(steam_id):
 	return _show_user(
@@ -70,13 +70,13 @@ def show_twitch_user_by_name(name):
 	return _show_user(
 			db.get_displayed_twitch_user_by_name, name, _TWITCH_USER_TEMPLATE_FILENAME)
 
-@app.route('/user/twitch_id/<twitch_id>')
+@app.route('/user/twitch_id/<int:twitch_id>')
 @login_optional
 def show_twitch_user_by_id(twitch_id):
 	return _show_user(
 			db.get_displayed_twitch_user_by_id, twitch_id, _TWITCH_USER_TEMPLATE_FILENAME)
 
-@app.route('/playlist/<playlist_id>')
+@app.route('/playlist/<int:playlist_id>')
 @login_optional
 def show_playlist(playlist_id):
 	displayed_playlist = None

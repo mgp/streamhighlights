@@ -32,6 +32,30 @@ class TestViews(DbTestCase):
 		with client.session_transaction() as session:
 			session['client_id'] = client_id
 
+	def test_show_steam_user(self):
+		# TODO
+		pass
+
+	def test_show_missing_steam_user(self):
+		# TODO
+		pass
+
+	def test_show_twitch_user(self):
+		# TODO
+		pass
+
+	def test_show_missing_twitch_user(self):
+		# TODO
+		pass
+
+	def test_show_playlist(self):
+		# TODO
+		pass
+
+	def test_show_missing_playlist(self):
+		# TODO
+		pass
+
 	"""Assert that the AJAX request succeeded.
 	"""
 	def _assert_ajax_success(self, response):
