@@ -30,7 +30,10 @@ class TestViews(DbTestCase):
 
 	def _add_client_id(self, client, client_id):
 		with client.session_transaction() as session:
-			session['client_id'] = client_id
+			user = {
+					'id': client_id
+			}
+			session['user'] = user
 
 	def test_show_steam_user(self):
 		# Create a new Steam user.

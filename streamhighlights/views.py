@@ -9,10 +9,48 @@ import requests
 import urllib
 from urlparse import urlparse
 
+"""Reads the client's user identifier from the session.
+"""
+def _read_client_id_from_session():
+	user = flask.session.get('user', None)
+	if user is None:
+		return None
+	return user['id']
+
+"""Writes information for a Twitch user to the session.
+"""
+def _write_twitch_user_to_session(user_id,
+		twitch_id, name, display_name, logo, access_token):
+	twitch_user = {
+			'id': twitch_id,
+			'name': name,
+			'display_name': display_name,
+			'logo': logo,
+			'access_token': access_token
+	}
+	user = {
+			'id': user_id,
+			'twitch': twitch_user
+	}
+	flask.session['user'] = user
+
+"""Writes information for a Steam user to the session.
+"""
+def _write_steam_user_to_session(user_id):
+	steam_user = {
+			'id': steam_id,
+			# TODO
+	}
+	user = {
+			'id': user_id,
+			'steam': steam_user
+	}
+	flask.session['user'] = user
+
 def login_required(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		client_id = flask.session.get('client_id', None)
+		client_id = _read_client_id_from_session()
 		if client_id is None:
 			# Return status code 401 if user is not logged in.
 			flask.abort(requests.codes.unauthorized)
@@ -24,7 +62,7 @@ def login_required(f):
 def login_optional(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		client_id = flask.session.get('client_id', None)
+		client_id = _read_client_id_from_session()
 		if client_id is None:
 			flask.g.logged_in = False
 		else:
@@ -165,17 +203,20 @@ def show_twitch_video(archive_id):
 
 
 _TWITCH_CLIENT_ID = ''
+_TWITCH_CLIENT_SECRET = ''
+_TWITCH_API_URI_PREFIX = 'https://api.twitch.tv/kraken'
+
 _TWITCH_REDIRECT_URI = 'https://streamhighlights.com/complete_twitch_auth'
 _TWITCH_USER_READ_SCOPE = 'user_read'
-
-_TWITCH_OAUTH_AUTHORIZE_URL = ('https://api.twitch.tv/kraken/oauth2/authorize?%s' %
+_TWITCH_OAUTH_AUTHORIZE_URL = ('%s/oauth2/authorize?%s' % (
+		_TWITCH_API_URI_PREFIX,
 		urllib.urlencode({
 			'client_id': _TWITCH_CLIENT_ID,
 			'redirect_uri': _TWITCH_REDIRECT_URI,
 			'response_type': 'code',
 			'scope': _TWITCH_USER_READ_SCOPE,
 		})
-)
+))
 
 @app.route('/start_twitch_auth')
 def start_twitch_auth():
@@ -186,11 +227,12 @@ def start_twitch_auth():
 	# Redirect the user.
 	return flask.redirect(_TWITCH_OAUTH_AUTHORIZE_URL)
 
-_TWITCH_OAUTH_ACCESS_TOKEN_URL = 'https://api.twitch.tv/kraken/oauth2/token'
-_TWITCH_CLIENT_SECRET = ''
+_TWITCH_OAUTH_ACCESS_TOKEN_URL = '%s/oauth2/token' % _TWITCH_API_URI_PREFIX
+_TWITCH_AUTHENTICATED_USER_URL = '%s/user' % _TWITCH_API_URI_PREFIX
 
 @app.route('/complete_twitch_auth')
 def complete_twitch_auth():
+	# Given the code, get the access token for this user.
 	code = request.args['code']
 	params = {
 			'client_id': _TWITCH_CLIENT_ID,
@@ -200,35 +242,34 @@ def complete_twitch_auth():
 			'code': code
 	}
 	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
-	if _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
+	if response.status != requests.codes.ok:
+		# TODO
+		return
+	elif _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
 		# The client did not grant read-only access for basic information.
 		# TODO
 		return
+	access_token = response.json['access_token']
 
-	twitch_user_json = {
-			'id': response.json['twitch_id'],
-			'name': response.json['name'],
-			'display_name': response.json['display_name'],
-			'logo': response.json['logo'],
-			'access_token': response.json['access_token']
-	}
-	session['twitch_user'] = twitch_user_json
-	# TODO: db.insert_or_update_twitch_user()
-
-def _add_twitch_api_header(headers):
+	# Given the access code for this user, get the user's information.
 	headers['accept'] = 'application/vnd.twitchtv.v1+json'
-
-def _add_oauth_header(headers, oauth_token):
-	headers['authorization'] = 'OAuth %s' % oauth_token
-
-def _get_authenticated_twitch_user(self, ):
-	authenticated_user_url = 'https://api.twitch.tv/kraken/user'
-	response = requests.get(authenticated_user_url)
-	status = response.json.get('status', 200)
-	if status != 200:
-		# There was an error; the token is likely invalid or expired.
-		return None
-	return response.json['name']
+	headers['authorization'] = 'OAuth %s' % access_token
+	response = requests.get(_TWITCH_AUTHENTICATED_USER_URL, headers=headers)
+	if response.status != requests.codes.ok:
+		# TODO
+		return
+	twitch_id = response.json['twitch_id']
+	name = response.json['name']
+	display_name = response.json['display_name']
+	logo = response.json['logo']
+	access_token = response.json['access_token']
+	
+	# Log in the Twitch user.
+	user_id = db.twitch_user_logged_in(
+			twitch_id, name, display_name, logo, access_token, datetime.utcnow())
+	# Write the Twitch user to the session.
+	_write_twitch_user_to_session(
+			user_id, twitch_id, name, display_name, logo, access_token)
 
 
 _AJAX_SUCCESS = {'success': True}
@@ -238,7 +279,7 @@ def ajax_request(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		# Raise an exception if the session is missing the client identifier.
-		client_id = flask.session.get('client_id', None)
+		client_id = _read_client_id_from_session()
 		if client_id is None:
 			# Return status code 401 if user is not logged in.
 			flask.abort(requests.codes.unauthorized)
