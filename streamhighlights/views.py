@@ -7,7 +7,10 @@ import functools
 import re
 import requests
 import urllib
+from flask_openid import OpenID
 from urlparse import urlparse
+
+oid = OpenID(app)
 
 """Reads the client's user identifier from the session.
 """
@@ -36,10 +39,14 @@ def _write_twitch_user_to_session(user_id,
 
 """Writes information for a Steam user to the session.
 """
-def _write_steam_user_to_session(user_id):
+def _write_steam_user_to_session(user_id,
+		steam_id, personaname, profile_url, avatar, avatar_full):
 	steam_user = {
 			'id': steam_id,
-			# TODO
+			'personaname': personaname,
+			'profile_url': profile_url,
+			'avatar': avatar,
+			'avatar_full': avatar_full
 	}
 	user = {
 			'id': user_id,
@@ -220,6 +227,7 @@ _TWITCH_OAUTH_AUTHORIZE_URL = ('%s/oauth2/authorize?%s' % (
 
 @app.route('/start_twitch_auth')
 def start_twitch_auth():
+	# TODO: Remove any user from the session.
 	# Store the URL that the user came from; redirect here when auth completes.
 	next_url = flask.request.args.get('next_url', None)
 	if next_url is not None:
@@ -270,6 +278,56 @@ def complete_twitch_auth():
 	# Write the Twitch user to the session.
 	_write_twitch_user_to_session(
 			user_id, twitch_id, name, display_name, logo, access_token)
+
+
+_STEAM_WEB_API_KEY = '52F753EAA320784E9CD999A78997B5D1'
+_STEAM_OPEN_ID_URL = 'http://steamcommunity.com/openid'
+
+@app.route('/start_steam_auth')
+@oid.loginhandler
+def _start_steam_auth():
+	# TODO: Remove any user from the session.
+	return oid.try_login(_STEAM_OPEN_ID_URL)
+
+_GET_STEAM_ID_REGEX = re.compile('steamcommunity.com/openid/id/(?P<steam_id>.*?)$')
+_STEAM_PLAYER_SUMMARY_URL = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002'
+
+@oid.after_login
+def complete_steam_auth(response):
+	# Get the user's Steam identifier from the OpenID response.
+	steam_id_match = _GET_STEAM_ID_REGEX.search(response.identity_url)
+	if not steam_id_match:
+		# TODO
+		return
+	steam_id = steam_id_match.group('steam_id')
+	
+	# Given the user's Steam ID, get the user's information.
+	user_url = ('%s/?%s' % (
+			_STEAM_PLAYER_SUMMARY_URL,
+			urllib.urlencode({
+					'key': _STEAM_WEB_API_KEY,
+					'steamids': steam_id
+			})
+	))
+	response = requests.get(user_url)
+	if response.status != requests.codes.ok:
+		# TODO
+		return
+	if ('response' not in response.json) or not response.json['response']['players']:
+ 		# TODO
+		return
+	player = response.json['response']['players'][0]
+	personaname = player['personaname']
+	profile_url = player.get('profileurl', None)
+	avatar = player.get('avatar', None)
+	avatar_full = player.get('avatarfull', None)
+
+	# Log in the Steam user.
+	user_id = db.steam_user_logged_in(
+			steam_id, personaname, profile_url, avatar, avatar_full)
+	# Write the Steam user to the session.
+	_write_steam_user_to_session(
+			user_id, steam_id, personaname, profile_url, avatar, avatar_full)
 
 
 _AJAX_SUCCESS = {'success': True}
