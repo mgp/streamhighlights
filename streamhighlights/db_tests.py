@@ -164,6 +164,10 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(updated_time, twitch_user.user.last_seen)
 		self.assertEqual(updated_access_token, twitch_user.access_token)
 
+		# Assert that the Twitch user cannot be found by its old name.
+		with self.assertRaises(db.DbException):
+			db.get_displayed_twitch_user_by_name(None, name)
+
 	def _get_steam_user(self, steam_id):
 		steam_user = self.session.query(db.SteamUser)\
 				.options(sa_orm.joinedload(db.SteamUser.user))\
@@ -229,6 +233,146 @@ class TestBookmarksDb(DbTestCase):
 		self.assertEqual(self.now, steam_user.user.created)
 		self.assertEqual(updated_time, steam_user.user.last_seen)
 
+		# Assert that the Steam user cannot be found by its old name.
+		with self.assertRaises(db.DbException):
+			db.get_displayed_steam_user_by_name(None, community_id)
+
+	"""Test that the name associated with a Twitch user is unique.
+	"""
+	def test_twitch_user_name_is_unique(self):
+		name = 'name'
+		expected_link_url = 'http://www.twitch.tv/%s' % name
+
+		# Create the first Twitch user.
+		add_time1 = self.now + timedelta(minutes=10)
+		twitch_id1 = 123
+		display_name1 = 'display_name1'
+		logo1 = 'logo_url1'
+		access_token1 = 'access_token1'
+		user_id1 = db.twitch_user_logged_in(
+				twitch_id1, name, display_name1, logo1, access_token1, add_time1)
+
+		# Create the second Twitch user.
+		add_time2 = self.now + timedelta(minutes=20)
+		twitch_id2 = 456
+		display_name2 = 'display_name2'
+		logo2 = 'logo_url2'
+		access_token2 = 'access_token2'
+		user_id2 = db.twitch_user_logged_in(
+				twitch_id2, name, display_name2, logo2, access_token2, add_time2)
+
+		# Assert that the second Twitch user is returned by the shared name.
+		displayed_twitch_user = db.get_displayed_twitch_user_by_name(None, name)
+		self._assert_displayed_twitch_user(displayed_twitch_user,
+				user_id2, display_name2, twitch_id2, expected_link_url, image_url_large=logo2)
+
+		# Assert that the first Twitch user is no longer associated with the shared name.
+		twitch_user = self._get_twitch_user(twitch_id1)
+		self.assertEqual('t:%s' % twitch_id1, twitch_user.user.url_by_id)
+		self.assertIsNone(twitch_user.user.url_by_name)
+		self.assertEqual(add_time1, twitch_user.user.created)
+		self.assertEqual(add_time1, twitch_user.user.last_seen)
+		self.assertEqual(access_token1, twitch_user.access_token)
+		# Assert that the second Twitch user is associated with the shared name.
+		twitch_user = self._get_twitch_user(twitch_id2)
+		self.assertEqual('t:%s' % twitch_id2, twitch_user.user.url_by_id)
+		self.assertEqual('t:%s' % name, twitch_user.user.url_by_name)
+		self.assertEqual(add_time2, twitch_user.user.created)
+		self.assertEqual(add_time2, twitch_user.user.last_seen)
+		self.assertEqual(access_token2, twitch_user.access_token)
+
+		# Log in the first Twitch user again with the same name.
+		add_time3 = self.now + timedelta(minutes=30)
+		db.twitch_user_logged_in(
+				twitch_id1, name, display_name1, logo1, access_token1, add_time3)
+
+		# Assert that the second Twitch user is returned by the shared name.
+		displayed_twitch_user = db.get_displayed_twitch_user_by_name(None, name)
+		self._assert_displayed_twitch_user(displayed_twitch_user,
+				user_id1, display_name1, twitch_id1, expected_link_url, image_url_large=logo1)
+
+		# Assert that the first Twitch user is associated with the shared name.
+		twitch_user = self._get_twitch_user(twitch_id1)
+		self.assertEqual('t:%s' % twitch_id1, twitch_user.user.url_by_id)
+		self.assertEqual('t:%s' % name, twitch_user.user.url_by_name)
+		self.assertEqual(add_time1, twitch_user.user.created)
+		self.assertEqual(add_time3, twitch_user.user.last_seen)
+		self.assertEqual(access_token1, twitch_user.access_token)
+		# Assert that the second Twitch user is no longer associated with the shared name.
+		twitch_user = self._get_twitch_user(twitch_id2)
+		self.assertEqual('t:%s' % twitch_id2, twitch_user.user.url_by_id)
+		self.assertIsNone(twitch_user.user.url_by_name)
+		self.assertEqual(add_time2, twitch_user.user.created)
+		self.assertEqual(add_time2, twitch_user.user.last_seen)
+		self.assertEqual(access_token2, twitch_user.access_token)
+
+	"""Test that the name associated with a Steam user is unique.
+	"""
+	def test_steam_user_name_is_unique(self):
+		community_id = 'community_id'
+		profile_url = 'steamcommunity.com/id/%s' % community_id
+
+		# Create the first Steam user.
+		add_time1 = self.now + timedelta(minutes=10)
+		steam_id1 = 123
+		personaname1 = 'personaname1'
+		avatar1 = 'avatar1'
+		avatar_full1 = 'avatar_full1'
+		user_id1 = db.steam_user_logged_in(
+				steam_id1, personaname1, profile_url, avatar1, avatar_full1, add_time1)
+
+		# Create the second Steam user with the same name.
+		add_time2 = self.now + timedelta(minutes=20)
+		steam_id2 = 456
+		personaname2 = 'personaname2'
+		avatar2 = 'avatar2'
+		avatar_full2 = 'avatar_full2'
+		user_id2 = db.steam_user_logged_in(
+				steam_id2, personaname2, profile_url, avatar2, avatar_full2, add_time2)
+
+		# Assert that the second Steam user is returned by the shared name.
+		displayed_steam_user = db.get_displayed_steam_user_by_name(None, community_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id2, personaname2, steam_id2, profile_url,
+				image_url_small=avatar2, image_url_large=avatar_full2)
+
+		# Assert that the first Steam user is no longer associated with the shared name.
+		steam_user = self._get_steam_user(steam_id1)
+		self.assertEqual('s:%s' % steam_id1, steam_user.user.url_by_id)
+		self.assertIsNone(steam_user.user.url_by_name)
+		self.assertEqual(add_time1, steam_user.user.created)
+		self.assertEqual(add_time1, steam_user.user.last_seen)
+		# Assert that the second Steam user is associated with the shared name.
+		steam_user = self._get_steam_user(steam_id2)
+		self.assertEqual('s:%s' % steam_id2, steam_user.user.url_by_id)
+		self.assertEqual('s:%s' % community_id, steam_user.user.url_by_name)
+		self.assertEqual(add_time2, steam_user.user.created)
+		self.assertEqual(add_time2, steam_user.user.last_seen)
+
+		# Log in the first Steam user again with the same name.
+		add_time3 = self.now + timedelta(minutes=30)
+		db.steam_user_logged_in(
+				steam_id1, personaname1, profile_url, avatar1, avatar_full1, add_time3)
+
+		# Assert that the first Steam user is returned by the shared name.
+		displayed_steam_user = db.get_displayed_steam_user_by_name(None, community_id)
+		self._assert_displayed_steam_user(displayed_steam_user,
+				user_id1, personaname1, steam_id1, profile_url,
+				image_url_small=avatar1, image_url_large=avatar_full1)
+
+		# Assert that the first Steam user is associated with the shared name.
+		steam_user = self._get_steam_user(steam_id1)
+		self.assertEqual('s:%s' % steam_id1, steam_user.user.url_by_id)
+		self.assertEqual('s:%s' % community_id, steam_user.user.url_by_name)
+		self.assertEqual(add_time1, steam_user.user.created)
+		self.assertEqual(add_time3, steam_user.user.last_seen)
+		# Assert that the second Steam user is no longer associated with the shared name.
+		steam_user = self._get_steam_user(steam_id2)
+		self.assertEqual('s:%s' % steam_id2, steam_user.user.url_by_id)
+		self.assertIsNone(steam_user.user.url_by_name)
+		self.assertEqual(add_time2, steam_user.user.created)
+		self.assertEqual(add_time2, steam_user.user.last_seen)
+
 	"""Test that fails to return a displayed Twitch user because the Twitch user
 	identifier is unknown.
 	"""
@@ -260,6 +404,11 @@ class TestBookmarksDb(DbTestCase):
 		missing_community_id = 'missing_community_id'
 		with self.assertRaises(db.DbException):
 			db.get_displayed_steam_user_by_name(client_id, missing_community_id)
+
+
+	# 
+	# Begin tests for playlists.
+	# 
 
 	"""Test that fails to create a playlist because the user identifier is unknown.
 	"""
@@ -344,11 +493,6 @@ class TestBookmarksDb(DbTestCase):
 		displayed_user_playlist = displayed_steam_user.playlists[0]
 		self._assert_displayed_user_playlist(displayed_user_playlist,
 				playlist_id, playlist_title, self.now)
-
-
-	# 
-	# Begin tests for playlists.
-	# 
 
 	"""Test that fails to return a displayed playlist because the playlist identifier
 	is unknown.
