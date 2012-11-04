@@ -561,10 +561,162 @@ class TestViews(DbTestCase):
 		self._assert_get_steam_id_regex_failure('http://steamcommunity.com/openid/id/')
 
 
+def _get_response(status_code, body):
+	response = requests.models.Response()
+	response.status_code = status_code
+	if body:
+		response._content = json.dumps(body)
+	return response	
+
+class TestCompleteTwitchAuth(DbTestCase):
+	def _get_access_token(self, url, params={}):
+		self.access_token_url = url
+		self.access_token_params = params
+		return self.access_token_response
+	
+	def _get_user_data(self, url, headers={}):
+		self.user_data_url = url
+		self.user_data_headers = headers
+		return self.user_data_response
+	
+	def _set_access_token_response(self, status_code, body):
+		self.access_token_response = _get_response(status_code, body)
+	
+	def _set_user_data_response(self, status_code, body):
+		self.user_data_response = _get_response(status_code, body)
+
+	def setUp(self):
+		DbTestCase.setUp(self)
+		self.code = 1234
+
+		self.access_token_url = None
+		self.access_token_params = None
+		self.access_token_response = None
+
+		self.user_data_url = None
+		self.user_data_headers = None
+		self.user_data_response = None
+
+		# Replace the getter to return whatever response is created.
+		views.requests.post = self._get_access_token
+		views.requests.get = self._get_user_data
+	
+	def tearDown(self):
+		# Reset the getter.
+		views.requests.get = requests.get
+		views.requests.post = requests.post
+		unittest.TestCase.tearDown(self)
+
+	def test_get_access_token_bad_response(self):
+		with app.test_client() as client:
+			self._set_access_token_response(requests.codes.server_error, None)
+			client.get('/complete_twitch_auth?code=%s' % self.code)
+
+			# Assert that a request for the access token was made.
+			self.assertIsNotNone(self.access_token_url)
+			# Assert that no request for the user was made.
+			self.assertIsNone(self.user_data_url)
+
+	def test_get_access_token_missing_scope(self):
+		with app.test_client() as client:
+			json_body = {
+					'scope': []
+			}
+			self._set_access_token_response(requests.codes.ok, json_body)
+			client.get('/complete_twitch_auth?code=%s' % self.code)
+
+			# Assert that a request for the access token was made.
+			self.assertIsNotNone(self.access_token_url)
+			# Assert that no request for the user was made.
+			self.assertIsNone(self.user_data_url)
+	
+	def test_get_user_data_bad_response(self):
+		with app.test_client() as client:
+			json_body = {
+					'scope': [views._TWITCH_USER_READ_SCOPE],
+					'access_token': 'access_token'
+			}
+			self._set_access_token_response(requests.codes.ok, json_body)
+			self._set_user_data_response(requests.codes.server_error, None)
+			client.get('/complete_twitch_auth?code=%s' % self.code)
+
+			# Assert that a request for the access token was made.
+			self.assertIsNotNone(self.access_token_url)
+			# Assert that no request for the user was made.
+			self.assertIsNotNone(self.user_data_url)
+	
+	def test_get_user_data_missing_user(self):
+		with app.test_client() as client:
+			json_body = {
+					'scope': [views._TWITCH_USER_READ_SCOPE],
+					'access_token': 'access_token'
+			}
+			self._set_access_token_response(requests.codes.ok, json_body)
+			json_body = {
+					'error': 'Not Found'
+			}
+			self._set_user_data_response(requests.codes.server_error, json_body)
+			client.get('/complete_twitch_auth?code=%s' % self.code)
+
+			# Assert that a request for the access token was made.
+			self.assertIsNotNone(self.access_token_url)
+			# Assert that no request for the user was made.
+			self.assertIsNotNone(self.user_data_url)
+		
+	def test_complete_twitch_auth(self):
+		access_token = 'access_token'
+		twitch_id = 123
+		name = 'name'
+		display_name = 'display_name'
+		logo = 'logo_url'
+
+		expected_user_id = 1
+		expected_link_url = 'http://www.twitch.tv/%s' % name
+
+		with app.test_client() as client:
+			json_body = {
+					'scope': [views._TWITCH_USER_READ_SCOPE],
+					'access_token': access_token
+			}
+			self._set_access_token_response(requests.codes.ok, json_body)
+			json_body = {
+					'twitch_id': twitch_id,
+					'name': name,
+					'display_name': display_name,
+					'logo': logo
+			}
+			self._set_user_data_response(requests.codes.ok, json_body)
+			client.get('/complete_twitch_auth?code=%s' % self.code)
+
+			# Assert that a request for the access token was made.
+			self.assertIsNotNone(self.access_token_url)
+			# Assert that no request for the user was made.
+			self.assertIsNotNone(self.user_data_url)
+		
+			# Assert that the user is logged in.
+			session_user_id = views._read_client_id_from_session()
+			self.assertEqual(expected_user_id, session_user_id)
+			# Assert that the Twitch user data is found, and the Steam user data is missing.
+			steam_user, twitch_user = views._read_client_data_from_session()
+			self.assertIsNone(steam_user)
+			self.assertDictEqual({
+					'id': twitch_id,
+					'name': name,
+					'display_name': display_name,
+					'logo': logo,
+					'access_token': access_token}, twitch_user)
+
+			# Assert that the user was created.
+			for displayed_twitch_user in (
+					db.get_displayed_twitch_user_by_id(None, twitch_id),
+					db.get_displayed_twitch_user_by_name(None, name)):
+				self._assert_displayed_twitch_user(displayed_twitch_user, expected_user_id,
+						display_name, twitch_id, expected_link_url, image_url_large=logo)
+
+
 class FakeOpenIdResponse:
 	def __init__(self, identity_url):
 		self.identity_url = identity_url
-
 
 class TestCompleteSteamAuth(DbTestCase):
 	def _get_user_summary(self, url):
@@ -572,10 +724,7 @@ class TestCompleteSteamAuth(DbTestCase):
 		return self.user_summary_response
 
 	def _set_user_summary_response(self, status_code, body):
-		self.user_summary_response = requests.models.Response()
-		self.user_summary_response.status_code = status_code
-		if body:
-			self.user_summary_response._content = json.dumps(body)
+		self.user_summary_response = _get_response(status_code, body)
 
 	def setUp(self):
 		DbTestCase.setUp(self)
@@ -663,7 +812,6 @@ class TestCompleteSteamAuth(DbTestCase):
 		for displayed_steam_user in (
 				db.get_displayed_steam_user_by_id(None, steam_id),
 				db.get_displayed_steam_user_by_name(None, community_id)):
-			# Assert that the updated Steam user was returned.
 			self._assert_displayed_steam_user(displayed_steam_user,
 					user_id, personaname, steam_id, profile_url,
 					image_url_small=avatar, image_url_large=avatar_full)

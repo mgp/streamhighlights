@@ -255,7 +255,7 @@ _TWITCH_AUTHENTICATED_USER_URL = '%s/user' % _TWITCH_API_URI_PREFIX
 @app.route('/complete_twitch_auth')
 def complete_twitch_auth():
 	# Given the code, get the access token for this user.
-	code = request.args['code']
+	code = flask.request.args['code']
 	params = {
 			'client_id': _TWITCH_CLIENT_ID,
 			'redirect_uri': _TWITCH_REDIRECT_URI,
@@ -265,33 +265,35 @@ def complete_twitch_auth():
 	}
 	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
 	if response.status_code != requests.codes.ok:
-		# TODO
-		return
+		return flask.render_template('complete_twitch_auth.html', error=True)
 	elif _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
 		# The client did not grant read-only access for basic information.
-		# TODO
-		return
+		return flask.render_template('complete_twitch_auth.html', error=True)
 	access_token = response.json['access_token']
 
 	# Given the access code for this user, get the user's information.
-	headers['accept'] = 'application/vnd.twitchtv.v1+json'
-	headers['authorization'] = 'OAuth %s' % access_token
+	headers = {
+			'accept': 'application/vnd.twitchtv.v1+json',
+			'authorization': 'OAuth %s' % access_token
+	}
 	response = requests.get(_TWITCH_AUTHENTICATED_USER_URL, headers=headers)
 	if response.status_code != requests.codes.ok:
-		# TODO
-		return
+		return flask.render_template('complete_twitch_auth.html', error=True)
+	elif 'error' in response.json:
+		return flask.render_template('complete_twitch_auth.html', error=True)
 	twitch_id = response.json['twitch_id']
 	name = response.json['name']
 	display_name = response.json['display_name']
 	logo = response.json['logo']
-	access_token = response.json['access_token']
 	
 	# Log in the Twitch user.
 	user_id = db.twitch_user_logged_in(
-			twitch_id, name, display_name, logo, access_token, datetime.utcnow())
+			twitch_id, name, display_name, logo, access_token)
 	# Write the Twitch user to the session.
 	_write_twitch_user_to_session(
 			user_id, twitch_id, name, display_name, logo, access_token)
+	# TODO: Redirect the user.
+	return flask.render_template('complete_twitch_auth.html')
 
 
 _STEAM_WEB_API_KEY = '52F753EAA320784E9CD999A78997B5D1'
