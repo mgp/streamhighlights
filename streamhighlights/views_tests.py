@@ -35,6 +35,56 @@ class TestViews(DbTestCase):
 			}
 			session['user'] = user
 
+	def test_write_twitch_user_to_session(self):
+		user_id = 'user_id'
+		twitch_id = 'twitch_id'
+		name = 'name'
+		display_name = 'display_name'
+		logo = 'logo'
+		access_token = 'access_token'
+
+		# Use a dictionary for the session since outside a request context.
+		session = {}
+		views._write_twitch_user_to_session(user_id,
+				twitch_id, name, display_name, logo, access_token, session=session)
+		# Assert that the user identifier is correct.
+		session_user_id = views._read_client_id_from_session(session=session)
+		self.assertEqual(user_id, session_user_id)
+		# Assert that the Twitch user data is found, and the Steam user data is missing.
+		steam_user, twitch_user = views._read_client_data_from_session(session=session)
+		self.assertIsNone(steam_user)
+		self.assertDictEqual({
+				'id': twitch_id,
+				'name': name,
+				'display_name': display_name,
+				'logo': logo,
+				'access_token': access_token}, twitch_user)
+
+	def test_write_steam_user_to_session(self):
+		user_id = 'user_id'
+		steam_id = 'steam_id'
+		personaname = 'personaname'
+		profile_url = 'profile_url'
+		avatar = 'avatar'
+		avatar_full = 'avatar_full'
+
+		# Use a dictionary for the session since outside a request context.
+		session = {}
+		views._write_steam_user_to_session(user_id,
+				steam_id, personaname, profile_url, avatar, avatar_full, session=session)
+		# Assert that the user identifier is correct.
+		session_user_id = views._read_client_id_from_session(session=session)
+		self.assertEqual(user_id, session_user_id)
+		# Assert that the Steam user data is found, and the Twitch user data is missing.
+		steam_user, twitch_user = views._read_client_data_from_session(session=session)
+		self.assertDictEqual({
+				'id': steam_id,
+				'personaname': personaname,
+				'profile_url': profile_url,
+				'avatar': avatar,
+				'avatar_full': avatar_full}, steam_user)
+		self.assertIsNone(twitch_user)
+
 	def test_show_steam_user(self):
 		# Create a new Steam user.
 		steam_id = 456
@@ -511,6 +561,114 @@ class TestViews(DbTestCase):
 		self._assert_get_steam_id_regex_failure('http://steamcommunity.com/openid/id/')
 
 
+class FakeOpenIdResponse:
+	def __init__(self, identity_url):
+		self.identity_url = identity_url
+
+
+class TestCompleteSteamAuth(DbTestCase):
+	def _get_user_summary(self, url):
+		self.url = url
+		return self.user_summary_response
+
+	def _set_user_summary_response(self, status_code, body):
+		self.user_summary_response = requests.models.Response()
+		self.user_summary_response.status_code = status_code
+		if body:
+			self.user_summary_response._content = json.dumps(body)
+
+	def setUp(self):
+		DbTestCase.setUp(self)
+		# Replace the getter to return whatever response is created.
+		self.url = None
+		self.user_summary_response = None
+		views.requests.get = self._get_user_summary
+	
+	def tearDown(self):
+		# Reset the getter.
+		views.requests.get = requests.get
+		unittest.TestCase.tearDown(self)
+
+	def test_complete_steam_auth_invalid_steam_id(self):
+		# Return an OpenID response with no Steam identifier.
+		open_id_response = FakeOpenIdResponse('http://steamcommunity.com/openid/id/')
+		views.complete_steam_auth(open_id_response)
+
+		# Assert that no request was made.
+		self.assertIsNone(self.url)
+	
+	def test_complete_steam_auth_bad_response(self):
+		# Return an OpenID response with a HTTP status codes that is not 200.
+		self._set_user_summary_response(requests.codes.server_error, None)
+		open_id_response = FakeOpenIdResponse('http://steamcommunity.com/openid/id/123')
+		views.complete_steam_auth(open_id_response)
+
+		# Assert that no request was made.
+		self.assertIsNotNone(self.url)
+	
+	def test_complete_steam_auth_missing_user(self):
+		# Return an OpenID response with no Steam user data.
+		json_body = {
+				'response': {
+						'players': []
+				}
+		}
+		self._set_user_summary_response(requests.codes.ok, json_body)
+		open_id_response = FakeOpenIdResponse('http://steamcommunity.com/openid/id/123')
+		views.complete_steam_auth(open_id_response)
+
+		# Assert that no request was made.
+		self.assertIsNotNone(self.url)
+	
+	def test_complete_steam_auth(self):
+		# Return an OpenID response with Steam user data.
+		steam_id = 123
+		personaname = 'personaname1'
+		community_id = 'community_id'
+		profile_url = 'steamcommunity.com/id/%s' % community_id
+		avatar = 'avatar1'
+		avatar_full = 'avatar_full1'
+		json_body = {
+				'response': {
+						'players': [{
+								'personaname': personaname,
+								'profileurl': profile_url,
+								'avatar': avatar,
+								'avatarfull': avatar_full
+						}]
+				}
+		}
+		self._set_user_summary_response(requests.codes.ok, json_body)
+		open_id_response = FakeOpenIdResponse('http://steamcommunity.com/openid/id/%s' % steam_id)
+		session = {}
+		user_id = views.complete_steam_auth(open_id_response, session)
+
+		# Assert that a request was made.
+		self.assertIsNotNone(self.url)
+
+		# Assert that the user is logged in.
+		session_user_id = views._read_client_id_from_session(session=session)
+		self.assertEqual(user_id, session_user_id)
+		# Assert that the Twitch user data is found, and the Steam user data is missing.
+		steam_user, twitch_user = views._read_client_data_from_session(session=session)
+		self.assertDictEqual({
+				'id': steam_id,
+				'personaname': personaname,
+				'profile_url': profile_url,
+				'avatar': avatar,
+				'avatar_full': avatar_full}, steam_user)
+		self.assertIsNone(twitch_user)
+
+		# Assert that the user was created.
+		for displayed_steam_user in (
+				db.get_displayed_steam_user_by_id(None, steam_id),
+				db.get_displayed_steam_user_by_name(None, community_id)):
+			# Assert that the updated Steam user was returned.
+			self._assert_displayed_steam_user(displayed_steam_user,
+					user_id, personaname, steam_id, profile_url,
+					image_url_small=avatar, image_url_large=avatar_full)
+
+
 class TestRequestTwitchVideo(unittest.TestCase):
 	def _get_twitch_video(self, url):
 		self.url = url
@@ -519,6 +677,7 @@ class TestRequestTwitchVideo(unittest.TestCase):
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		# Create the Response object containing the Twitch video JSON.
+		self.url = None
 		self.twitch_video_json = {
 				'title': 'title_value',
 				'length': 33,
@@ -532,7 +691,6 @@ class TestRequestTwitchVideo(unittest.TestCase):
 		views.requests.get = self._get_twitch_video
 	
 	def tearDown(self):
-		self.url = None
 		# Reset the getter.
 		views.requests.get = requests.get
 		unittest.TestCase.tearDown(self)

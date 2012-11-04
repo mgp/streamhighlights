@@ -14,16 +14,28 @@ oid = OpenID(app)
 
 """Reads the client's user identifier from the session.
 """
-def _read_client_id_from_session():
-	user = flask.session.get('user', None)
+def _read_client_id_from_session(session=None):
+	if session is None:
+		session = flask.session
+	user = session.get('user', None)
 	if user is None:
 		return None
 	return user['id']
 
+def _read_client_data_from_session(session=None):
+	if session is None:
+		session = flask.session
+	user = session.get('user', {})
+	steam_user = user.get('steam', None)
+	twitch_user = user.get('twitch', None)
+	return steam_user, twitch_user
+
 """Writes information for a Twitch user to the session.
 """
 def _write_twitch_user_to_session(user_id,
-		twitch_id, name, display_name, logo, access_token):
+		twitch_id, name, display_name, logo, access_token, session=None):
+	if session is None:
+		session = flask.session
 	twitch_user = {
 			'id': twitch_id,
 			'name': name,
@@ -35,12 +47,14 @@ def _write_twitch_user_to_session(user_id,
 			'id': user_id,
 			'twitch': twitch_user
 	}
-	flask.session['user'] = user
+	session['user'] = user
 
 """Writes information for a Steam user to the session.
 """
 def _write_steam_user_to_session(user_id,
-		steam_id, personaname, profile_url, avatar, avatar_full):
+		steam_id, personaname, profile_url, avatar, avatar_full, session=None):
+	if session is None:
+		session = flask.session
 	steam_user = {
 			'id': steam_id,
 			'personaname': personaname,
@@ -52,7 +66,7 @@ def _write_steam_user_to_session(user_id,
 			'id': user_id,
 			'steam': steam_user
 	}
-	flask.session['user'] = user
+	session['user'] = user
 
 def login_required(f):
 	@functools.wraps(f)
@@ -250,7 +264,7 @@ def complete_twitch_auth():
 			'code': code
 	}
 	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
-	if response.status != requests.codes.ok:
+	if response.status_code != requests.codes.ok:
 		# TODO
 		return
 	elif _TWITCH_USER_READ_SCOPE not in response.json.get('scope', ()):
@@ -263,7 +277,7 @@ def complete_twitch_auth():
 	headers['accept'] = 'application/vnd.twitchtv.v1+json'
 	headers['authorization'] = 'OAuth %s' % access_token
 	response = requests.get(_TWITCH_AUTHENTICATED_USER_URL, headers=headers)
-	if response.status != requests.codes.ok:
+	if response.status_code != requests.codes.ok:
 		# TODO
 		return
 	twitch_id = response.json['twitch_id']
@@ -293,13 +307,13 @@ _GET_STEAM_ID_REGEX = re.compile('http://steamcommunity.com/openid/id/(?P<steam_
 _STEAM_PLAYER_SUMMARY_URL = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002'
 
 @oid.after_login
-def complete_steam_auth(response):
+def complete_steam_auth(response, session=None):
 	# Get the user's Steam identifier from the OpenID response.
 	steam_id_match = _GET_STEAM_ID_REGEX.search(response.identity_url)
 	if not steam_id_match:
 		# TODO
 		return
-	steam_id = steam_id_match.group('steam_id')
+	steam_id = int(steam_id_match.group('steam_id'))
 	
 	# Given the user's Steam ID, get the user's information.
 	user_url = ('%s/?%s' % (
@@ -311,7 +325,7 @@ def complete_steam_auth(response):
 			})
 	))
 	response = requests.get(user_url)
-	if response.status != requests.codes.ok:
+	if response.status_code != requests.codes.ok:
 		# TODO
 		return
 	if ('response' not in response.json) or not response.json['response']['players']:
@@ -328,7 +342,10 @@ def complete_steam_auth(response):
 			steam_id, personaname, profile_url, avatar, avatar_full)
 	# Write the Steam user to the session.
 	_write_steam_user_to_session(
-			user_id, steam_id, personaname, profile_url, avatar, avatar_full)
+			user_id, steam_id, personaname, profile_url, avatar, avatar_full, session)
+
+	# Return the user identifier for testing.
+	return user_id
 
 
 _AJAX_SUCCESS = {'success': True}
