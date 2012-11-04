@@ -605,7 +605,7 @@ class TestCompleteTwitchAuth(DbTestCase):
 		# Reset the getter.
 		views.requests.get = requests.get
 		views.requests.post = requests.post
-		unittest.TestCase.tearDown(self)
+		DbTestCase.tearDown(self)
 
 	def test_get_access_token_bad_response(self):
 		with app.test_client() as client:
@@ -670,9 +670,6 @@ class TestCompleteTwitchAuth(DbTestCase):
 		display_name = 'display_name'
 		logo = 'logo_url'
 
-		expected_user_id = 1
-		expected_link_url = 'http://www.twitch.tv/%s' % name
-
 		with app.test_client() as client:
 			json_body = {
 					'scope': [views._TWITCH_USER_READ_SCOPE],
@@ -695,6 +692,7 @@ class TestCompleteTwitchAuth(DbTestCase):
 		
 			# Assert that the user is logged in.
 			session_user_id = views._read_client_id_from_session()
+			expected_user_id = 1
 			self.assertEqual(expected_user_id, session_user_id)
 			# Assert that the Twitch user data is found, and the Steam user data is missing.
 			steam_user, twitch_user = views._read_client_data_from_session()
@@ -707,6 +705,7 @@ class TestCompleteTwitchAuth(DbTestCase):
 					'access_token': access_token}, twitch_user)
 
 			# Assert that the user was created.
+			expected_link_url = 'http://www.twitch.tv/%s' % name
 			for displayed_twitch_user in (
 					db.get_displayed_twitch_user_by_id(None, twitch_id),
 					db.get_displayed_twitch_user_by_name(None, name)):
@@ -736,7 +735,7 @@ class TestCompleteSteamAuth(DbTestCase):
 	def tearDown(self):
 		# Reset the getter.
 		views.requests.get = requests.get
-		unittest.TestCase.tearDown(self)
+		DbTestCase.tearDown(self)
 
 	def test_complete_steam_auth_invalid_steam_id(self):
 		# Return an OpenID response with no Steam identifier.
@@ -790,14 +789,15 @@ class TestCompleteSteamAuth(DbTestCase):
 		self._set_user_summary_response(requests.codes.ok, json_body)
 		open_id_response = FakeOpenIdResponse('http://steamcommunity.com/openid/id/%s' % steam_id)
 		session = {}
-		user_id = views.complete_steam_auth(open_id_response, session)
+		views.complete_steam_auth(open_id_response, session)
 
 		# Assert that a request was made.
 		self.assertIsNotNone(self.url)
 
 		# Assert that the user is logged in.
 		session_user_id = views._read_client_id_from_session(session=session)
-		self.assertEqual(user_id, session_user_id)
+		expected_user_id = 1
+		self.assertEqual(expected_user_id, session_user_id)
 		# Assert that the Twitch user data is found, and the Steam user data is missing.
 		steam_user, twitch_user = views._read_client_data_from_session(session=session)
 		self.assertDictEqual({
@@ -813,7 +813,7 @@ class TestCompleteSteamAuth(DbTestCase):
 				db.get_displayed_steam_user_by_id(None, steam_id),
 				db.get_displayed_steam_user_by_name(None, community_id)):
 			self._assert_displayed_steam_user(displayed_steam_user,
-					user_id, personaname, steam_id, profile_url,
+					expected_user_id, personaname, steam_id, profile_url,
 					image_url_small=avatar, image_url_large=avatar_full)
 
 

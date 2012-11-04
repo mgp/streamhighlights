@@ -346,8 +346,7 @@ def complete_steam_auth(response, session=None):
 	_write_steam_user_to_session(
 			user_id, steam_id, personaname, profile_url, avatar, avatar_full, session)
 
-	# Return the user identifier for testing.
-	return user_id
+	# TODO: Redirect the user.
 
 
 _AJAX_SUCCESS = {'success': True}
