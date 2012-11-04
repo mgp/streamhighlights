@@ -490,6 +490,26 @@ class TestViews(DbTestCase):
 			# Assert that the next_url parameter was stored in the session.
 			self.assertEqual(next_url, flask.session['next_url'])
 
+	def _assert_get_steam_id_regex_success(self, url, steam_id):
+		steam_id_match = views._GET_STEAM_ID_REGEX.search(url)
+		self.assertIsNotNone(steam_id_match)
+		self.assertEqual(steam_id, int(steam_id_match.group('steam_id')))
+
+	def _assert_get_steam_id_regex_failure(self, url):
+		self.assertFalse(views._GET_STEAM_ID_REGEX.search(url))
+
+	def test_get_steam_id_regex_success(self):
+		self._assert_get_steam_id_regex_success(
+				'http://steamcommunity.com/openid/id/123', 123)
+	
+	def test_get_steam_id_regex_failure(self):
+		self._assert_get_steam_id_regex_failure(
+				'http://foo.steamcommunity.com/openid/id/123')
+		self._assert_get_steam_id_regex_failure(
+				'foo://steamcommunity.com/openid/id/123')
+		self._assert_get_steam_id_regex_failure('http://steamcommunity.com/openid/id')
+		self._assert_get_steam_id_regex_failure('http://steamcommunity.com/openid/id/')
+
 
 class TestRequestTwitchVideo(unittest.TestCase):
 	def _get_twitch_video(self, url):
@@ -555,6 +575,7 @@ class TestRequestTwitchVideo(unittest.TestCase):
 	def test_get_archive_id_regex_failure(self):
 		self._assert_get_archive_id_regex_failure('/123')
 		self._assert_get_archive_id_regex_failure('/x/123')
+		self._assert_get_archive_id_regex_failure('/b')
 		self._assert_get_archive_id_regex_failure('/b/')
 		self._assert_get_archive_id_regex_failure('/b/foo')
 		self._assert_get_archive_id_regex_failure('/b/123/456')

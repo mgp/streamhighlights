@@ -289,7 +289,7 @@ def _start_steam_auth():
 	# TODO: Remove any user from the session.
 	return oid.try_login(_STEAM_OPEN_ID_URL)
 
-_GET_STEAM_ID_REGEX = re.compile('steamcommunity.com/openid/id/(?P<steam_id>.*?)$')
+_GET_STEAM_ID_REGEX = re.compile('http://steamcommunity.com/openid/id/(?P<steam_id>\d+)$')
 _STEAM_PLAYER_SUMMARY_URL = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002'
 
 @oid.after_login
@@ -306,6 +306,7 @@ def complete_steam_auth(response):
 			_STEAM_PLAYER_SUMMARY_URL,
 			urllib.urlencode({
 					'key': _STEAM_WEB_API_KEY,
+					'format': 'json',
 					'steamids': steam_id
 			})
 	))
