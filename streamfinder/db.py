@@ -254,8 +254,79 @@ def drop_all():
 
 	_Base.metadata.drop_all(_engine)
 
+
 def _get_now(now):
 	if now is None:
 		return datetime.utcnow()
 	return now
+
+
+"""Adds a star by the client for the match with the given identifier.
+"""
+def add_star_match(client_id, match_id, now=None):
+	now = _get_now(now)
+	# Add the star for the match.
+	star = StarredMatch(user_id=client_id, match_id=match_id, added=now)
+	session.add(star)
+	# Increment the count of stars for the match.
+	session.execute(Matches.update()
+			.where(Match.id == match_id)
+			.values({Match.num_stars: Match.num_stars + 1}))
+	session.commit()
+
+"""Removes a star by the client for the match with the given identifier.
+"""
+def remove_star_match(client_id, match_id, now=None):
+	# Remove the client's star for the match.
+	result = session.execute(StarredMatch.delete().where(sa.and_(
+			StarredMatch.user_id == client_id,
+			StarredMatch.match_id == match_id)))
+	if result.rowcount:
+		# Decrement the count of stars for the match.
+		session.execute(Matches.update()
+				.where(Match.id == match_id)
+				.values({Match.num_stars: Match.num_stars - 1}))
+		session.commit()
+	else:
+		session.rollback()
+
+
+"""Adds a star by the client for the team with the given identifier.
+"""
+def add_star_team(client_id, team_id, now=None):
+	now = _get_now(now)
+	# Add the star for the team.
+	star = StarredTeam(user_id=client_id, team_id=team_id, added=now)
+	session.add(star)
+	# Increment the count of stars for the team.
+	session.execute(Teams.update()
+			.where(Team.id == team_id)
+			.values({Team.num_stars: Team.num_stars + 1}))
+	session.commit()
+
+"""Removes a star by the client for the team with the given identifier.
+"""
+def remove_star_team(client_id, team_id, now=None):
+	# Remove the client's star for the team.
+	result = session.execute(StarredTeam.delete().where(sa.and_(
+			StarredTeam.user_id == client_id,
+			StarredTeam.team_id == team_id)))
+	if result.rowcount:
+		# Decrement the count of stars for the team.
+		session.execute(Teams.update()
+				.where(Team.id == team_id)
+				.values({Team.num_stars: Team.num_stars - 1}))
+		session.commit()
+	else:
+		session.rollback()
+
+"""Adds a stream by the client for the match with the given identifier.
+"""
+def add_stream_match(client_id, match_id, now=None):
+	pass
+
+"""Removes a stream by the client for the match with the given identifier.
+"""
+def remove_stream_match(client_id, match_id, now=None):
+	pass
 
