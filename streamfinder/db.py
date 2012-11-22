@@ -251,12 +251,11 @@ def add_star_match(client_id, match_id, now=None):
 		raise DbException._chain()
 
 	# Increment the count of stars for the match.
-	session.execute(Matches.update()
-			.where(Match.id == match_id)
-			.values({Match.num_stars: Match.num_stars + 1}))
+	match = session.query(Match).filter(Match.id == match_id).one()
+	match.num_stars += 1
 
 	# If needed, remove a CalendarEntry for the streamed match.
-	_increment_num_user_stars(client_id, match_id, now)
+	_increment_num_user_stars(client_id, match, now)
 
 	session.commit()
 
@@ -307,14 +306,14 @@ def add_star_team(client_id, team_id, now=None):
 			.values({Team.num_stars: Team.num_stars + 1}))
 
 	# If needed, add a CalendarEntry for each streamed match.
-	match_ids_cursor = session.query(Match.id)\
+	matches_cursor = session.query(Match)\
 			.filter(Match.team1_id == team_id, Match.is_streamed == True)
-	for match_id in match_ids:
-		_increment_num_user_stars(client_id, match_id, now)
-	match_ids_cursor = session.query(Match.id)\
+	for match in matches_cursor:
+		_increment_num_user_stars(client_id, match, now)
+	matches_cursor = session.query(Match)\
 			.filter(Match.team2_id == team_id, Match.is_streamed == True)
-	for match_id in match_ids:
-		_increment_num_user_stars(client_id, match_id, now)
+	for match in matches_cursor:
+		_increment_num_user_stars(client_id, match, now)
 	
 	session.commit()
 
@@ -373,9 +372,10 @@ def add_star_streamer(client_id, streamer_id, now=None):
 			.values({User.num_stars: User.num_stars + 1}))
 
 	# If needed, add a CalendarEntry for each streamed match.
-	match_ids_cursor = session.query(StreamedMatch.match_id)\
+	matches_cursor = session.query(Match)\
+			.join(Match, StreamedMatch.match_id == Match.id)\
 			.filter(StreamedMatch.streamer_id == streamer_id)
-	for match_id in match_ids_cursor:
+	for match in matches_cursor:
 		_increment_num_user_stars(client_id, match, now)
 
 	session.commit()
@@ -425,21 +425,16 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 		session.rollback()
 		raise DbException._chain()
 
-	num_streams = session.query(Match.num_streams)\
-			.filter(Match.id == match_id)\
-			.one()
-	if num_streams > 1:
+	match = session.query(Match).filter(Match.id == match_id).one()
+	if match.num_streams > 0:
 		# This is not the first streaming user for the match.
-		session.execute(Matches.update()
-				.where(Match.id == match_id)
-				.values({Match.num_streams: num_streams + 1}))
-		_add_not_first_stream_calendar_entries(client_id, match_id, now)
+		match.num_streams += 1
+		_add_not_first_stream_calendar_entries(client_id, match, now)
 	else:
 		# This is the first streaming user for the match.
-		session.execute(Matches.update()
-				.where(Match.id == match_id)
-				.values({Match.num_streams: 1, Match.is_streamed: True}))
-		_add_first_stream_calendar_entries(client_id, match_id, now)
+		match.num_streams = 1
+		match.is_streamed = True
+		_add_first_stream_calendar_entries(client_id, match, now)
 
 	session.commit()
 
@@ -559,18 +554,15 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
-	
-	session.commit()
 
 """Updates or creates CalendarEntries for users, given that the client was
 added as a streamer, but not the first one.
 """
-def _add_not_first_stream_calendar_entries(client_id, match_id, now):
+def _add_not_first_stream_calendar_entries(client_id, match, now):
 	# If needed, add a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
-	session.commit()
 
 
 """Updates or deletes CalendarEntries for users, given that the client was
@@ -580,8 +572,7 @@ def _remove_not_last_stream_calendar_entries(client_id, match_id, now):
 	# If needed, remove a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
-	_multi_decrement_num_user_stars(user_ids_cursor, match, now)
-	session.commit()
+	_multi_decrement_num_user_stars(user_ids_cursor, match_id, now)
 
 """Updates or deletes CalendarEntries for users, given that the client was
 removed as the last streaming user.
@@ -590,5 +581,4 @@ def _remove_last_stream_calendar_entries(client_id, match_id, now):
 	# Remove every CalendarEntry for this match.
 	result = session.execute(
 			CalendarEntries.delete().where(CalendarEntry.user_id == client_id))
-	session.commit()
 
