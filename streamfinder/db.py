@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
 import sqlalchemy.ext.declarative as sa_ext_declarative
@@ -6,114 +7,27 @@ import sqlalchemy.orm as sa_orm
 import sqlalchemy.schema as sa_schema
 import sys
 
-"""Exception class raised by the database.
+
+"""A team in a match.
 """
-class DbException(Exception):
-	def __init__(self, reason):
-		Exception.__init__(self)
-		self.reason = reason
-	
-	def __str__(self):
-		return str(self.reason)
-
-	@staticmethod
-	def _chain():
-		exception_type, exception_value, traceback = sys.exc_info()
-		raise DbException(exception_value), None, traceback
-
-
-def get_engine(testing=True):
-	if testing:
-		return sa.create_engine('sqlite:///:memory:', echo=False)
-	else:
-		# TODO
-		return None
-
-_engine = get_engine()
-_Session = sa_orm.sessionmaker(bind=_engine)
-# TODO: Use a contextual session
-# http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#unitofwork-contextual
-session = _Session()
-
-# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
-@sa.event.listens_for(sa_engine.Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-	cursor = dbapi_connection.cursor()
-	cursor.execute("PRAGMA foreign_keys=ON")
-	cursor.close()
-
-
-_Base = sa_ext_declarative.declarative_base()
-
-"""A user of the site.
-"""
-class User(_Base):
-	__tablename__ = 'Users'
+class Team(_Base):
+	__tablename__ = 'Teams'
 
 	id = sa.Column(sa.Integer, primary_key=True)
 	name = sa.Column(sa.String, nullable=False)
-	image_url_small = sa.Column(sa.String)
-	image_url_large = sa.Column(sa.String)
-	created = sa.Column(sa.DateTime, nullable=False)
-	last_seen = sa.Column(sa.DateTime)
-
-	url_by_id = sa.Column(sa.String, nullable=False)
-	url_by_name = sa.Column(sa.String)
-
-	steam_user = sa_orm.relationship('SteamUser', uselist=False, backref='user')
-	twitch_user = sa_orm.relationship('TwitchUser', uselist=False, backref='user')
+	game = sa.Column(sa.String, nullable=False)
+	league = sa.Column(sa.String, nullable=False)
+	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
+	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, steam_user=%r, twitch_user=%r)' % (
+		print 'Team(id=%r, name=%r, game=%r, league=%r, num_stars=%r, fingerprint=%r)' % (
 				self.id,
 				self.name,
-				self.image_url_small,
-				self.image_url_large,
-				self.created.isoformat(),
-				self.last_seen.isoformat() if self.last_seen else None,
-				self.url_by_id,
-				self.url_by_name,
-				self.steam_user,
-				self.twitch_user)
-
-
-"""If the user logged in through Steam, the details of that user on Steam.
-"""
-class SteamUser(_Base):
-	__tablename__ = 'SteamUsers'
-
-	steam_id = sa.Column(sa.Integer, primary_key=True)
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-	# Used to construct URL to user on Steam.
-	profile_url = sa.Column(sa.String)
-
-	def __repr__(self):
-		# Has backref: user.
-		return 'SteamUser(steam_id=%r, user_id=%r, profile_url=%r, user=%r)' % (
-				self.steam_id,
-				self.user_id,
-				self.profile_url,
-				self.user)
-
-
-"""If the user logged in through Twitch, the details of that user on Twitch.
-"""
-class TwitchUser(_Base):
-	__tablename__ = 'TwitchUsers'
-
-	twitch_id = sa.Column(sa.Integer, primary_key=True)
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
-	# Used to construct URL to user on Twitch.
-	name = sa.Column(sa.String, nullable=False)
-	access_token = sa.Column(sa.String)
-
-	def __repr__(self):
-		# Has backref: user.
-		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r, access_token=%r)' % (
-				self.twitch_id,
-				self.user_id,
-				self.name,
-				self.access_token)
+				self.game,
+				self.league,
+				self.num_stars,
+				self.fingerprint)
 
 
 """A match between teams.
@@ -122,44 +36,50 @@ class Match(_Base):
 	__tablename__ = 'Matches'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	team1 = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
-	team2 = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
+	team1_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
+	team2_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
 	time = sa.Column(sa.DateTime, nullable=False)
 	game = sa.Column(sa.String, nullable=False)
-	league = sa.Column(sa.DateTime, nullable=False)
+	league = sa.Column(sa.String, nullable=False)
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	num_streams = sa.Column(sa.Integer, default=0, nullable=False)
+	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
+	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Match(id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r)' % (
+		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
 				self.id,
-				self.team1,
-				self.team2,
+				self.team1_id,
+				self.team2_id,
 				self.time,
 				self.game,
 				self.league,
 				self.num_stars,
-				self.num_streams)
+				self.num_streams,
+				self.is_streamed,
+				self.fingerprint)
 
 
-"""A team in a match.
+"""An edit for a match.
 """
-class Team(_Base):
-	__tablename__  'Teams'
+class MatchEdit(_Base):
+	__tablename__ = 'MatchEdits'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
-	game = sa.Column(sa.String, nullable=False)
-	league = sa.Column(sa.String, nullable=False)
-	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
+	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'))
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	action = sa.Column(sa.Enum('edit_time', 'cancel'), nullable=False)
+	data = sa.Column(sa.String)
+	comment = sa.Column(sa.String)
 
 	def __repr__(self):
-		print 'Team(id=%r, name=%r, game=%r, league=%r, num_stars=%r)' % (
+		return 'MatchEdit(id=%r, match_id=%r, user_id=%r, action=%r, data=%r, comment=%r)' % (
 				self.id,
-				self.name,
-				self.game,
-				self.league,
-				self.num_stars)
+				self.match_id,
+				self.user_id,
+				self.action,
+				self.data,
+				self.comment)
 
 
 """The association from users to their starred matches.
@@ -181,7 +101,7 @@ class StarredMatch(_Base):
 """The association from users to their starred teams.
 """
 class StarredTeam(_Base):
-	__tablename__ = 'StarredTeam'
+	__tablename__ = 'StarredTeams'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
@@ -194,139 +114,481 @@ class StarredTeam(_Base):
 				self.added)
 
 
-"""The association from users to their streamed matches.
+"""The association from users to their starred streaming users.
+"""
+class StarredStreamer(_Base):
+	__tablename__ = 'StarredStreamers'
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	added = sa.Column(sa.DateTime, nullable=False)
+
+	def __repr__(self):
+		return 'StarredStreamer(user_id=%r, streamer_id=%r, added=%r)' % (
+				self.user_id,
+				self.streamer_id,
+				self.added)
+
+
+"""The association from streaming users to their streamed matches.
 """
 class StreamedMatch(_Base):
 	__tablename__ = 'StreamedMatches'
 
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
-	match_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
-	added = sa.Column(sa.DateTime, 
+	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	added = sa.Column(sa.DateTime, nullable=False)
+	comment = sa.Column(sa.String)
 
 	def __repr__(self):
-		return 'StreamedMatch(user_id=%r, match_id=%r, added=%r)' % (
+		return 'StreamedMatch(streamer_id=%r, match_id=%r, added=%r, comment=%r)' % (
+				self.streamer_id,
+				self.match_id,
+				self.added,
+				self.comment)
+
+
+"""An entry in a user's calendar.
+"""
+class CalendaryEntry(_Base):
+	__tablename__ = 'CalendarEntries'
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	time = sa.Column(sa.DateTime, nullable=False)
+	num_user_stars = sa.Column(sa.Integer, default=0, nullable=False)
+
+	def __repr__(self):
+		return 'CalendarEntry(user_id=%r, match_id=%r, time=%r, num_user_stars=%r)' %  (
 				self.user_id,
 				self.match_id,
-				self.added)
+				self.time,
+				self.num_user_stars)
 
 
 def create_all():
-	global Users
-	global SteamUsers
-	global TwitchUsers
 	global Teams
 	global Matches
-	global StarredMatch
-	global StarredTeam
-	global StreamedMatch
-
-	_Base.metadata.create_all(_engine)
-
-	# Create aliases for each table.
-	Users = User.__table__
-	SteamUsers = SteamUser.__table__
-	TwitchUsers = TwitchUser.__table__
-	Teams = Team.__table__
-	Matches = Match.__table__
-	StarredMatches = StarredMatch.__table__
-	StarredTeams = StarredTeam.__table__
-	StreamedMatches = StreamedMatch.__table__
-
-def drop_all():
-	global Users
-	global SteamUsers
-	global TwitchUsers
-	global Teams
-	global Matches
+	global MatchEdits
 	global StarredMatches
 	global StarredTeams
+	global StarredStreamers
+	global StreamedMatches
+	global CalendarEntries
+
+	# TODO: call common create_all()
+
+	# Create aliases for each table.
+	Teams = Team.__table__
+	Matches = Match.__table__
+	MatchEdits = MatchEdit.__table__
+	StarredMatches = StarredMatch.__table__
+	StarredTeams = StarredTeam.__table__
+	StarredStreamers = StarredStreamer.__table__
+	StreamedMatches = StreamedMatch.__table__
+	CalendarEntries = CalendarEntry.__table__
+
+def drop_all():
+	global Teams
+	global Matches
+	global MatchEdits
+	global StarredMatches
+	global StarredTeams
+	global StarredStreamers
 	global StreamedMatches
 
 	# Clear aliases for each table.
-	Users = None
-	SteamUsers = None
-	TwitchUsers = None
 	Teams = None
 	Matches = None
+	MatchEdits = None
 	StarredMatches = None
 	StarredTeams = None
+	StarredStreamers = None
 	StreamedMatches = None
+	CalendarEntries = None
 
-	_Base.metadata.drop_all(_engine)
+	# TODO: call common drop_all()
 
 
-def _get_now(now):
-	if now is None:
-		return datetime.utcnow()
-	return now
+
+"""Adds a match between two teams at a given time.
+"""
+def add_match(team1_id, team2_id, time, game, league, now=None):
+	try:
+		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time)
+		session.add(match)
+		session.commit()
+		return match.id
+	except sa.exc.IntegrityError:
+		# The commit failed because teams with the given identifiers are missing.
+		session.rollback()
+		raise DbException._chain()
+
+"""Adds a team in the given game and league.
+"""
+def add_team(name, game, league):
+	team = Team(name=name, game=game, league=league)
+	session.add(team)
+	session.commit()
+	return team.id
 
 
 """Adds a star by the client for the match with the given identifier.
 """
 def add_star_match(client_id, match_id, now=None):
 	now = _get_now(now)
-	# Add the star for the match.
-	star = StarredMatch(user_id=client_id, match_id=match_id, added=now)
-	session.add(star)
+
+	try:
+		# Add the client's star for the match.
+		starred_match = StarredMatch(user_id=client_id,
+				match_id=match_id,
+				added=now)
+		session.add(starred_match)
+		session.flush()
+	except sa.exc.IntegrityError:
+		# The flush failed because the client has already starred this match.
+		session.rollback()
+		raise DbException._chain()
+
 	# Increment the count of stars for the match.
 	session.execute(Matches.update()
 			.where(Match.id == match_id)
 			.values({Match.num_stars: Match.num_stars + 1}))
+
+	# If needed, remove a CalendarEntry for the streamed match.
+	_increment_num_user_stars(client_id, match_id, now)
+
 	session.commit()
 
 """Removes a star by the client for the match with the given identifier.
 """
 def remove_star_match(client_id, match_id, now=None):
+	now = _get_now(now)
+
 	# Remove the client's star for the match.
-	result = session.execute(StarredMatch.delete().where(sa.and_(
+	result = session.execute(StarredMatches.delete().where(sa.and_(
 			StarredMatch.user_id == client_id,
 			StarredMatch.match_id == match_id)))
-	if result.rowcount:
-		# Decrement the count of stars for the match.
-		session.execute(Matches.update()
-				.where(Match.id == match_id)
-				.values({Match.num_stars: Match.num_stars - 1}))
-		session.commit()
-	else:
+	if not result.rowcount:
 		session.rollback()
+		return
+
+	# Decrement the count of stars for the match.
+	session.execute(Matches.update()
+			.where(Match.id == match_id)
+			.values({Match.num_stars: Match.num_stars - 1}))
+
+	# If needed, remove a CalendarEntry for the streamed match.
+	_decrement_num_user_stars(client_id, match_id, now)
+
+	session.commit()
 
 
 """Adds a star by the client for the team with the given identifier.
 """
 def add_star_team(client_id, team_id, now=None):
 	now = _get_now(now)
-	# Add the star for the team.
-	star = StarredTeam(user_id=client_id, team_id=team_id, added=now)
-	session.add(star)
+
+	try:
+		# Add the client's star for the team.
+		starred_team = StarredTeam(user_id=client_id,
+				team_id=team_id,
+				added=now)
+		session.add(starred_team)
+		session.flush()
+	except sa.exc.IntegrityError:
+		# The flush failed because the client has already starred this team.
+		session.rollback()
+		raise DbException._chain()
+
 	# Increment the count of stars for the team.
 	session.execute(Teams.update()
 			.where(Team.id == team_id)
 			.values({Team.num_stars: Team.num_stars + 1}))
+
+	# If needed, add a CalendarEntry for each streamed match.
+	match_ids_cursor = session.query(Match.id)\
+			.filter(Match.team1_id == team_id, Match.is_streamed == True)
+	for match_id in match_ids:
+		_increment_num_user_stars(client_id, match_id, now)
+	match_ids_cursor = session.query(Match.id)\
+			.filter(Match.team2_id == team_id, Match.is_streamed == True)
+	for match_id in match_ids:
+		_increment_num_user_stars(client_id, match_id, now)
+	
 	session.commit()
+
 
 """Removes a star by the client for the team with the given identifier.
 """
 def remove_star_team(client_id, team_id, now=None):
+	now = _get_now(now)
+
 	# Remove the client's star for the team.
 	result = session.execute(StarredTeam.delete().where(sa.and_(
 			StarredTeam.user_id == client_id,
 			StarredTeam.team_id == team_id)))
-	if result.rowcount:
-		# Decrement the count of stars for the team.
-		session.execute(Teams.update()
-				.where(Team.id == team_id)
-				.values({Team.num_stars: Team.num_stars - 1}))
-		session.commit()
-	else:
+	if not result.rowcount:
 		session.rollback()
+		return
+
+	# Decrement the count of stars for the team.
+	session.execute(Teams.update()
+			.where(Team.id == team_id)
+			.values({Team.num_stars: Team.num_stars - 1}))
+
+	# If needed, remove a CalendarEntry for each streamed match.
+	match_ids_cursor = session.query(Match.id)\
+			.filter(Match.team1_id == team_id, Match.is_streamed == True)
+	for match_id in match_ids_cursor:
+		_decrement_num_user_stars(client_id, match_id, now)
+	match_ids_cursor = session.query(Match.id)\
+			.filter(Match.team2_id == team_id, Match.is_streamed == True)
+	for match_id in match_ids_cursor:
+		_decrement_num_user_stars(client_id, match_id, now)
+
+	session.commit()
+
+
+"""Adds a star by the client for the streaming user with the given identifier.
+"""
+def add_star_streamer(client_id, streamer_id, now=None):
+	now = _get_now(now)
+
+	try:
+		# Add the client's star for the streaming user.
+		starred_streamer = StarredStreamer(user_id=client_id,
+				streamer_id=streamer_id,
+				added=now)
+		session.add(starred_streamer)
+		session.flush()
+	except sa.exc.IntegrityError:
+		# The flush failed because the client has already starred this streaming user.
+		session.rollback()
+		raise DbException._chain()
+
+	# Increment the count of stars for the streaming user.
+	session.execute(Users.update()
+			.where(User.id == streamer_id)
+			.values({User.num_stars: User.num_stars + 1}))
+
+	# If needed, add a CalendarEntry for each streamed match.
+	match_ids_cursor = session.query(StreamedMatch.match_id)\
+			.filter(StreamedMatch.streamer_id == streamer_id)
+	for match_id in match_ids_cursor:
+		_increment_num_user_stars(client_id, match, now)
+
+	session.commit()
+
+"""Removes a star by the client for the streaming user with the given identifier.
+"""
+def remove_star_streamer(client_id, streamer_id, now=None):
+	now = _get_now(now)
+
+	# Remove the client's star for the streaming user.
+	result = session.execute(StarredStreamer.delete().where(sa.and_(
+			StarredStreamer.user_id == client_id,
+			StarredStreamer.streamer_id == streamer_id)))
+	if not result.rowcount:
+		session.rollback()
+		return
+
+	# Decrement the count of stars for the streaming user.
+	session.execute(Users.update()
+			.where(User.id == streamer_id)
+			.values({User.num_stars: User.num_stars - 1}))
+
+	# If needed, remove a CalendarEntry for each streamed match.
+	match_ids_cursor = session.query(StreamedMatch.match_id)\
+			.filter(StreamedMatch.streamer_id == streamer_id)
+	for match_id in match_ids_cursor:
+		_decrement_num_user_stars(client_id, match_id, now)
+
+	session.commit()
+
 
 """Adds a stream by the client for the match with the given identifier.
 """
-def add_stream_match(client_id, match_id, now=None):
-	pass
+def add_stream_match(client_id, match_id, comment=None, now=None):
+	now = _get_now(now)
+
+	try:
+		# Add the client as a user streaming the match.
+		streamed_match = StreamedMatch(streamer_id=client_id,
+				match_id=match_id,
+				added=now,
+				comment=comment)
+		session.add(streamed_match)
+		session.flush()
+	except sa.exc.IntegrityError:
+		# The flush failed because the client is already streaming this match.
+		session.rollback()
+		raise DbException._chain()
+
+	num_streams = session.query(Match.num_streams)\
+			.filter(Match.id == match_id)\
+			.one()
+	if num_streams > 1:
+		# This is not the first streaming user for the match.
+		session.execute(Matches.update()
+				.where(Match.id == match_id)
+				.values({Match.num_streams: num_streams + 1}))
+		_add_not_first_stream_calendar_entries(client_id, match_id, now)
+	else:
+		# This is the first streaming user for the match.
+		session.execute(Matches.update()
+				.where(Match.id == match_id)
+				.values({Match.num_streams: 1, Match.is_streamed: True}))
+		_add_first_stream_calendar_entries(client_id, match_id, now)
+
+	session.commit()
 
 """Removes a stream by the client for the match with the given identifier.
 """
 def remove_stream_match(client_id, match_id, now=None):
-	pass
+	now = _get_now(now)
+
+	# Remove the client as a user streaming the match.
+	result = session.execute(StreamedMatch.delete().where(sa.and_(
+			StreamedMatch.user_id == client_id,
+			StreamedMatch.match_id == match_id)))
+	if not result.rowcount:
+		session.rollback()
+		return
+	
+	num_streams = session.query(Match.num_streams)\
+			.filter(Match.id == match_id)\
+			.one()
+	if num_streams > 1:
+		# This was not the last streaming user for the match.
+		session.execute(Matches.update()
+				.where(Match.id == match_id)
+				.values({Match.num_streams: num_streams - 1}))
+		_remove_not_last_stream_calendar_entries(client_id, match_id, now)
+	else:
+		# This was the last streaming user for the match.
+		session.execute(Matches.update()
+				.where(Match.id == match_id)
+				.values({Match.num_streams: 0, Match.is_streamed: False}))
+		_remove_last_stream_calendar_entries(client_id, match_id, now)
+	
+	session.commit()
+
+
+"""Returns a CalendarEntry created with the given user identifier and match.
+"""
+def _get_calendar_entry(user_id, match):
+	return CalendarEntry(user_id=user_id,
+			match_id=match.id,
+			time=match.time,
+			num_user_stars=1)
+
+
+def _multi_increment_num_user_stars(user_ids, match, now):
+	for user_id in user_ids:
+		_increment_num_user_stars(user_id, match, now)
+
+"""Updates or creates a CalendarEntry for the given user identifier and match.
+"""
+def _increment_num_user_stars(user_id, match, now):
+	missing = session.query(CalendarEntry)\
+			.filter(
+				CalendarEntry.user_id == user_id,
+				CalendarEntry.match_id == match.id)\
+			.count() == 0
+	if missing:
+		# No existing CalendarEntry; create a new one.
+		entry = _get_calendar_entry(user_id, match)
+		session.add(entry)
+	else:
+		# Increment the count of stars for an existing CalendarEntry.
+		session.execute(CalendarEntries.update()
+				.where(sa.and_(
+					CalendarEntry.user_id == user_id,
+					CalendarEntry.match_id == match.id))
+				.values({CalendarEntry.num_user_stars: CalendarEntry.num_user_stars + 1}))
+
+
+def _multi_decrement_num_user_stars(user_ids, match_id, now):
+	for user_id in user_ids:
+		_decrement_num_user_stars(user_id, match_id, now)
+
+"""Updates or deletes a CalendarEntry for the given user and match identifier.
+"""
+def _decrement_num_user_stars(user_ids, match_id, now):
+	num_user_stars = session.query(CalendarEntry.num_user_stars)\
+			.filter(
+				CalendarEntry.user_id == user_id,
+				CalendarEntry.match_id == match_id)\
+			.one()
+	if num_user_stars > 1:
+		# Decrement the count of stars for the CalendarEntry to a positive integer.
+		session.execute(CalendarEntries.update()
+				.where(sa.and_(
+					CalendarEntry.user_id == user_id,
+					CalendarEntry.match_id == match_id))
+				.values({CalendarEntry.num_user_stars: num_user_stars - 1}))
+	else:
+		# Delete the CalendarEntry becuase the count of stars is now zero.
+		session.execute(CalendarEntries.delete().where(sa.and_(
+				CalendarEntry.user_id == user_id,
+				CalendarEntry.match_id == match_id)))
+
+
+"""Updates or creates CalendarEntries for users, given that the client was
+added as the first streaming user.
+"""
+def _add_first_stream_calendar_entries(client_id, match, now):
+	# Add a CalendarEntry for each user who starred the match.
+	user_ids_cursor = session.query(StarredMatch.user_id)\
+			.filter(StarredMatch.match_id == match.id)
+	for user_id in user_ids_cursor:
+		entry = _get_calendar_entry(user_id, match)
+		session.add(entry)
+
+	# Add a CalendarEntry for each user who starred the first steam.
+	user_ids_cursor = session.query(StarredTeam.user_id)\
+			.filter(StarredTeam.team_id == match.team1_id)
+	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+	# Add a CalendarEntry for each user who starred the second team.
+	user_ids_cursor = session.query(StarredTeam.user_id)\
+			.filter(StarredTeam.team_id == match.team2_id)
+	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+
+	# Add a CalendarEntry for each user who starred the streaming user.
+	user_ids_cursor = session.query(StarredStreamer.user_id)\
+			.filter(StarredStreamer.streamer_id == client_id)
+	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+	
+	session.commit()
+
+"""Updates or creates CalendarEntries for users, given that the client was
+added as a streamer, but not the first one.
+"""
+def _add_not_first_stream_calendar_entries(client_id, match_id, now):
+	# If needed, add a CalendarEntry for each user who starred the streaming user.
+	user_ids_cursor = session.query(StarredStreamer.user_id)\
+			.filter(StarredStreamer.streamer_id == client_id)
+	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+	session.commit()
+
+
+"""Updates or deletes CalendarEntries for users, given that the client was
+removed as a streamer, but not the last one.
+"""
+def _remove_not_last_stream_calendar_entries(client_id, match_id, now):
+	# If needed, remove a CalendarEntry for each user who starred the streaming user.
+	user_ids_cursor = session.query(StarredStreamer.user_id)\
+			.filter(StarredStreamer.streamer_id == client_id)
+	_multi_decrement_num_user_stars(user_ids_cursor, match, now)
+	session.commit()
+
+"""Updates or deletes CalendarEntries for users, given that the client was
+removed as the last streaming user.
+"""
+def _remove_last_stream_calendar_entries(client_id, match_id, now):	
+	# Remove every CalendarEntry for this match.
+	result = session.execute(
+			CalendarEntries.delete().where(CalendarEntry.user_id == client_id))
+	session.commit()
 
