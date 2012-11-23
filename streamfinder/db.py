@@ -719,17 +719,19 @@ class DisplayedMatch:
 """A match for a DisplayedTeam.
 """
 class DisplayedTeamMatch:
-	def __init__(self, opponent_id, opponent_name, time, num_stars, num_streams):
+	def __init__(self, opponent_id, opponent_name, match_id, time, num_stars, num_streams):
 		self.opponent_id = opponent_id
 		self.opponent_name = opponent_name
+		self.match_id = match_id
 		self.time = time
 		self.num_stars = num_stars
 		self.num_streams = num_streams
 	
 	def __repr__(self):
-		return 'DisplayedTeamMatch(opponent_id=%r, opponent_name=%r, time=%r, num_stars=%r, num_streams=%r)' % (
+		return 'DisplayedTeamMatch(opponent_id=%r, opponent_name=%r, match_id=%r, time=%r, num_stars=%r, num_streams=%r)' % (
 				self.opponent_id,
 				self.opponent_name,
+				self.match_id,
 				self.time,
 				self.num_stars,
 				self.num_streams)
@@ -807,4 +809,182 @@ class DisplayedStreamer:
 				self.matches,
 				self.prev_key,
 				self.next_key)
+
+
+def _get_displayed_calendar_match(match, team1, team2):
+	return DisplayedCalendarMatch(match.id,
+			team1.id,
+			team1.name,
+			team2.id,
+			team2.name,
+			match.time,
+			match.game,
+			match.league,
+			match.num_stars,
+			match.num_streams)
+
+"""Returns a DisplayedCalendar containing calendar entries for the given user.
+"""
+def get_displayed_calendar(client_id, prev_key=None, next_key=None):
+	# TODO: Get the next match.
+
+	matches_query = session.query(Match, Team, Team)\
+			.join(CalendarEntry.match_id == Match.id)\
+			.join(Match.team1_id == Team.id)\
+			.join(Match.team2_id == Team.id)\
+			.filter(CalendarEntry.user_id == client_id)
+	if prev_key:
+		# TODO: Add filter, limit.
+		pass
+	elif next_key:
+		# TODO: Add filter, limit.
+		pass
+
+	matches = [
+			_get_displayed_calendar_match(match, team1, team2)
+				for match, team1, team2 in matches_query]
+	session.close()
+
+	if prev_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	elif next_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	return DisplayedCalendar(next_match,
+			matches,
+			new_prev_key,
+			new_next_key)
+
+
+def _get_displayed_match_team(team):
+	return DisplayedMatchTeam(team.id,
+			team.name,
+			team.num_stars)
+
+def _get_displayed_match_streamer(streamer):
+	return DisplayedMatchStreamer(streamer.id,
+			streamer.name,
+			streamer.num_stars,
+			streamer.image_url,
+			streamer.url_by_id,
+			streamer.url_by_name)
+
+"""Returns a DisplayedMatch containing streaming users.
+"""
+def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
+	match, team1, team2 = session.query(Match, Team, Team)\
+			.join(Match.team1_id == Team.id)\
+			.join(Match.team2_id == Team.id)\
+			.filter(Match.id == match_id)\
+			.one()
+	displayed_team1 = _get_displayed_match_team(team1)
+	displayed_team2 = _get_displayed_match_team(team2)
+	
+	streamers_query = session.query(User)\
+			.join(StreamedMatch.streamer_id == User.id)\
+			.filter(StreamedMatch.match_id == match_id)
+	if prev_key:
+		# TODO: Add filter, limit.
+		pass
+	elif next_key:
+		# TODO: Add filter, limit.
+		pass
+
+	streamers = [
+			_get_displayed_match_streamer(streamer)
+				for streamer in streamers_query]
+	session.close()
+
+	if prev_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	elif next_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	return DisplayedMatch(match_id,
+			displayed_team1,
+			displayed_team2,
+			match.time,
+			match.game,
+			match.league,
+			match.num_stars,
+			match.streamers,
+			new_prev_key,
+			new_next_key)
+
+
+def _get_displayed_team_match(match, opponent_team):
+	return DisplayedTeamMatch(opponent_team.id,
+			opponent_team.name,
+			match.id,
+			match.time,
+			match.num_stars,
+			match.num_streams)
+
+"""Returns a DisplayedTeam containing scheduled matches.
+"""
+def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
+	team = session.query(Team).filter(Team.id == team_id).one()
+
+	if prev_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	elif next_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	return DisplayedTeam(team_id,
+			team.name,
+			team.game,
+			team.league,
+			team.num_stars,
+			matches,
+			new_prev_key,
+			new_next_key)
+
+
+def _get_displayed_streamer_match(match, team1, team2):
+	return DisplayedStreamerMatch(match.id,
+			team1.id,
+			team1.name,
+			team2.id,
+			team2.name,
+			match.time,
+			match.game,
+			match.league,
+			match.num_stars,
+			match.num_streams)
+
+def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None):
+	streamer = session.query(User).filter(User.id == streamer_id).one()
+
+	matches_query = session.query(Match, Team, Team)\
+			.join(StreamedMatch.match_id == Match.id)\
+			.join(Match.team1_id == Team.id)\
+			.join(Match.team2_id == Team.id)\
+			.filter(StreamedMatch.streamer_id == streamer_id)
+	if prev_key:
+		# TODO: Add filter, limit.
+		pass
+	elif next_key:
+		# TODO: Add filter, limit.
+		pass
+
+	matches = [
+			_get_displayed_streamer_match(match, team1, team2)
+				for match, team1, team2 in matches_query]
+	session.close()
+
+	if prev_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	elif next_key:
+		# TODO: Set new_prev_key, new_next_key
+		pass
+	return DisplayedStreamer(streamer_id,
+			streamer.name,
+			streamer.num_stars,
+			matches,
+			new_prev_key,
+			new_next_key)
 
