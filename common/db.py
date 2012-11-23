@@ -48,9 +48,7 @@ _Base = sa_ext_declarative.declarative_base()
 
 """A user of the site.
 """
-class User(_Base):
-	__tablename__ = 'Users'
-
+class UserMixin(object):
 	id = sa.Column(sa.Integer, primary_key=True)
 	name = sa.Column(sa.String, nullable=False)
 	image_url_small = sa.Column(sa.String)
@@ -61,21 +59,12 @@ class User(_Base):
 	url_by_id = sa.Column(sa.String, nullable=False)
 	url_by_name = sa.Column(sa.String)
 
-	steam_user = sa_orm.relationship('SteamUser', uselist=False, backref='user')
-	twitch_user = sa_orm.relationship('TwitchUser', uselist=False, backref='user')
-
-	def __repr__(self):
-		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, steam_user=%r, twitch_user=%r)' % (
-				self.id,
-				self.name,
-				self.image_url_small,
-				self.image_url_large,
-				self.created.isoformat(),
-				self.last_seen.isoformat() if self.last_seen else None,
-				self.url_by_id,
-				self.url_by_name,
-				self.steam_user,
-				self.twitch_user)
+	@sa_ext_declarative.declared_attr
+	def steam_user(cls):
+		return sa_orm.relationship('SteamUser', uselist=False, backref='user')
+	@sa_ext_declarative.declared_attr
+	def twitch_user(cls):
+		return sa_orm.relationship('TwitchUser', uselist=False, backref='user')
 
 
 """If the user logged in through Steam, the details of that user on Steam.
@@ -188,7 +177,7 @@ def _get_twitch_url(user):
 	prefix, twitch_id = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
 	return '/user/twitch_id/%s' % twitch_id
 
-def _remove_equal_url_by_name(url_by_name, user_id):
+def _remove_equal_url_by_name(User, Users, url_by_name, user_id):
 	if url_by_name is not None:
 		# The url_by_name must be unique.
 		update_statement = Users.update().where(User.url_by_name == url_by_name)
@@ -198,16 +187,17 @@ def _remove_equal_url_by_name(url_by_name, user_id):
 
 """Called whenever a Twitch user has been authenticated and logged in.
 """
-def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token, now=None):
+def twitch_user_logged_in(User, Users,
+		twitch_id, name, display_name, logo, access_token, now=None):
 	now = _get_now(now)
 	url_by_name = _get_twitch_url_by_name(name)
 	try:
 		twitch_user = session.query(TwitchUser)\
 				.options(sa_orm.joinedload(TwitchUser.user))\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
-		_remove_equal_url_by_name(url_by_name, twitch_user.user.id)
+		_remove_equal_url_by_name(User, Users, url_by_name, twitch_user.user.id)
 	except sa_orm.exc.NoResultFound:
-		_remove_equal_url_by_name(url_by_name, None)
+		_remove_equal_url_by_name(User, Users, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
 		twitch_user.user = User(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
 		session.add(twitch_user)
@@ -226,16 +216,17 @@ def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token, now
 
 """Called whenever a Steam user has been authenticated and logged in.
 """
-def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full, now=None):
+def steam_user_logged_in(User, Users,
+		steam_id, personaname, profile_url, avatar, avatar_full, now=None):
 	now = _get_now(now)
 	url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
 	try:
 		steam_user = session.query(SteamUser)\
 				.options(sa_orm.joinedload(SteamUser.user))\
 				.filter(SteamUser.steam_id == steam_id).one()
-		_remove_equal_url_by_name(url_by_name, steam_user.user.id)
+		_remove_equal_url_by_name(User, Users, url_by_name, steam_user.user.id)
 	except sa_orm.exc.NoResultFound:
-		_remove_equal_url_by_name(url_by_name, None)
+		_remove_equal_url_by_name(User, Users, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
 		steam_user.user = User(created=now, url_by_id=_get_steam_url_by_id(steam_id))
 		session.add(steam_user)
@@ -253,24 +244,20 @@ def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full
 	return steam_user.user.id
 
 def create_all():
-	global Users
+	_Base.metadata.create_all(_engine)
+
 	global SteamUsers
 	global TwitchUsers
 
-	_Base.metadata.create_all(_engine)
-
 	# Create aliases for each table.
-	Users = User.__table__
 	SteamUsers = SteamUser.__table__
 	TwitchUsers = TwitchUser.__table__
 
 def drop_all():
-	global Users
 	global SteamUsers
 	global TwitchUsers
 	
 	# Clear aliases for each table.
-	Users = None
 	SteamUsers = None
 	TwitchUsers = None
 
