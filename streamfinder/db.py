@@ -85,6 +85,26 @@ class Match(common_db._Base):
 				self.fingerprint)
 
 
+"""The association between a team in a match and its opponent.
+"""
+class MatchOpponent(common_db._Base):
+	__tablename__ = 'MatchOpponents'
+
+	team_id = sa.Clumn(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
+	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
+	time = sa.Column(sa.DateTime, nullable=False)
+	opponent_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
+
+	def __repr__(self):
+		return 'MatchOpponent(team_id=%r, match_id=%r, is_streamed=%r, time=%r, opponent_id=%r)' % (
+				self.team_id,
+				self.match_id,
+				self.is_streamed,
+				self.time,
+				self.opponent_id)
+
+
 """An edit for a match.
 """
 class MatchEdit(common_db._Base):
@@ -196,6 +216,7 @@ def create_all():
 
 	global Teams
 	global Matches
+	global MatchOpponents
 	global MatchEdits
 	global StarredMatches
 	global StarredTeams
@@ -206,6 +227,7 @@ def create_all():
 	# Create aliases for each table.
 	Teams = Team.__table__
 	Matches = Match.__table__
+	MatchOpponents = MatchOpponent.__table__
 	MatchEdits = MatchEdit.__table__
 	StarredMatches = StarredMatch.__table__
 	StarredTeams = StarredTeam.__table__
@@ -216,6 +238,7 @@ def create_all():
 def drop_all():
 	global Teams
 	global Matches
+	global MatchOpponents
 	global MatchEdits
 	global StarredMatches
 	global StarredTeams
@@ -225,6 +248,7 @@ def drop_all():
 	# Clear aliases for each table.
 	Teams = None
 	Matches = None
+	MatchOpponents = None
 	MatchEdits = None
 	StarredMatches = None
 	StarredTeams = None
@@ -239,9 +263,20 @@ def drop_all():
 """
 def add_match(team1_id, team2_id, time, game, league, now=None):
 	try:
+		# Add the match.
 		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time)
 		session.add(match)
+		session.flush()
+
+		# Add each opponent for the match.
+		match_opponent1 = MatchOpponent(
+				team_id=team1_id, match_id=match.id, time=time, opponent_id=team2_id)
+		match_opponent2 = MatchOpponent(
+				team_id=team2_id, match_id=match.id, time=time, opponent_id=team1_id)
+		session.add(match_opponent1)
+		session.add(match_opponent2)
 		session.commit()
+
 		return match.id
 	except sa.exc.IntegrityError:
 		# The commit failed because teams with the given identifiers are missing.
@@ -331,11 +366,8 @@ def add_star_team(client_id, team_id, now=None):
 
 	# If needed, add a CalendarEntry for each streamed match.
 	matches_cursor = session.query(Match)\
-			.filter(Match.team1_id == team_id, Match.is_streamed == True)
-	for match in matches_cursor:
-		_increment_num_user_stars(client_id, match, now)
-	matches_cursor = session.query(Match)\
-			.filter(Match.team2_id == team_id, Match.is_streamed == True)
+			.join(Match, MatchOpponent.match_id == Match.id)\
+			.filter(MatchOpponent.team_id == team_id, MatchOpponent.is_streamed == True)
 	for match in matches_cursor:
 		_increment_num_user_stars(client_id, match, now)
 	
@@ -361,12 +393,9 @@ def remove_star_team(client_id, team_id, now=None):
 			.values({Team.num_stars: Team.num_stars - 1}))
 
 	# If needed, remove a CalendarEntry for each streamed match.
-	match_ids_cursor = session.query(Match.id)\
-			.filter(Match.team1_id == team_id, Match.is_streamed == True)
-	for match_id in match_ids_cursor:
-		_decrement_num_user_stars(client_id, match_id, now)
-	match_ids_cursor = session.query(Match.id)\
-			.filter(Match.team2_id == team_id, Match.is_streamed == True)
+	matches_cursor = session.query(Match)\
+			.join(Match, MatchOpponent.match_id == Match.id)\
+			.filter(MatchOpponent.team_id == team_id, MatchOpponent.is_streamed == True)
 	for match_id in match_ids_cursor:
 		_decrement_num_user_stars(client_id, match_id, now)
 
@@ -565,13 +594,10 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 		entry = _get_calendar_entry(user_id, match)
 		session.add(entry)
 
-	# Add a CalendarEntry for each user who starred the first steam.
+	# Add a CalendarEntry for each user who starred either team.
 	user_ids_cursor = session.query(StarredTeam.user_id)\
-			.filter(StarredTeam.team_id == match.team1_id)
-	_multi_increment_num_user_stars(user_ids_cursor, match, now)
-	# Add a CalendarEntry for each user who starred the second team.
-	user_ids_cursor = session.query(StarredTeam.user_id)\
-			.filter(StarredTeam.team_id == match.team2_id)
+			.join(MatchOpponent, MatchOpponent.match_id == match.id)
+			.filter(StarredTeam.team_id == MatchOpponent.team_id)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
 	# Add a CalendarEntry for each user who starred the streaming user.
@@ -829,9 +855,9 @@ def get_displayed_calendar(client_id, prev_key=None, next_key=None):
 	# TODO: Get the next match.
 
 	matches_query = session.query(Match, Team, Team)\
-			.join(CalendarEntry.match_id == Match.id)\
-			.join(Match.team1_id == Team.id)\
-			.join(Match.team2_id == Team.id)\
+			.join(Match, CalendarEntry.match_id == Match.id)\
+			.join(Team, Match.team1_id == Team.id)\
+			.join(Team, Match.team2_id == Team.id)\
 			.filter(CalendarEntry.user_id == client_id)
 	if prev_key:
 		# TODO: Add filter, limit.
@@ -874,15 +900,15 @@ def _get_displayed_match_streamer(streamer):
 """
 def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
 	match, team1, team2 = session.query(Match, Team, Team)\
-			.join(Match.team1_id == Team.id)\
-			.join(Match.team2_id == Team.id)\
+			.join(Team, Match.team1_id == Team.id)\
+			.join(Team, Match.team2_id == Team.id)\
 			.filter(Match.id == match_id)\
 			.one()
 	displayed_team1 = _get_displayed_match_team(team1)
 	displayed_team2 = _get_displayed_match_team(team2)
 	
 	streamers_query = session.query(User)\
-			.join(StreamedMatch.streamer_id == User.id)\
+			.join(User, StreamedMatch.streamer_id == User.id)\
 			.filter(StreamedMatch.match_id == match_id)
 	if prev_key:
 		# TODO: Add filter, limit.
@@ -927,6 +953,22 @@ def _get_displayed_team_match(match, opponent_team):
 def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
 	team = session.query(Team).filter(Team.id == team_id).one()
 
+	matches_query = session.query(Match, Team)\
+			.join(Match, MatchOpponent.match_id == Match.id)\
+			.join(Team, MatchOpponent.opponent_id == Team.id)\
+			.filter(MatchOpponent.team_id == team_id)
+	if prev_key:
+		# TODO: Add filter, limit.
+		pass
+	elif next_key:
+		# TODO: Add filter, limit.
+		pass
+
+	matches = [
+			_get_displayed_team_match(match, opponent_team)
+				for match, opponent_team in matches_query]
+	session.close()
+
 	if prev_key:
 		# TODO: Set new_prev_key, new_next_key
 		pass
@@ -959,9 +1001,9 @@ def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None)
 	streamer = session.query(User).filter(User.id == streamer_id).one()
 
 	matches_query = session.query(Match, Team, Team)\
-			.join(StreamedMatch.match_id == Match.id)\
-			.join(Match.team1_id == Team.id)\
-			.join(Match.team2_id == Team.id)\
+			.join(Match, StreamedMatch.match_id == Match.id)\
+			.join(Team, Match.team1_id == Team.id)\
+			.join(Team, Match.team2_id == Team.id)\
 			.filter(StreamedMatch.streamer_id == streamer_id)
 	if prev_key:
 		# TODO: Add filter, limit.
