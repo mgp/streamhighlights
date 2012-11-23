@@ -7,10 +7,35 @@ import sqlalchemy.orm as sa_orm
 import sqlalchemy.schema as sa_schema
 import sys
 
+import common_db
+
+"""A user of the site.
+"""
+class User(common_db.UserMixin, common_db._Base):
+	__tablename__ = 'Users'
+
+	can_stream = sa.Column(sa.Boolean, nullable=False)
+	stream_info = sa.Column(sa.String)
+
+	def __repr__(self):
+		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, can_stream=%r, stream_info=%r, steam_user=%r, twitch_user=%r)' % (
+				self.id,
+				self.name,
+				self.image_url_small,
+				self.image_url_large,
+				self.created.isoformat(),
+				self.last_seen.isoformat() if self.last_seen else None,
+				self.url_by_id,
+				self.url_by_name,
+				self.can_stream,
+				self.stream_info,
+				self.steam_user,
+				self.twitch_user)
+
 
 """A team in a match.
 """
-class Team(_Base):
+class Team(common_db._Base):
 	__tablename__ = 'Teams'
 
 	id = sa.Column(sa.Integer, primary_key=True)
@@ -32,7 +57,7 @@ class Team(_Base):
 
 """A match between teams.
 """
-class Match(_Base):
+class Match(common_db._Base):
 	__tablename__ = 'Matches'
 
 	id = sa.Column(sa.Integer, primary_key=True)
@@ -62,7 +87,7 @@ class Match(_Base):
 
 """An edit for a match.
 """
-class MatchEdit(_Base):
+class MatchEdit(common_db._Base):
 	__tablename__ = 'MatchEdits'
 
 	id = sa.Column(sa.Integer, primary_key=True)
@@ -84,7 +109,7 @@ class MatchEdit(_Base):
 
 """The association from users to their starred matches.
 """
-class StarredMatch(_Base):
+class StarredMatch(common_db._Base):
 	__tablename__ = 'StarredMatches'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -100,7 +125,7 @@ class StarredMatch(_Base):
 
 """The association from users to their starred teams.
 """
-class StarredTeam(_Base):
+class StarredTeam(common_db._Base):
 	__tablename__ = 'StarredTeams'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -116,7 +141,7 @@ class StarredTeam(_Base):
 
 """The association from users to their starred streaming users.
 """
-class StarredStreamer(_Base):
+class StarredStreamer(common_db._Base):
 	__tablename__ = 'StarredStreamers'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -132,7 +157,7 @@ class StarredStreamer(_Base):
 
 """The association from streaming users to their streamed matches.
 """
-class StreamedMatch(_Base):
+class StreamedMatch(common_db._Base):
 	__tablename__ = 'StreamedMatches'
 
 	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -150,7 +175,7 @@ class StreamedMatch(_Base):
 
 """An entry in a user's calendar.
 """
-class CalendaryEntry(_Base):
+class CalendaryEntry(common_db._Base):
 	__tablename__ = 'CalendarEntries'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -167,6 +192,8 @@ class CalendaryEntry(_Base):
 
 
 def create_all():
+	common_db.create_all()
+
 	global Teams
 	global Matches
 	global MatchEdits
@@ -175,8 +202,6 @@ def create_all():
 	global StarredStreamers
 	global StreamedMatches
 	global CalendarEntries
-
-	# TODO: call common create_all()
 
 	# Create aliases for each table.
 	Teams = Team.__table__
@@ -207,8 +232,7 @@ def drop_all():
 	StreamedMatches = None
 	CalendarEntries = None
 
-	# TODO: call common drop_all()
-
+	common_db.drop_all()
 
 
 """Adds a match between two teams at a given time.
@@ -222,7 +246,7 @@ def add_match(team1_id, team2_id, time, game, league, now=None):
 	except sa.exc.IntegrityError:
 		# The commit failed because teams with the given identifiers are missing.
 		session.rollback()
-		raise DbException._chain()
+		raise common_db.DbException._chain()
 
 """Adds a team in the given game and league.
 """
@@ -248,13 +272,13 @@ def add_star_match(client_id, match_id, now=None):
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this match.
 		session.rollback()
-		raise DbException._chain()
+		raise common_db.DbException._chain()
 
 	# Increment the count of stars for the match.
 	match = session.query(Match).filter(Match.id == match_id).one()
 	match.num_stars += 1
 
-	# If needed, remove a CalendarEntry for the streamed match.
+	# If needed, add a CalendarEntry for the streamed match.
 	_increment_num_user_stars(client_id, match, now)
 
 	session.commit()
@@ -298,7 +322,7 @@ def add_star_team(client_id, team_id, now=None):
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this team.
 		session.rollback()
-		raise DbException._chain()
+		raise common_db.DbException._chain()
 
 	# Increment the count of stars for the team.
 	session.execute(Teams.update()
@@ -364,7 +388,7 @@ def add_star_streamer(client_id, streamer_id, now=None):
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this streaming user.
 		session.rollback()
-		raise DbException._chain()
+		raise common_db.DbException._chain()
 
 	# Increment the count of stars for the streaming user.
 	session.execute(Users.update()
@@ -423,7 +447,7 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 	except sa.exc.IntegrityError:
 		# The flush failed because the client is already streaming this match.
 		session.rollback()
-		raise DbException._chain()
+		raise common_db.DbException._chain()
 
 	match = session.query(Match).filter(Match.id == match_id).one()
 	if match.num_streams > 0:
@@ -581,4 +605,206 @@ def _remove_last_stream_calendar_entries(client_id, match_id, now):
 	# Remove every CalendarEntry for this match.
 	result = session.execute(
 			CalendarEntries.delete().where(CalendarEntry.user_id == client_id))
+
+
+
+"""A match in a DisplayedCalendar.
+"""
+class DisplayedCalendarMatch:
+	def __init__(self, match_id, team1_id, team1_name, team2_id, team2_name,
+			time, game, league, num_stars, num_streams):
+		self.match_id = match_id
+		self.team1_id = team1_id
+		self.team1_name = team1_name
+		self.team2_id = team2_id
+		self.team2_name = team2_name
+		self.time = time
+		self.game = game
+		self.league = league
+		self.num_stars = num_stars
+		self.num_streams = num_streams
+
+	def __repr__(self):
+		return 'DisplayedCalendarMatch(match_id=%r, team1_id=%r, team1_name=%r, team2_id=%r, team2_name=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r)' % (
+				self.match_id,
+				self.team1_id,
+				self.team1_name,
+				self.team2_id,
+				self.team2_name,
+				self.time,
+				self.game,
+				self.league,
+				self.num_stars,
+				self.num_streams)
+
+"""A list of matches in the Calendar tab.
+"""
+class DisplayedCalendar:
+	def __init__(self, next_match, matches, prev_key, next_key):
+		self.next_match = next_match
+		self.matches = matches
+		self.prev_key = prev_key
+		self.next_key = next_key
+	
+	def __repr__(self):
+		return 'DisplayedCalendar(next_match=%r, matches=%r, next_key=%r, prev_key=%r)' % (
+				self.next_match,
+				self.matches,
+				self.prev_key,
+				self.next_key)
+
+
+"""A team in a DisplayedMatch.
+"""
+class DisplayedMatchTeam:
+	def __init__(self, team_id, name, num_stars):
+		self.team_id = team_id
+		self.name = name
+		self.num_stars = num_stars
+
+	def __repr__(self):
+		return 'DisplayedMatchTeam(team_id=%r, name=%r, num_stars=%r)' % (
+				self.team_id,
+				self.name,
+				self.num_stars)
+
+"""A streaming user for a DisplayedMatch.
+"""
+class DisplayedMatchStreamer:
+	def __init__(self, user_id, name, num_stars, image_url, url_by_id, url_by_name):
+		self.user_id = user_id
+		self.name = name
+		self.num_stars = num_stars
+		self.image_url = image_url
+		self.url_by_id = url_by_id
+		self.url_by_name = url_by_name
+
+	def __repr__(self):
+		return 'DisplayedMatchStreamer(user_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name=%r)' % (
+				self.user_id,
+				self.name,
+				self.num_stars,
+				self.image_url,
+				self.url_by_id,
+				self.url_by_name)
+
+"""A detailed view of a match.
+"""
+class DisplayedMatch:
+	def __init__(self, match_id, team1, team2, time, game, league, num_stars, streamers, prev_key, next_key):
+		self.match_id = match_id
+		self.team1 = team1
+		self.team2 = team2
+		self.time = time
+		self.game = game
+		self.league = league
+		self.num_stars = num_stars
+		self.streamers = streamers
+		self.prev_key = prev_key
+		self.next_key = next_key
+	
+	def __repr__(self):
+		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r, streamers=%r, prev_key=%r, next_key=%r)' % (
+				self.match_id,
+				self.team1,
+				self.team2,
+				self.time,
+				self.game,
+				self.league,
+				self.streamers,
+				self.prev_key,
+				self.next_key)
+
+
+"""A match for a DisplayedTeam.
+"""
+class DisplayedTeamMatch:
+	def __init__(self, opponent_id, opponent_name, time, num_stars, num_streams):
+		self.opponent_id = opponent_id
+		self.opponent_name = opponent_name
+		self.time = time
+		self.num_stars = num_stars
+		self.num_streams = num_streams
+	
+	def __repr__(self):
+		return 'DisplayedTeamMatch(opponent_id=%r, opponent_name=%r, time=%r, num_stars=%r, num_streams=%r)' % (
+				self.opponent_id,
+				self.opponent_name,
+				self.time,
+				self.num_stars,
+				self.num_streams)
+
+"""A detailed view of a team.
+"""
+class DisplayedTeam:
+	def __init__(self, team_id, name, game, league, num_stars, matches, prev_key, next_key):
+		self.team_id = team_id
+		self.name = name
+		self.game = game
+		self.league = league
+		self.num_stars = num_stars
+		self.matches = matches
+		self.prev_key = prev_key
+		self.next_key = next_key
+
+	def __repr__(self):
+		return 'DisplayedTeam(team_id=%r, name=%r, game=%r, league=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+				self.team_id,
+				self.name,
+				self.game,
+				self.league,
+				self.num_stars,
+				self.matches,
+				self.prev_key,
+				self.next_key)
+
+
+"""A match for a DisplayedStreamer.
+"""
+class DisplayedStreamerMatch:
+	def __init__(self, match_id, team1_id, team1_name, team2_id, team2_name,
+			time, game, league, num_stars, num_streams):
+		self.match_id = match_id
+		self.team1_id = team1_id
+		self.team1_name = team1_name
+		self.team2_id = team2_id
+		self.team2_name = team2_name
+		self.time = time
+		self.game = game
+		self.league = league
+		self.num_stars = num_stars
+		self.num_streams = num_streams
+	
+	def __repr__(self):
+		return 'DisplayedStreamerMatch(match_id=%r, team1_id=%r, team1_name=%r, team2_id=%r, team2_name=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r)' % (
+				self.match_id,
+				self.team1_id,
+				self.team1_name,
+				self.team2_id,
+				self.team2_name,
+				self.time,
+				self.game,
+				self.league,
+				self.num_stars,
+				self.num_streams)
+
+"""A detailed view of a streamer.
+"""
+class DisplayedStreamer:
+	def __init__(self, streamer_id, name, num_stars, matches, prev_key, next_key):
+		self.streamer_id = streamer_id
+		self.name = name
+		self.num_stars = num_stars
+		self.matches = matches
+		self.prev_key = prev_key
+		self.next_key = next_key
+
+	def __repr__(self):
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+				self.streamer_id,
+				self.name,
+				self.num_stars,
+				self.matches,
+				self.prev_key,
+				self.next_key)
 
