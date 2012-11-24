@@ -12,6 +12,7 @@ class TestFinderDb(DbTestCase):
 
 		self.game = 'game'
 		self.league = 'league'
+		self.client_name = 'client_name'
 		self.streamer_name = 'streamer_name'
 		self.team1_name = 'team1_name'
 		self.team1_url = 'team1_url'
@@ -171,8 +172,7 @@ class TestFinderDb(DbTestCase):
 	def test_add_match_star_unknown_match(self):
 		missing_match_id = 'missing_match_id'
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_match(client_id, missing_match_id, now=self.now)
@@ -193,8 +193,7 @@ class TestFinderDb(DbTestCase):
 	def test_add_team_star_unknown_team(self):
 		missing_team_id = 'missing_team_id'
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_team(client_id, missing_team_id, now=self.now)
@@ -214,8 +213,7 @@ class TestFinderDb(DbTestCase):
 	def test_add_streamer_star_unknown_team(self):
 		missing_streamer_id = 'missing_streamer_id'
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_streamer(client_id, missing_streamer_id, now=self.now)
@@ -224,8 +222,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_remove_match_star_not_casted(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -294,8 +291,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_remove_match_star_casted(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -352,8 +348,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_remove_team_star_not_casted(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -414,8 +409,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_remove_team_star_casted(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -463,8 +457,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_remove_streamer_star_not_casted(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -511,8 +504,7 @@ class TestFinderDb(DbTestCase):
 	def test_add_remove_streamer_star_casted(self):
 		pass
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Create the match.
@@ -626,8 +618,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_add_multi_stars_then_stream(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
@@ -658,8 +649,7 @@ class TestFinderDb(DbTestCase):
 	"""
 	def test_stream_then_add_multi_stars(self):
 		# Create the client.
-		client_name = 'client_name1'
-		client_steam_id, client_id = self._create_steam_user(client_name)
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
@@ -684,6 +674,9 @@ class TestFinderDb(DbTestCase):
 
 		# Remove all the stars.
 		self._remove_multi_stars(client_id, streamer_id, team1_id, team2_id, match_id)
+
+	# TODO: Test adding, removing multiple streams for a match.
+	# TODO: Test remove_stream_match.
 
 	"""Test that clients see their own stars for matches.
 	"""
