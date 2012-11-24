@@ -298,20 +298,49 @@ class TestFinderDb(DbTestCase):
 	def test_add_remove_team_star_casted(self):
 		pass
 	
-	"""Test that adds and removes a star for a team in a match that is not casted.
-	"""
-	def test_add_remove_streamer_star_not_casted(self):
-		pass
-	
 	"""Test that adds and removes a star for a streamer that is not casting a
 	match.
 	"""
-	def test_add_remove_streamer_star_casted(self):
-		pass
+	def test_add_remove_streamer_star_not_casted(self):
+		# Create the client.
+		client_name = 'client_name1'
+		client_steam_id, client_id = self._create_steam_user(client_name)
+		# Create the streaming user.
+		streamer_name = 'streamer_name1'
+		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+
+		# Add a star for the streamer.
+		db.add_star_streamer(client_id, streamer_id, now=self.now)
+		# Assert that the streamer has a star.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, streamer_name, is_starred=True, num_stars=1)
+
+		# Add the star for the streamer again.
+		with self.assertRaises(common_db.DbException):
+			db.add_star_streamer(client_id, streamer_id, now=self.now)
+		# Assert that this had no effect.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, streamer_name, is_starred=True, num_stars=1)
+	
+		# Remove the star for the streamer.
+		db.remove_star_streamer(client_id, streamer_id, now=self.now)
+		# Assert that the streamer no longer has a star.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, streamer_name)
+
+		# Remove the star for the streamer.
+		db.remove_star_streamer(client_id, streamer_id, now=self.now)
+		# Assert that this had no effect.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, streamer_name)
 
 	"""Test that adds and removes a star for a streamer that is casting a match.
 	"""
-	def test_add_remove_streamer_star_not_casted(self):
+	def test_add_remove_streamer_star_casted(self):
 		pass
 
 	# TODO: same three tests with stars for teams and streams for matches

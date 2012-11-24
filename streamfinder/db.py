@@ -15,11 +15,12 @@ from common_db import _get_now, session
 class User(common_db.UserMixin, common_db._Base):
 	__tablename__ = 'Users'
 
+	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	can_stream = sa.Column(sa.Boolean, default=False, nullable=False)
 	stream_info = sa.Column(sa.String)
 
 	def __repr__(self):
-		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, can_stream=%r, stream_info=%r, steam_user=%r, twitch_user=%r)' % (
+		return 'User(id=%r, name=%r, image_url_small=%r, image_url_large=%r, created=%r, last_seen=%r, url_by_id=%r, url_by_name=%r, num_stars=%r, can_stream=%r, stream_info=%r, steam_user=%r, twitch_user=%r)' % (
 				self.id,
 				self.name,
 				self.image_url_small,
@@ -28,6 +29,7 @@ class User(common_db.UserMixin, common_db._Base):
 				self.last_seen.isoformat() if self.last_seen else None,
 				self.url_by_id,
 				self.url_by_name,
+				self.num_stars,
 				self.can_stream,
 				self.stream_info,
 				self.steam_user,
@@ -434,10 +436,10 @@ def add_star_streamer(client_id, streamer_id, now=None):
 			.values({User.num_stars: User.num_stars + 1}))
 
 	# If needed, add a CalendarEntry for each streamed match.
-	matches_cursor = session.query(Match)\
+	matches_cursor = session.query(StreamedMatch.match_id, Match)\
 			.join(Match, StreamedMatch.match_id == Match.id)\
 			.filter(StreamedMatch.streamer_id == streamer_id)
-	for match in matches_cursor:
+	for match_id, match in matches_cursor:
 		_increment_num_user_stars(client_id, match, now)
 
 	session.commit()
@@ -871,10 +873,12 @@ def _get_displayed_calendar_match(match, team1, team2):
 def get_displayed_calendar(client_id, prev_key=None, next_key=None):
 	# TODO: Get the next match.
 
-	matches_query = session.query(Match, Team, Team)\
+	team_alias1 = sa_orm.aliased(Team)
+	team_alias2 = sa_orm.aliased(Team)
+	matches_query = session.query(Match, team_alias1, team_alias2)\
 			.join(Match, CalendarEntry.match_id == Match.id)\
-			.join(Team, Match.team1_id == Team.id)\
-			.join(Team, Match.team2_id == Team.id)\
+			.join(team_alias1, Match.team1_id == team_alias1.id)\
+			.join(team_alias2, Match.team2_id == team_alias2.id)\
 			.filter(CalendarEntry.user_id == client_id)
 	if prev_key:
 		# TODO: Add filter, limit.
@@ -1035,7 +1039,7 @@ def _get_displayed_streamer_match(match, team1, team2):
 			match.num_streams)
 
 def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None):
-	streamer, starred_streamer = session.query(User)\
+	streamer, starred_streamer = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
 				StarredStreamer.streamer_id == streamer_id,
 				StarredStreamer.user_id == client_id))\
@@ -1043,10 +1047,12 @@ def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None)
 			.one()
 	is_starred = (starred_streamer is not None)
 
-	matches_query = session.query(Match, Team, Team)\
+	team_alias1 = sa_orm.aliased(Team)
+	team_alias2 = sa_orm.aliased(Team)
+	matches_query = session.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
 			.join(Match, StreamedMatch.match_id == Match.id)\
-			.join(Team, Match.team1_id == Team.id)\
-			.join(Team, Match.team2_id == Team.id)\
+			.join(team_alias1, Match.team1_id == team_alias1.id)\
+			.join(team_alias2, Match.team2_id == team_alias2.id)\
 			.filter(StreamedMatch.streamer_id == streamer_id)
 	if prev_key:
 		# TODO: Add filter, limit.
@@ -1057,15 +1063,17 @@ def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None)
 
 	matches = [
 			_get_displayed_streamer_match(match, team1, team2)
-				for match, team1, team2 in matches_query]
+				for match_id, match, team1, team2 in matches_query]
 	session.close()
 
 	if prev_key:
 		# TODO: Set new_prev_key, new_next_key
-		pass
-	elif next_key:
+		new_prev_key = None
+		new_next_key = None
+	else:
 		# TODO: Set new_prev_key, new_next_key
-		pass
+		new_prev_key = None
+		new_next_key = None
 	return DisplayedStreamer(streamer_id,
 			streamer.name,
 			is_starred,
