@@ -326,7 +326,8 @@ def add_star_match(client_id, match_id, now=None):
 	match.num_stars += 1
 
 	# If needed, add a CalendarEntry for the streamed match.
-	_increment_num_user_stars(client_id, match, now)
+	if match.is_streamed:
+		_increment_num_user_stars(client_id, match, now)
 
 	session.commit()
 
@@ -349,7 +350,12 @@ def remove_star_match(client_id, match_id, now=None):
 			.values({Match.num_stars: Match.num_stars - 1}))
 
 	# If needed, remove a CalendarEntry for the streamed match.
-	_decrement_num_user_stars(client_id, match_id, now)
+	is_streamed = session.query(Match.is_streamed)\
+			.filter(Match.id == match_id)\
+			.one()\
+			.is_streamed
+	if is_streamed:
+		_decrement_num_user_stars(client_id, match_id, now)
 
 	session.commit()
 
@@ -517,7 +523,8 @@ def remove_stream_match(client_id, match_id, now=None):
 	
 	num_streams = session.query(Match.num_streams)\
 			.filter(Match.id == match_id)\
-			.one()
+			.one()\
+			.num_streams
 	if num_streams > 1:
 		# This was not the last streaming user for the match.
 		session.execute(Matches.update()
@@ -550,6 +557,8 @@ def _multi_increment_num_user_stars(user_ids, match, now):
 """Updates or creates a CalendarEntry for the given user identifier and match.
 """
 def _increment_num_user_stars(user_id, match, now):
+	assert match.is_streamed
+
 	missing = session.query(CalendarEntry)\
 			.filter(
 				CalendarEntry.user_id == user_id,
@@ -871,11 +880,30 @@ def _get_displayed_calendar_match(match, team1, team2):
 """Returns a DisplayedCalendar containing calendar entries for the given user.
 """
 def get_displayed_calendar(client_id, prev_key=None, next_key=None):
-	# TODO: Get the next match.
-
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
-	matches_query = session.query(Match, team_alias1, team_alias2)\
+
+	# Get the next match.
+	next_match = None
+	try:
+		next_match_id, next_match, next_match_team1, next_match_team2 = session\
+				.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
+				.join(Match, CalendarEntry.match_id == Match.id)\
+				.join(team_alias1, Match.team1_id == team_alias1.id)\
+				.join(team_alias2, Match.team2_id == team_alias2.id)\
+				.filter(CalendarEntry.user_id == client_id)\
+				.order_by(CalendarEntry.time.asc())\
+				.limit(1)\
+				.one()
+		next_match = _get_displayed_calendar_match(
+				next_match, next_match_team1, next_match_team2)
+	except sa_orm.exc.NoResultFound:
+		# There are no matches.
+		session.close()
+		return DisplayedCalendar(None, [], None, None)
+
+	matches_query = session\
+			.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
 			.join(Match, CalendarEntry.match_id == Match.id)\
 			.join(team_alias1, Match.team1_id == team_alias1.id)\
 			.join(team_alias2, Match.team2_id == team_alias2.id)\
@@ -889,15 +917,17 @@ def get_displayed_calendar(client_id, prev_key=None, next_key=None):
 
 	matches = [
 			_get_displayed_calendar_match(match, team1, team2)
-				for match, team1, team2 in matches_query]
+				for match_id, match, team1, team2 in matches_query]
 	session.close()
 
 	if prev_key:
 		# TODO: Set new_prev_key, new_next_key
-		pass
-	elif next_key:
+		new_prev_key = None
+		new_next_key = None
+	else:
 		# TODO: Set new_prev_key, new_next_key
-		pass
+		new_prev_key = None
+		new_next_key = None
 	return DisplayedCalendar(next_match,
 			matches,
 			new_prev_key,
@@ -913,7 +943,7 @@ def _get_displayed_match_streamer(streamer):
 	return DisplayedMatchStreamer(streamer.id,
 			streamer.name,
 			streamer.num_stars,
-			streamer.image_url,
+			streamer.image_url_small,
 			streamer.url_by_id,
 			streamer.url_by_name)
 
