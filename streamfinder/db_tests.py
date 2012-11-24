@@ -152,6 +152,19 @@ class TestFinderDb(DbTestCase):
 		self.assertEqual(num_matches, len(displayed_streamer.matches))
 
 
+	"""Test that fails to create a match because one team identifier is unknown.
+	"""
+	def test_add_match_unknown_team(self):
+		missing_team2_id = 'missing_team2_id'
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.add_match(team1_id, missing_team2_id, self.time, self.game, self.league,
+					self.match_url, self.match_fingerprint, now=self.now)
+
 	"""Test that fails to star a match because the client identifier is unknown.
 	"""
 	def test_add_match_star_unknown_client(self):
@@ -677,6 +690,9 @@ class TestFinderDb(DbTestCase):
 
 	# TODO: Test adding, removing multiple streams for a match.
 	# TODO: Test remove_stream_match.
+	# TODO: Test multiple entries in calendar.
+	# TODO: Test pagination.
+	# TODO: Test adding existing matches, teams.
 
 	"""Test that clients see their own stars for matches.
 	"""
