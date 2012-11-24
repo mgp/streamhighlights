@@ -375,10 +375,10 @@ def add_star_team(client_id, team_id, now=None):
 			.values({Team.num_stars: Team.num_stars + 1}))
 
 	# If needed, add a CalendarEntry for each streamed match.
-	matches_cursor = session.query(Match)\
+	matches_cursor = session.query(MatchOpponent.match_id, Match)\
 			.join(Match, MatchOpponent.match_id == Match.id)\
 			.filter(MatchOpponent.team_id == team_id, MatchOpponent.is_streamed == True)
-	for match in matches_cursor:
+	for match_id, match in matches_cursor:
 		_increment_num_user_stars(client_id, match, now)
 	
 	session.commit()
@@ -390,7 +390,7 @@ def remove_star_team(client_id, team_id, now=None):
 	now = _get_now(now)
 
 	# Remove the client's star for the team.
-	result = session.execute(StarredTeam.delete().where(sa.and_(
+	result = session.execute(StarredTeams.delete().where(sa.and_(
 			StarredTeam.user_id == client_id,
 			StarredTeam.team_id == team_id)))
 	if not result.rowcount:
@@ -403,8 +403,7 @@ def remove_star_team(client_id, team_id, now=None):
 			.values({Team.num_stars: Team.num_stars - 1}))
 
 	# If needed, remove a CalendarEntry for each streamed match.
-	matches_cursor = session.query(Match)\
-			.join(Match, MatchOpponent.match_id == Match.id)\
+	match_ids_cursor = session.query(MatchOpponent.match_id)\
 			.filter(MatchOpponent.team_id == team_id, MatchOpponent.is_streamed == True)
 	for match_id in match_ids_cursor:
 		_decrement_num_user_stars(client_id, match_id, now)
@@ -449,7 +448,7 @@ def remove_star_streamer(client_id, streamer_id, now=None):
 	now = _get_now(now)
 
 	# Remove the client's star for the streaming user.
-	result = session.execute(StarredStreamer.delete().where(sa.and_(
+	result = session.execute(StarredStreamers.delete().where(sa.and_(
 			StarredStreamer.user_id == client_id,
 			StarredStreamer.streamer_id == streamer_id)))
 	if not result.rowcount:
@@ -507,7 +506,7 @@ def remove_stream_match(client_id, match_id, now=None):
 	now = _get_now(now)
 
 	# Remove the client as a user streaming the match.
-	result = session.execute(StreamedMatch.delete().where(sa.and_(
+	result = session.execute(StreamedMatches.delete().where(sa.and_(
 			StreamedMatch.user_id == client_id,
 			StreamedMatch.match_id == match_id)))
 	if not result.rowcount:
@@ -979,7 +978,7 @@ def _get_displayed_team_match(match, opponent_team):
 """Returns a DisplayedTeam containing scheduled matches.
 """
 def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
-	team, starred_team = session.query(Team)\
+	team, starred_team = session.query(Team, StarredTeam)\
 			.outerjoin(StarredTeam, sa.and_(
 				StarredTeam.team_id == team_id,
 				StarredTeam.user_id == client_id))\
@@ -987,7 +986,8 @@ def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
 			.one()
 	is_starred = (starred_team is not None)
 
-	matches_query = session.query(Match, Team)\
+	matches_query = session\
+			.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
 			.join(Match, MatchOpponent.match_id == Match.id)\
 			.join(Team, MatchOpponent.opponent_id == Team.id)\
 			.filter(MatchOpponent.team_id == team_id)
@@ -1000,15 +1000,17 @@ def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
 
 	matches = [
 			_get_displayed_team_match(match, opponent_team)
-				for match, opponent_team in matches_query]
+				for match_id, team_id, match, opponent_team in matches_query]
 	session.close()
 
 	if prev_key:
 		# TODO: Set new_prev_key, new_next_key
-		pass
-	elif next_key:
+		new_prev_key = None
+		new_next_key = None
+	else:
 		# TODO: Set new_prev_key, new_next_key
-		pass
+		new_prev_key = None
+		new_next_key = None
 	return DisplayedTeam(team_id,
 			team.name,
 			team.game,
