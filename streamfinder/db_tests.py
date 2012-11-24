@@ -12,6 +12,7 @@ class TestFinderDb(DbTestCase):
 
 		self.game = 'game'
 		self.league = 'league'
+		self.streamer_name = 'streamer_name'
 		self.team1_name = 'team1_name'
 		self.team1_url = 'team1_url'
 		self.team1_fingerprint = 'team1_fingerprint'
@@ -259,8 +260,7 @@ class TestFinderDb(DbTestCase):
 				self.match_url, self.match_fingerprint, now=None)
 
 		# Create the streaming user.
-		streamer_name = 'streamer_name1'
-		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Stream the match.
 		db.add_stream_match(streamer_id, match_id)
 
@@ -276,7 +276,8 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
 		self._assert_displayed_match_streamer(displayed_match.streamers[0],
-				streamer_id, streamer_name, common_db._get_steam_url_by_id(streamer_steam_id))
+				streamer_id, self.streamer_name,
+				common_db._get_steam_url_by_id(streamer_steam_id))
 		# Assert that the user's calendar has the match.
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
@@ -296,7 +297,8 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
 		self._assert_displayed_match_streamer(displayed_match.streamers[0],
-				streamer_id, streamer_name, common_db._get_steam_url_by_id(streamer_steam_id))
+				streamer_id, self.streamer_name,
+				common_db._get_steam_url_by_id(streamer_steam_id))
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
@@ -378,8 +380,7 @@ class TestFinderDb(DbTestCase):
 				self.match_url, self.match_fingerprint, now=None)
 
 		# Create the streaming user.
-		streamer_name = 'streamer_name1'
-		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Stream the match.
 		db.add_stream_match(streamer_id, match_id)
 
@@ -420,15 +421,14 @@ class TestFinderDb(DbTestCase):
 		client_name = 'client_name1'
 		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create the streaming user.
-		streamer_name = 'streamer_name1'
-		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
 		# Add a star for the streamer.
 		db.add_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the streamer has a star.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name, is_starred=True, num_stars=1)
+				streamer_id, self.streamer_name, is_starred=True, num_stars=1)
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
@@ -439,7 +439,7 @@ class TestFinderDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name, is_starred=True, num_stars=1)
+				streamer_id, self.streamer_name, is_starred=True, num_stars=1)
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
@@ -448,7 +448,7 @@ class TestFinderDb(DbTestCase):
 		# Assert that the streamer no longer has a star.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name)
+				streamer_id, self.streamer_name)
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
@@ -457,7 +457,7 @@ class TestFinderDb(DbTestCase):
 		# Assert that this had no effect.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name)
+				streamer_id, self.streamer_name)
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
@@ -469,8 +469,7 @@ class TestFinderDb(DbTestCase):
 		client_name = 'client_name1'
 		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create the streaming user.
-		streamer_name = 'streamer_name1'
-		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -480,8 +479,7 @@ class TestFinderDb(DbTestCase):
 				self.match_url, self.match_fingerprint, now=None)
 
 		# Create the streaming user.
-		streamer_name = 'streamer_name1'
-		streamer_steam_id, streamer_id = self._create_steam_user(streamer_name)
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Stream the match.
 		db.add_stream_match(streamer_id, match_id)
 
@@ -490,7 +488,8 @@ class TestFinderDb(DbTestCase):
 		# Assert that the streamer has a star.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name, is_starred=True, num_stars=1, num_matches=1)
+				streamer_id, self.streamer_name,
+				is_starred=True, num_stars=1, num_matches=1)
 		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
 				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
 				self.time, self.game, self.league, num_streams=1)
@@ -507,10 +506,139 @@ class TestFinderDb(DbTestCase):
 		# Assert that the streamer no longer has a star.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, streamer_name, num_matches=1)
+				streamer_id, self.streamer_name, num_matches=1)
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
+
+	def _remove_multi_stars(self, client_id, streamer_id,
+			team1_id, team2_id, match_id):
+		# Assert that the user's calendar has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_stars=1, num_streams=1)
+		
+		# Remove the star for the match.
+		db.remove_star_match(client_id, match_id, now=self.now)
+		# Assert that the user's calendar still has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+	
+		# Remove the star for both teams.
+		db.remove_star_team(client_id, team1_id, now=self.now)
+		db.remove_star_team(client_id, team2_id, now=self.now)
+		# Assert that the user's calendar still has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+	
+		# Remove the star from the streamer.
+		db.remove_star_streamer(client_id, streamer_id, now=self.now)
+		# Assert that the user's calendar is empty.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar)
+
+		# Assert that the match should no longer have a star.
+		displayed_match = db.get_displayed_match(client_id, match_id)
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league, num_streamers=1)
+		self._assert_displayed_match_team(displayed_match.team1,
+				team1_id, self.team1_name)
+		self._assert_displayed_match_team(displayed_match.team2,
+				team2_id, self.team2_name)
+		# Assert that team1 no longer has a star.
+		displayed_team = db.get_displayed_team(client_id, team1_id)
+		self._assert_displayed_team(displayed_team,
+				team1_id, self.team1_name, self.game, self.league, num_matches=1)
+		self._assert_displayed_team_match(displayed_team.matches[0],
+				team2_id, self.team2_name, match_id, self.time, num_streams=1)
+		# Assert that team2 no longer has a star.
+		displayed_team = db.get_displayed_team(client_id, team2_id)
+		self._assert_displayed_team(displayed_team,
+				team2_id, self.team2_name, self.game, self.league, num_matches=1)
+		self._assert_displayed_team_match(displayed_team.matches[0],
+				team1_id, self.team1_name, match_id, self.time, num_streams=1)
+		# The streamer should no longer have a star.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=1)
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+
+	"""Test that adds stars to all match components, and then adds a user
+	streaming the match before removing all stars.
+	"""
+	def test_add_multi_stars_then_stream(self):
+		# Create the client.
+		client_name = 'client_name1'
+		client_steam_id, client_id = self._create_steam_user(client_name)
+
+		# Create the match.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		# Create the streaming user.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+
+		# Add a star for the match.
+		db.add_star_match(client_id, match_id, now=self.now)
+		# Add a star for both teams.
+		db.add_star_team(client_id, team1_id, now=self.now)
+		db.add_star_team(client_id, team2_id, now=self.now)
+		# Add a star for the streamer.
+		db.add_star_streamer(client_id, streamer_id, now=self.now)
+
+		# Stream the match.
+		db.add_stream_match(streamer_id, match_id)
+
+		# Remove all the stars.
+		self._remove_multi_stars(client_id, streamer_id, team1_id, team2_id, match_id)
+
+	"""Test that adds a user streaming a match, and then adds stars to all match
+	components before removing all stars.
+	"""
+	def test_stream_then_add_multi_stars(self):
+		# Create the client.
+		client_name = 'client_name1'
+		client_steam_id, client_id = self._create_steam_user(client_name)
+
+		# Create the match.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		# Create the streaming user.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+
+		# Stream the match.
+		db.add_stream_match(streamer_id, match_id)
+
+		# Add a star for the match.
+		db.add_star_match(client_id, match_id, now=self.now)
+		# Add a star for both teams.
+		db.add_star_team(client_id, team1_id, now=self.now)
+		db.add_star_team(client_id, team2_id, now=self.now)
+		# Add a star for the streamer.
+		db.add_star_streamer(client_id, streamer_id, now=self.now)
+
+		# Remove all the stars.
+		self._remove_multi_stars(client_id, streamer_id, team1_id, team2_id, match_id)
 
 	"""Test that clients see their own stars for matches.
 	"""

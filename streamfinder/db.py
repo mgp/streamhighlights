@@ -630,11 +630,13 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 	user_ids_cursor = session.query(StarredTeam.user_id)\
 			.join(MatchOpponent, MatchOpponent.match_id == match.id)\
 			.filter(StarredTeam.team_id == MatchOpponent.team_id)
+	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
 	# Add a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
+	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
 """Updates or creates CalendarEntries for users, given that the client was
@@ -644,6 +646,7 @@ def _add_not_first_stream_calendar_entries(client_id, match, now):
 	# If needed, add a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
+	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
 
@@ -654,6 +657,7 @@ def _remove_not_last_stream_calendar_entries(client_id, match_id, now):
 	# If needed, remove a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
+	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_decrement_num_user_stars(user_ids_cursor, match_id, now)
 
 """Updates or deletes CalendarEntries for users, given that the client was
