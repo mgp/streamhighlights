@@ -151,10 +151,10 @@ class TestFinderDb(DbTestCase):
 		self.assertEqual(num_matches, len(displayed_streamer.matches))
 
 
-	"""Test that fails to create a star because the user identifier is unknown.
+	"""Test that fails to star a match because the client identifier is unknown.
 	"""
-	def test_add_match_star_unknown_user(self):
-		missing_user_id = 'missing_user_id'
+	def test_add_match_star_unknown_client(self):
+		missing_client_id = 'missing_client_id'
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_url, self.team1_fingerprint)
@@ -164,8 +164,10 @@ class TestFinderDb(DbTestCase):
 				self.match_url, self.match_fingerprint, now=None)
 
 		with self.assertRaises(common_db.DbException):
-			db.add_star_match(missing_user_id, match_id, now=self.now)
+			db.add_star_match(missing_client_id, match_id, now=self.now)
 
+	"""Test that fails to star a match because the match identifier is unknown.
+	"""
 	def test_add_match_star_unknown_match(self):
 		missing_match_id = 'missing_match_id'
 		# Create the client.
@@ -175,6 +177,49 @@ class TestFinderDb(DbTestCase):
 		with self.assertRaises(common_db.DbException):
 			db.add_star_match(client_id, missing_match_id, now=self.now)
 	
+	"""Test that fails to star a team because the client identifier is unknown.
+	"""
+	def test_add_team_star_unknown_client(self):
+		missing_client_id = 'missing_client_id'
+		# Create the team.
+		team_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+	
+		with self.assertRaises(common_db.DbException):
+			db.add_star_team(missing_client_id, team_id, now=self.now)
+
+	"""Test that fails to star a match because the team identifier is unknown.
+	"""
+	def test_add_team_star_unknown_team(self):
+		missing_team_id = 'missing_team_id'
+		# Create the client.
+		client_name = 'client_name1'
+		client_steam_id, client_id = self._create_steam_user(client_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.add_star_team(client_id, missing_team_id, now=self.now)
+	
+	"""Test that fails to star a streamer because the client identifier is unknown.
+	"""
+	def test_add_streamer_star_unknown_client(self):
+		missing_client_id = 'missing_client_id'
+		# Create the streaming user.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.add_star_team(missing_client_id, streamer_id, now=self.now)
+	
+	"""Test that fails to star a streamer because the streamer identifier is unknown.
+	"""
+	def test_add_streamer_star_unknown_team(self):
+		missing_streamer_id = 'missing_streamer_id'
+		# Create the client.
+		client_name = 'client_name1'
+		client_steam_id, client_id = self._create_steam_user(client_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.add_star_streamer(client_id, missing_streamer_id, now=self.now)
+
 	"""Test that adds and removes a star for a match that is not casted.
 	"""
 	def test_add_remove_match_star_not_casted(self):
