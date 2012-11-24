@@ -413,8 +413,8 @@ def remove_star_team(client_id, team_id, now=None):
 	# If needed, remove a CalendarEntry for each streamed match.
 	match_ids_cursor = session.query(MatchOpponent.match_id)\
 			.filter(MatchOpponent.team_id == team_id, MatchOpponent.is_streamed == True)
-	for match_id in match_ids_cursor:
-		_decrement_num_user_stars(client_id, match_id, now)
+	for row in match_ids_cursor:
+		_decrement_num_user_stars(client_id, row.match_id, now)
 
 	session.commit()
 
@@ -471,11 +471,16 @@ def remove_star_streamer(client_id, streamer_id, now=None):
 	# If needed, remove a CalendarEntry for each streamed match.
 	match_ids_cursor = session.query(StreamedMatch.match_id)\
 			.filter(StreamedMatch.streamer_id == streamer_id)
-	for match_id in match_ids_cursor:
-		_decrement_num_user_stars(client_id, match_id, now)
+	for row in match_ids_cursor:
+		_decrement_num_user_stars(client_id, row.match_id, now)
 
 	session.commit()
 
+
+def _set_match_opponent_streaming(team_id, is_streamed):
+		session.execute(MatchOpponents.update()
+				.where(MatchOpponent.team_id == team_id)
+				.values({MatchOpponent.is_streamed: is_streamed}))
 
 """Adds a stream by the client for the match with the given identifier.
 """
@@ -502,6 +507,9 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 		_add_not_first_stream_calendar_entries(client_id, match, now)
 	else:
 		# This is the first streaming user for the match.
+		_set_match_opponent_streaming(match.team1_id, True)
+		_set_match_opponent_streaming(match.team2_id, True)
+
 		match.num_streams = 1
 		match.is_streamed = True
 		_add_first_stream_calendar_entries(client_id, match, now)
@@ -521,10 +529,10 @@ def remove_stream_match(client_id, match_id, now=None):
 		session.rollback()
 		return
 	
-	num_streams = session.query(Match.num_streams)\
+	num_streams, team1_id, team2_id = session\
+			.query(Match.num_streams, Match.team1_id, Match.team2_id)\
 			.filter(Match.id == match_id)\
-			.one()\
-			.num_streams
+			.one()
 	if num_streams > 1:
 		# This was not the last streaming user for the match.
 		session.execute(Matches.update()
@@ -533,6 +541,9 @@ def remove_stream_match(client_id, match_id, now=None):
 		_remove_not_last_stream_calendar_entries(client_id, match_id, now)
 	else:
 		# This was the last streaming user for the match.
+		_set_match_opponent_streaming(team1_id, False)
+		_set_match_opponent_streaming(team2_id, False)
+
 		session.execute(Matches.update()
 				.where(Match.id == match_id)
 				.values({Match.num_streams: 0, Match.is_streamed: False}))
@@ -611,8 +622,8 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 	# Add a CalendarEntry for each user who starred the match.
 	user_ids_cursor = session.query(StarredMatch.user_id)\
 			.filter(StarredMatch.match_id == match.id)
-	for user_id in user_ids_cursor:
-		entry = _get_calendar_entry(user_id, match)
+	for row in user_ids_cursor:
+		entry = _get_calendar_entry(row.user_id, match)
 		session.add(entry)
 
 	# Add a CalendarEntry for each user who starred either team.
