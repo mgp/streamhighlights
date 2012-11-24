@@ -177,17 +177,17 @@ def _get_twitch_url(user):
 	prefix, twitch_id = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
 	return '/user/twitch_id/%s' % twitch_id
 
-def _remove_equal_url_by_name(User, Users, url_by_name, user_id):
+def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 	if url_by_name is not None:
 		# The url_by_name must be unique.
-		update_statement = Users.update().where(User.url_by_name == url_by_name)
+		update_statement = users_table.update().where(user_class.url_by_name == url_by_name)
 		if user_id is not None:
-			update_statement = update_statement.where(User.id != user_id)
-		session.execute(update_statement.values({User.url_by_name: None}))
+			update_statement = update_statement.where(user_class.id != user_id)
+		session.execute(update_statement.values({user_class.url_by_name: None}))
 
 """Called whenever a Twitch user has been authenticated and logged in.
 """
-def twitch_user_logged_in(User, Users,
+def twitch_user_logged_in(user_class, users_table,
 		twitch_id, name, display_name, logo, access_token, now=None):
 	now = _get_now(now)
 	url_by_name = _get_twitch_url_by_name(name)
@@ -195,11 +195,11 @@ def twitch_user_logged_in(User, Users,
 		twitch_user = session.query(TwitchUser)\
 				.options(sa_orm.joinedload(TwitchUser.user))\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
-		_remove_equal_url_by_name(User, Users, url_by_name, twitch_user.user.id)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, twitch_user.user.id)
 	except sa_orm.exc.NoResultFound:
-		_remove_equal_url_by_name(User, Users, url_by_name, None)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
-		twitch_user.user = User(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
+		twitch_user.user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
 		session.add(twitch_user)
 
 	# Update the User.
@@ -216,7 +216,7 @@ def twitch_user_logged_in(User, Users,
 
 """Called whenever a Steam user has been authenticated and logged in.
 """
-def steam_user_logged_in(User, Users,
+def steam_user_logged_in(user_class, users_table,
 		steam_id, personaname, profile_url, avatar, avatar_full, now=None):
 	now = _get_now(now)
 	url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
@@ -224,11 +224,11 @@ def steam_user_logged_in(User, Users,
 		steam_user = session.query(SteamUser)\
 				.options(sa_orm.joinedload(SteamUser.user))\
 				.filter(SteamUser.steam_id == steam_id).one()
-		_remove_equal_url_by_name(User, Users, url_by_name, steam_user.user.id)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, steam_user.user.id)
 	except sa_orm.exc.NoResultFound:
-		_remove_equal_url_by_name(User, Users, url_by_name, None)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
-		steam_user.user = User(created=now, url_by_id=_get_steam_url_by_id(steam_id))
+		steam_user.user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id))
 		session.add(steam_user)
 	
 	# Update the User.
