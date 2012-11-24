@@ -90,7 +90,7 @@ class Match(common_db._Base):
 class MatchOpponent(common_db._Base):
 	__tablename__ = 'MatchOpponents'
 
-	team_id = sa.Clumn(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
+	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
 	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
 	time = sa.Column(sa.DateTime, nullable=False)
@@ -596,7 +596,7 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 
 	# Add a CalendarEntry for each user who starred either team.
 	user_ids_cursor = session.query(StarredTeam.user_id)\
-			.join(MatchOpponent, MatchOpponent.match_id == match.id)
+			.join(MatchOpponent, MatchOpponent.match_id == match.id)\
 			.filter(StarredTeam.team_id == MatchOpponent.team_id)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
@@ -717,26 +717,29 @@ class DisplayedMatchStreamer:
 """A detailed view of a match.
 """
 class DisplayedMatch:
-	def __init__(self, match_id, team1, team2, time, game, league, num_stars, streamers, prev_key, next_key):
+	def __init__(self, match_id, team1, team2, time, game, league, is_starred, num_stars, streamers, prev_key, next_key):
 		self.match_id = match_id
 		self.team1 = team1
 		self.team2 = team2
 		self.time = time
 		self.game = game
 		self.league = league
+		self.is_starred = is_starred
 		self.num_stars = num_stars
 		self.streamers = streamers
 		self.prev_key = prev_key
 		self.next_key = next_key
 	
 	def __repr__(self):
-		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r, streamers=%r, prev_key=%r, next_key=%r)' % (
+		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r, is_starred=%r, num_stars=%r, streamers=%r, prev_key=%r, next_key=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
 				self.time,
 				self.game,
 				self.league,
+				self.is_starred,
+				self.num_stars,
 				self.streamers,
 				self.prev_key,
 				self.next_key)
@@ -765,22 +768,24 @@ class DisplayedTeamMatch:
 """A detailed view of a team.
 """
 class DisplayedTeam:
-	def __init__(self, team_id, name, game, league, num_stars, matches, prev_key, next_key):
+	def __init__(self, team_id, name, game, league, is_starred, num_stars, matches, prev_key, next_key):
 		self.team_id = team_id
 		self.name = name
 		self.game = game
 		self.league = league
+		self.is_starred = is_starred
 		self.num_stars = num_stars
 		self.matches = matches
 		self.prev_key = prev_key
 		self.next_key = next_key
 
 	def __repr__(self):
-		return 'DisplayedTeam(team_id=%r, name=%r, game=%r, league=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+		return 'DisplayedTeam(team_id=%r, name=%r, game=%r, league=%r, is_starred=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
 				self.team_id,
 				self.name,
 				self.game,
 				self.league,
+				self.is_starred,
 				self.num_stars,
 				self.matches,
 				self.prev_key,
@@ -819,18 +824,20 @@ class DisplayedStreamerMatch:
 """A detailed view of a streamer.
 """
 class DisplayedStreamer:
-	def __init__(self, streamer_id, name, num_stars, matches, prev_key, next_key):
+	def __init__(self, streamer_id, name, is_starred, num_stars, matches, prev_key, next_key):
 		self.streamer_id = streamer_id
 		self.name = name
+		self.is_starred = is_starred
 		self.num_stars = num_stars
 		self.matches = matches
 		self.prev_key = prev_key
 		self.next_key = next_key
 
 	def __repr__(self):
-		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, is_starred=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
 				self.streamer_id,
 				self.name,
+				self.is_starred,
 				self.num_stars,
 				self.matches,
 				self.prev_key,
@@ -899,13 +906,17 @@ def _get_displayed_match_streamer(streamer):
 """Returns a DisplayedMatch containing streaming users.
 """
 def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
-	match, team1, team2 = session.query(Match, Team, Team)\
+	match, team1, team2, starred_match = session.query(Match, Team, Team, StarredMatch)\
 			.join(Team, Match.team1_id == Team.id)\
 			.join(Team, Match.team2_id == Team.id)\
+			.outerjoin(StarredMatch, sa.and_(
+				StarredMatch.match_id == match_id,
+				StarredMatch.user_id == client_id))\
 			.filter(Match.id == match_id)\
 			.one()
 	displayed_team1 = _get_displayed_match_team(team1)
 	displayed_team2 = _get_displayed_match_team(team2)
+	is_starred = (starred_match is not None)
 	
 	streamers_query = session.query(User)\
 			.join(User, StreamedMatch.streamer_id == User.id)\
@@ -934,8 +945,9 @@ def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
 			match.time,
 			match.game,
 			match.league,
+			is_starred,
 			match.num_stars,
-			match.streamers,
+			streamers,
 			new_prev_key,
 			new_next_key)
 
@@ -951,7 +963,13 @@ def _get_displayed_team_match(match, opponent_team):
 """Returns a DisplayedTeam containing scheduled matches.
 """
 def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
-	team = session.query(Team).filter(Team.id == team_id).one()
+	team, starred_team = session.query(Team)\
+			.outerjoin(StarredTeam, sa.and_(
+				StarredTeam.team_id == team_id,
+				StarredTeam.user_id == client_id))\
+			.filter(Team.id == team_id)\
+			.one()
+	is_starred = (starred_team is not None)
 
 	matches_query = session.query(Match, Team)\
 			.join(Match, MatchOpponent.match_id == Match.id)\
@@ -979,6 +997,7 @@ def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
 			team.name,
 			team.game,
 			team.league,
+			is_starred,
 			team.num_stars,
 			matches,
 			new_prev_key,
@@ -998,7 +1017,13 @@ def _get_displayed_streamer_match(match, team1, team2):
 			match.num_streams)
 
 def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None):
-	streamer = session.query(User).filter(User.id == streamer_id).one()
+	streamer, starred_streamer = session.query(User)\
+			.outerjoin(StarredStreamer, sa.and_(
+				StarredStreamer.streamer_id == streamer_id,
+				StarredStreamer.user_id == client_id))\
+			.filter(User.id == streamer_id)\
+			.one()
+	is_starred = (starred_streamer is not None)
 
 	matches_query = session.query(Match, Team, Team)\
 			.join(Match, StreamedMatch.match_id == Match.id)\
@@ -1025,6 +1050,7 @@ def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None)
 		pass
 	return DisplayedStreamer(streamer_id,
 			streamer.name,
+			is_starred,
 			streamer.num_stars,
 			matches,
 			new_prev_key,
