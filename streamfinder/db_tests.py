@@ -13,14 +13,20 @@ class TestFinderDb(DbTestCase):
 		self.game = 'game'
 		self.league = 'league'
 		self.team1_name = 'team1_name'
+		self.team1_url = 'team1_url'
+		self.team1_fingerprint = 'team1_fingerprint'
 		self.team2_name = 'team2_name'
+		self.team2_url = 'team2_url'
+		self.team2_fingerprint = 'team2_fingerprint'
+		self.match_url = 'match_url'
+		self.match_fingerprint = 'match_fingerprint'
 		self.time = datetime(2012, 11, 3, 18, 0, 0)
 		self.now = datetime(2012, 11, 5, 12, 0, 0)
 
 
 	"""Utility method to assert the properties of a DisplayedCalendarMatch.
 	"""
-	def _assert_displayed_calendar_match(displayed_calendar_match,
+	def _assert_displayed_calendar_match(self, displayed_calendar_match,
 			match_id, team1_id, team1_name, team2_id, team2_name, time, game, league,
 			num_stars=0, num_streams=0):
 		# Begin required arguments.
@@ -38,7 +44,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utilty method to assert the properties of a DisplayedCalendar.
 	"""
-	def _assert_displayed_calendar(displayed_calendar,
+	def _assert_displayed_calendar(self, displayed_calendar,
 			has_next_match=False, num_matches=0):
 		# Begin optional arguments.
 		self.assertEqual(has_next_match, displayed_calendar.next_match is not None)
@@ -47,7 +53,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedMatchTeam.
 	"""
-	def _assert_displayed_match_team(displayed_match_team, team_id, name,
+	def _assert_displayed_match_team(self, displayed_match_team, team_id, name,
 			num_stars=0):
 		# Begin required arguments.
 		self.assertEqual(team_id, displayed_match_team.team_id)
@@ -57,7 +63,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedMatchStreamer.
 	"""
-	def _assert_displayed_match_streamer(displayed_match_streamer,
+	def _assert_displayed_match_streamer(self, displayed_match_streamer,
 			user_id, name, url_by_id, num_stars=0, image_url=None, url_by_name=None):
 		# Begin required arguments.
 		self.assertEqual(user_id, displayed_match_streamer.user_id)
@@ -70,10 +76,12 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedMatch.
 	"""
-	def _assert_displayed_match(displayed_match, match_id, time, game, league,
+	def _assert_displayed_match(self, displayed_match, match_id, time, game, league,
 			is_starred=False, num_stars=0, num_streamers=0):
 		# Begin required arguments.
 		self.assertEqual(match_id, displayed_match.match_id)
+		self.assertIsNotNone(displayed_match.team1)
+		self.assertIsNotNone(displayed_match.team2)
 		self.assertEqual(time, displayed_match.time)
 		self.assertEqual(game, displayed_match.game)
 		self.assertEqual(league, displayed_match.league)
@@ -85,7 +93,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedTeamMatch.
 	"""
-	def _assert_displayed_team_match(displayed_team_match,
+	def _assert_displayed_team_match(self, displayed_team_match,
 			opponent_id, opponent_name, match_id, time, num_stars=0, num_streams=0):
 		# Begin required arguments.
 		self.assertEqual(opponent_id, displayed_team_match.opponent_id)
@@ -98,7 +106,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedTeam.
 	"""
-	def _assert_displayed_team(displayed_team, team_id, name, game, league,
+	def _assert_displayed_team(self, displayed_team, team_id, name, game, league,
 			is_starred=False, num_stars=0, num_matches=0):
 		# Begin required arguments.
 		self.assertEqual(team_id, displayed_team.team_id)
@@ -113,7 +121,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedStreamerMatch.
 	"""
-	def _assert_displayed_streamer_match(displayed_streamer_match,
+	def _assert_displayed_streamer_match(self, displayed_streamer_match,
 			match_id, team1_id, team1_name, team2_id, team2_name, time, game, league,
 			num_stars=0, num_streams=0):
 		# Begin required arguments.
@@ -131,7 +139,7 @@ class TestFinderDb(DbTestCase):
 
 	"""Utility method to assert the properties of a DisplayedStreamer.
 	"""
-	def _assert_displayed_streamer(displayed_streamer,
+	def _assert_displayed_streamer(self, displayed_streamer,
 			streamer_id, name, is_starred=False, num_stars=0, num_matches=0):
 		# Begin required arguments.
 		self.assertEqual(streamer_id, displayed_streamer.streamer_id)
@@ -147,9 +155,12 @@ class TestFinderDb(DbTestCase):
 	def test_add_match_star_unknown_user(self):
 		missing_user_id = 'missing_user_id'
 		# Create the match.
-		team1_id = db.add_team(self.team1_name, self.game, self.league)
-		team2_id = db.add_team(self.team2_name, self.game, self.league)
-		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league, now=None)
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_match(missing_user_id, match_id, now=self.now)
@@ -170,41 +181,59 @@ class TestFinderDb(DbTestCase):
 		client_name = 'client_name1'
 		client_steam_id, client_id = self._create_steam_user(client_name)
 		# Create the match.
-		team1_id = db.add_team(self.team1_name, self.game, self.league)
-		team2_id = db.add_team(self.team2_name, self.game, self.league)
-		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league, now=None)
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
 
 		# Add a star for the match.
 		db.add_star_match(client_id, match_id, now=self.now)
 		# Assert that the match has a star.
-		"""
 		displayed_match = db.get_displayed_match(client_id, match_id)
-		self._assert_displayed_match(displayed_match, num_stars=1)
-		"""
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league,
+				is_starred=True, num_stars=1)
+		self._assert_displayed_match_team(displayed_match.team1,
+				team1_id, self.team1_name)
+		self._assert_displayed_match_team(displayed_match.team2,
+				team2_id, self.team2_name)
 
 		# Add a star for the match again.
-		db.add_star_match(client_id, match_id, now=self.now)
+		with self.assertRaises(common_db.DbException):
+			db.add_star_match(client_id, match_id, now=self.now)
 		# Assert that this had no effect.
-		"""
 		displayed_match = db.get_displayed_match(client_id, match_id)
-		self._assert_displayed_match(displayed_match, num_stars=1)
-		"""
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league,
+				is_starred=True, num_stars=1)
+		self._assert_displayed_match_team(displayed_match.team1,
+				team1_id, self.team1_name)
+		self._assert_displayed_match_team(displayed_match.team2,
+				team2_id, self.team2_name)
 
 		# Remove the star for the match.
 		db.remove_star_match(client_id, match_id, now=self.now)
 		# Assert that the match no longer has a star.
-		"""
 		displayed_match = db.get_displayed_match(client_id, match_id)
-		self._assert_displayed_match(displayed_match)
-		"""
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league)
+		self._assert_displayed_match_team(displayed_match.team1,
+				team1_id, self.team1_name)
+		self._assert_displayed_match_team(displayed_match.team2,
+				team2_id, self.team2_name)
 
 		# Remove the star for the match again.
 		db.remove_star_match(client_id, match_id, now=self.now)
 		# Assert that this had no effect.
-		"""
 		displayed_match = db.get_displayed_match(client_id, match_id)
-		self._assert_displayed_match(displayed_match)
-		"""
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league)
+		self._assert_displayed_match_team(displayed_match.team1,
+				team1_id, self.team1_name)
+		self._assert_displayed_match_team(displayed_match.team2,
+				team2_id, self.team2_name)
 
 	"""Test that adds and removes a star for a match that is casted.
 	"""

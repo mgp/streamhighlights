@@ -8,13 +8,14 @@ import sqlalchemy.schema as sa_schema
 import sys
 
 import common_db
+from common_db import _get_now, session
 
 """A user of the site.
 """
 class User(common_db.UserMixin, common_db._Base):
 	__tablename__ = 'Users'
 
-	can_stream = sa.Column(sa.Boolean, nullable=False)
+	can_stream = sa.Column(sa.Boolean, default=False, nullable=False)
 	stream_info = sa.Column(sa.String)
 
 	def __repr__(self):
@@ -43,15 +44,17 @@ class Team(common_db._Base):
 	game = sa.Column(sa.String, nullable=False)
 	league = sa.Column(sa.String, nullable=False)
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
+	url = sa.Column(sa.String, nullable=False)
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Team(id=%r, name=%r, game=%r, league=%r, num_stars=%r, fingerprint=%r)' % (
+		print 'Team(id=%r, name=%r, game=%r, league=%r, num_stars=%r, url=%r, fingerprint=%r)' % (
 				self.id,
 				self.name,
 				self.game,
 				self.league,
 				self.num_stars,
+				self.url,
 				self.fingerprint)
 
 
@@ -69,10 +72,11 @@ class Match(common_db._Base):
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	num_streams = sa.Column(sa.Integer, default=0, nullable=False)
 	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
+	url = sa.Column(sa.String, nullable=False)
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
+		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r, is_streamed=%r, url=%r, fingerprint=%r)' % (
 				self.id,
 				self.team1_id,
 				self.team2_id,
@@ -82,6 +86,7 @@ class Match(common_db._Base):
 				self.num_stars,
 				self.num_streams,
 				self.is_streamed,
+				self.url,
 				self.fingerprint)
 
 
@@ -195,7 +200,7 @@ class StreamedMatch(common_db._Base):
 
 """An entry in a user's calendar.
 """
-class CalendaryEntry(common_db._Base):
+class CalendarEntry(common_db._Base):
 	__tablename__ = 'CalendarEntries'
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
@@ -214,6 +219,7 @@ class CalendaryEntry(common_db._Base):
 def create_all():
 	common_db.create_all()
 
+	global Users
 	global Teams
 	global Matches
 	global MatchOpponents
@@ -225,6 +231,7 @@ def create_all():
 	global CalendarEntries
 
 	# Create aliases for each table.
+	Users = User.__table__
 	Teams = Team.__table__
 	Matches = Match.__table__
 	MatchOpponents = MatchOpponent.__table__
@@ -236,6 +243,7 @@ def create_all():
 	CalendarEntries = CalendarEntry.__table__
 
 def drop_all():
+	global Users
 	global Teams
 	global Matches
 	global MatchOpponents
@@ -246,6 +254,7 @@ def drop_all():
 	global StreamedMatches
 
 	# Clear aliases for each table.
+	Users = None
 	Teams = None
 	Matches = None
 	MatchOpponents = None
@@ -261,10 +270,11 @@ def drop_all():
 
 """Adds a match between two teams at a given time.
 """
-def add_match(team1_id, team2_id, time, game, league, now=None):
+def add_match(team1_id, team2_id, time, game, league, url, fingerprint, now=None):
 	try:
 		# Add the match.
-		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time)
+		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time,
+				url=url, fingerprint=fingerprint)
 		session.add(match)
 		session.flush()
 
@@ -285,8 +295,8 @@ def add_match(team1_id, team2_id, time, game, league, now=None):
 
 """Adds a team in the given game and league.
 """
-def add_team(name, game, league):
-	team = Team(name=name, game=game, league=league)
+def add_team(name, game, league, url, fingerprint):
+	team = Team(name=name, game=game, league=league, url=url, fingerprint=fingerprint)
 	session.add(team)
 	session.commit()
 	return team.id
@@ -563,12 +573,13 @@ def _multi_decrement_num_user_stars(user_ids, match_id, now):
 
 """Updates or deletes a CalendarEntry for the given user and match identifier.
 """
-def _decrement_num_user_stars(user_ids, match_id, now):
+def _decrement_num_user_stars(user_id, match_id, now):
 	num_user_stars = session.query(CalendarEntry.num_user_stars)\
 			.filter(
 				CalendarEntry.user_id == user_id,
 				CalendarEntry.match_id == match_id)\
-			.one()
+			.one()\
+			.num_user_stars
 	if num_user_stars > 1:
 		# Decrement the count of stars for the CalendarEntry to a positive integer.
 		session.execute(CalendarEntries.update()
@@ -906,9 +917,12 @@ def _get_displayed_match_streamer(streamer):
 """Returns a DisplayedMatch containing streaming users.
 """
 def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
-	match, team1, team2, starred_match = session.query(Match, Team, Team, StarredMatch)\
-			.join(Team, Match.team1_id == Team.id)\
-			.join(Team, Match.team2_id == Team.id)\
+	team_alias1 = sa_orm.aliased(Team)
+	team_alias2 = sa_orm.aliased(Team)
+	match, team1, team2, starred_match = session\
+			.query(Match, team_alias1, team_alias2, StarredMatch)\
+			.join(team_alias1, Match.team1_id == team_alias1.id)\
+			.join(team_alias2, Match.team2_id == team_alias2.id)\
 			.outerjoin(StarredMatch, sa.and_(
 				StarredMatch.match_id == match_id,
 				StarredMatch.user_id == client_id))\
@@ -918,27 +932,29 @@ def get_displayed_match(client_id, match_id, prev_key=None, next_key=None):
 	displayed_team2 = _get_displayed_match_team(team2)
 	is_starred = (starred_match is not None)
 	
-	streamers_query = session.query(User)\
+	streamers_query = session.query(StreamedMatch.streamer_id, User)\
 			.join(User, StreamedMatch.streamer_id == User.id)\
 			.filter(StreamedMatch.match_id == match_id)
 	if prev_key:
 		# TODO: Add filter, limit.
 		pass
-	elif next_key:
+	else:
 		# TODO: Add filter, limit.
 		pass
 
 	streamers = [
 			_get_displayed_match_streamer(streamer)
-				for streamer in streamers_query]
+				for streamer_id, streamer in streamers_query]
 	session.close()
 
 	if prev_key:
 		# TODO: Set new_prev_key, new_next_key
-		pass
-	elif next_key:
+		new_prev_key = None
+		new_next_key = None
+	else:
 		# TODO: Set new_prev_key, new_next_key
-		pass
+		new_prev_key = None
+		new_next_key = None
 	return DisplayedMatch(match_id,
 			displayed_team1,
 			displayed_team2,
