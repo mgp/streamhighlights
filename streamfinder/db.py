@@ -523,7 +523,7 @@ def remove_stream_match(client_id, match_id, now=None):
 
 	# Remove the client as a user streaming the match.
 	result = session.execute(StreamedMatches.delete().where(sa.and_(
-			StreamedMatch.user_id == client_id,
+			StreamedMatch.streamer_id == client_id,
 			StreamedMatch.match_id == match_id)))
 	if not result.rowcount:
 		session.rollback()
@@ -666,8 +666,7 @@ removed as the last streaming user.
 def _remove_last_stream_calendar_entries(client_id, match_id, now):	
 	# Remove every CalendarEntry for this match.
 	result = session.execute(
-			CalendarEntries.delete().where(CalendarEntry.user_id == client_id))
-
+			CalendarEntries.delete().where(CalendarEntry.match_id == match_id))
 
 
 """A match in a DisplayedCalendar.

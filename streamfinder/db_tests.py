@@ -688,7 +688,64 @@ class TestFinderDb(DbTestCase):
 		# Remove all the stars.
 		self._remove_multi_stars(client_id, streamer_id, team1_id, team2_id, match_id)
 
-	# TODO: Test adding, removing multiple streams for a match.
+	"""Test that adds and removes multiple streamers for a casted match.
+	"""
+	def test_add_remove_multi_streamers(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		# Create the match.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		# Add a star for the match.
+		db.add_star_match(client_id, match_id, now=self.now)
+
+		# Create the first streaming user.
+		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
+		# Create the second streaming user.
+		streamer_name2 = 'streamer_name2'
+		streamer_steam_id2, streamer_id2 = self._create_steam_user(streamer_name2)
+
+		# The first streamer streams the match.
+		db.add_stream_match(streamer_id1, match_id)
+		# Assert that the user's calendar has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_stars=1, num_streams=1)
+	
+		# The second streamer streams the match.
+		db.add_stream_match(streamer_id2, match_id)
+		# Assert that the user's calendar still has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_stars=1, num_streams=2)
+	
+		# The first streamer is no longer streaming the match.
+		db.remove_stream_match(streamer_id1, match_id)
+		# Assert that the user's calendar still has the match.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_stars=1, num_streams=1)
+
+		# The second streamer is no longer streaming the match.
+		db.remove_stream_match(streamer_id2, match_id)
+		# Assert that the user's calendar is empty.
+		displayed_calendar = db.get_displayed_calendar(client_id)
+		self._assert_displayed_calendar(displayed_calendar)
+
 	# TODO: Test remove_stream_match.
 	# TODO: Test multiple entries in calendar.
 	# TODO: Test pagination.
@@ -877,7 +934,7 @@ class TestFinderDb(DbTestCase):
 		streamer_steam_id2, streamer_id2 = self._create_steam_user(streamer_name2)
 		# The first streamer streams the first match.
 		db.add_stream_match(streamer_id1, match_id1)
-		# The secod streamer streams the second match.
+		# The second streamer streams the second match.
 		db.add_stream_match(streamer_id2, match_id2)
 
 		# The first user adds a star for the first streamer.
