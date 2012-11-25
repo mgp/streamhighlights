@@ -66,8 +66,8 @@ class Match(common_db._Base):
 	__tablename__ = 'Matches'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	team1_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
-	team2_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
+	team1_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), nullable=False)
+	team2_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), nullable=False)
 	time = sa.Column(sa.DateTime, nullable=False)
 	game = sa.Column(sa.String, nullable=False)
 	league = sa.Column(sa.String, nullable=False)
@@ -101,7 +101,7 @@ class MatchOpponent(common_db._Base):
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
 	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
 	time = sa.Column(sa.DateTime, nullable=False)
-	opponent_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'))
+	opponent_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), nullable=False)
 
 	def __repr__(self):
 		return 'MatchOpponent(team_id=%r, match_id=%r, is_streamed=%r, time=%r, opponent_id=%r)' % (
@@ -118,8 +118,8 @@ class MatchEdit(common_db._Base):
 	__tablename__ = 'MatchEdits'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'))
-	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
+	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), nullable=False)
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), nullable=False)
 	action = sa.Column(sa.Enum('edit_time', 'cancel'), nullable=False)
 	data = sa.Column(sa.String)
 	comment = sa.Column(sa.String)
