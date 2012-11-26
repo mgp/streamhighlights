@@ -749,7 +749,59 @@ class TestFinderDb(DbTestCase):
 	# TODO: Test remove_stream_match.
 	# TODO: Test multiple entries in calendar.
 	# TODO: Test pagination.
-	# TODO: Test adding existing matches, teams.
+
+	"""Test that updates the name of an existing team.
+	"""
+	def test_update_existing_team(self):
+		updated_team_name = 'updated_name'
+		updated_game = 'updated_game'
+		updated_league = 'updated_league'
+		updated_team_url = 'updated_team_url'
+
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the team.
+		team_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+
+		# Update the team name.
+		updated_team_id = db.add_team(
+				updated_team_name, updated_game, updated_league, updated_team_url,
+				self.team1_fingerprint)
+		# Assert that only the name was updated.
+		self.assertEqual(team_id, updated_team_id)
+		displayed_team = db.get_displayed_team(client_id, team_id)
+		self._assert_displayed_team(displayed_team,
+				team_id, updated_team_name, self.game, self.league)
+
+	"""Test that fails to add a duplicate of an existing match.
+	"""
+	def test_add_existing_match(self):
+		updated_time = self.time + timedelta(hours=1)
+		updated_game = 'updated_game'
+		updated_league = 'updated_league'
+		updated_match_url = 'updated_match_url'
+
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		# Create the match.
+		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+
+		# Attempt to add the match again.
+		updated_match_id = db.add_match(team1_id, team2_id,
+				updated_time, updated_game, updated_league, updated_match_url,
+				self.match_fingerprint, now=None)
+		# Assert that this had no effect.
+		self.assertEqual(match_id, updated_match_id)
+		displayed_match = db.get_displayed_match(client_id, match_id)
+		self._assert_displayed_match(displayed_match,
+				match_id, self.time, self.game, self.league)
 
 	"""Test that clients see their own stars for matches.
 	"""

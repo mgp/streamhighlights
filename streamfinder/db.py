@@ -218,6 +218,10 @@ class CalendarEntry(common_db._Base):
 				self.num_user_stars)
 
 
+# Used by method add_match.
+sa_schema.Index('TeamsByFingerprint', Team.fingerprint, unique=True)
+# Used by method add_team.
+sa_schema.Index('MatchesByFingerprint', Match.fingerprint, unique=True)
 # Used by methods _add_star_team, _remove_star_team.
 sa_schema.Index('MatchOpponentsByTeamIdAndIsStreamed',
 		MatchOpponent.team_id, MatchOpponent.is_streamed)
@@ -288,6 +292,17 @@ def drop_all():
 """
 def add_match(team1_id, team2_id, time, game, league, url, fingerprint, now=None):
 	try:
+		match_id = session.query(Match)\
+				.filter(Match.fingerprint == fingerprint)\
+				.one()\
+				.id
+		session.close()
+		return match_id
+	except sa_orm.exc.NoResultFound:
+		# This match does not exist; continue to add the match.
+		session.rollback()
+
+	try:
 		# Add the match.
 		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time,
 				url=url, fingerprint=fingerprint)
@@ -311,9 +326,14 @@ def add_match(team1_id, team2_id, time, game, league, url, fingerprint, now=None
 
 """Adds a team in the given game and league.
 """
-def add_team(name, game, league, url, fingerprint):
-	team = Team(name=name, game=game, league=league, url=url, fingerprint=fingerprint)
-	session.add(team)
+def add_team(name, game, league, url, fingerprint, now=None):
+	try:
+		team = session.query(Team).filter(Team.fingerprint == fingerprint).one()
+		team.name = name
+	except sa_orm.exc.NoResultFound:
+		team = Team(name=name, game=game, league=league, url=url, fingerprint=fingerprint)
+		session.add(team)
+
 	session.commit()
 	return team.id
 
