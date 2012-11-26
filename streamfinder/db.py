@@ -234,6 +234,9 @@ sa_schema.Index('StarredStreamersByStreamerId', StarredStreamer.streamer_id)
 sa_schema.Index('CalendarEntriesByMatchId', CalendarEntry.match_id)
 # Used by method _get_displayed_match.
 sa_schema.Index('StreamedMatchesByMatchId', StreamedMatch.match_id)
+# Used by method get_displayed_calendar.
+sa_schema.Index('CalendarEntriesByUserIdAndTimeAndMatchId',
+		CalendarEntry.user_id.asc(), CalendarEntry.time.asc(), CalendarEntry.match_id.asc())
 
 
 def create_all():
@@ -733,18 +736,23 @@ class DisplayedCalendarMatch:
 """A list of matches in the Calendar tab.
 """
 class DisplayedCalendar:
-	def __init__(self, next_match, matches, prev_key, next_key):
+	def __init__(self, next_match, matches,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		self.next_match = next_match
 		self.matches = matches
-		self.prev_key = prev_key
-		self.next_key = next_key
+		self.prev_time = prev_time
+		self.prev_match_id = prev_match_id
+		self.next_time = next_time
+		self.next_match_id = next_match_id
 	
 	def __repr__(self):
-		return 'DisplayedCalendar(next_match=%r, matches=%r, next_key=%r, prev_key=%r)' % (
+		return 'DisplayedCalendar(next_match=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.next_match,
 				self.matches,
-				self.prev_key,
-				self.next_key)
+				self.prev_time,
+				self.prev_match_id,
+				self.next_time,
+				self.next_match_id)
 
 
 """A team in a DisplayedMatch.
@@ -911,6 +919,9 @@ class DisplayedStreamer:
 				self.next_key)
 
 
+# The number of entities per page.
+_PAGE_LIMIT = 30
+
 def _get_displayed_calendar_match(match, team1, team2):
 	return DisplayedCalendarMatch(match.id,
 			team1.id,
@@ -923,14 +934,7 @@ def _get_displayed_calendar_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams)
 
-"""Returns a DisplayedCalendar containing calendar entries for the given user.
-"""
-def get_displayed_calendar(client_id, prev_key=None, next_key=None):
-	team_alias1 = sa_orm.aliased(Team)
-	team_alias2 = sa_orm.aliased(Team)
-
-	# Get the next match.
-	next_match = None
+def _get_next_match(client_id, team_alias1, team_alias2):
 	try:
 		next_match_id, next_match, next_match_team1, next_match_team2 = session\
 				.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
@@ -943,41 +947,85 @@ def get_displayed_calendar(client_id, prev_key=None, next_key=None):
 				.one()
 		next_match = _get_displayed_calendar_match(
 				next_match, next_match_team1, next_match_team2)
+		return next_match
 	except sa_orm.exc.NoResultFound:
 		# There are no matches.
 		session.close()
-		return DisplayedCalendar(None, [], None, None)
+	return None
 
+"""Returns a DisplayedCalendar containing calendar entries for the given user.
+"""
+def get_displayed_calendar(client_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	if page_limit is None:
+		page_limit = _PAGE_LIMIT
+	team_alias1 = sa_orm.aliased(Team)
+	team_alias2 = sa_orm.aliased(Team)
+
+	# Get the next match.
+	next_match = _get_next_match(client_id, team_alias1, team_alias2)
+	if next_match is None:
+		return DisplayedCalendar(None, ())
 	matches_query = session\
 			.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
 			.join(Match, CalendarEntry.match_id == Match.id)\
 			.join(team_alias1, Match.team1_id == team_alias1.id)\
 			.join(team_alias2, Match.team2_id == team_alias2.id)\
 			.filter(CalendarEntry.user_id == client_id)
-	if prev_key:
-		# TODO: Add filter, limit.
-		pass
-	elif next_key:
-		# TODO: Add filter, limit.
-		pass
 
-	matches = [
+	clicked_prev = (prev_time and prev_match_id)
+	if clicked_prev:
+		# The user clicked on Previous.
+		matches_query = matches_query\
+				.filter(sa.or_(
+					sa.and_(
+						CalendarEntry.time == prev_time,
+						CalendarEntry.match_id < prev_match_id),
+					CalendarEntry.time < prev_time))\
+				.order_by(CalendarEntry.time.desc(), CalendarEntry.match_id.desc())
+	elif next_time and next_match_id:
+		# The user clicked on Next.
+		matches_query = matches_query\
+				.filter(sa.or_(
+					sa.and_(
+						CalendarEntry.time == next_time,
+						CalendarEntry.match_id > next_match_id),
+					CalendarEntry.time > next_time))\
+				.order_by(CalendarEntry.time.asc(), CalendarEntry.match_id.asc())
+	else:
+		# Show the first page.
+		matches_query = matches_query\
+				.order_by(CalendarEntry.time.asc(), CalendarEntry.match_id.asc())
+
+	matches_query = matches_query.limit(page_limit)
+	matches = tuple(
 			_get_displayed_calendar_match(match, team1, team2)
-				for match_id, match, team1, team2 in matches_query]
+				for match_id, match, team1, team2 in matches_query)
 	session.close()
 
-	if prev_key:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
+	if clicked_prev:
+		matches = tuple(reversed(matches))
+
+	# Get the pagination values for the previous page.
+	on_first_page = (next_match.match_id == matches[0].match_id)
+	if not on_first_page:
+		prev_time = matches[0].time
+		prev_match_id = matches[0].match_id
 	else:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
-	return DisplayedCalendar(next_match,
-			matches,
-			new_prev_key,
-			new_next_key)
+		prev_time = None
+		prev_match_id = None
+	# Get the pagination values for the next page.
+	on_last_page = (len(matches) < page_limit)
+	if not on_last_page:
+		next_time = matches[-1].time
+		next_match_id = matches[-1].match_id
+	else:
+		next_time = None
+		next_match_id = None
+	
+	return DisplayedCalendar(next_match, matches,
+			prev_time, prev_match_id, next_time, next_match_id)
 
 
 def _get_displayed_match_team(team):

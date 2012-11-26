@@ -61,10 +61,15 @@ class TestFinderDb(DbTestCase):
 	"""Utilty method to assert the properties of a DisplayedCalendar.
 	"""
 	def _assert_displayed_calendar(self, displayed_calendar,
-			has_next_match=False, num_matches=0):
+			has_next_match=False, num_matches=0,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		# Begin optional arguments.
 		self.assertEqual(has_next_match, displayed_calendar.next_match is not None)
 		self.assertEqual(num_matches, len(displayed_calendar.matches))
+		self.assertEqual(prev_time, displayed_calendar.prev_time)
+		self.assertEqual(prev_match_id, displayed_calendar.prev_match_id)
+		self.assertEqual(next_time, displayed_calendar.next_time)
+		self.assertEqual(next_match_id, displayed_calendar.next_match_id)
 
 
 	"""Utility method to assert the properties of a DisplayedMatchTeam.
@@ -762,7 +767,147 @@ class TestFinderDb(DbTestCase):
 
 	# TODO: Test remove_stream_match.
 	# TODO: Test multiple entries in calendar.
-	# TODO: Test pagination.
+	# TODO: Test pagination for all displayed data.
+
+	"""Test pagination when displaying the calendar.
+	"""
+	def test_get_displayed_calendar_pagination(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		# Add stars for both teams.
+		db.add_star_team(client_id, team1_id)
+		db.add_star_team(client_id, team2_id)
+
+		# The second and third matches happen at the same time.
+		time2 = self.time + timedelta(days=1)
+		time3 = time2
+		time4 = time3 + timedelta(days=1)
+		time5 = time4 + timedelta(days=1)
+		# Create the matches.
+		match_url2 = 'match_url2'
+		match_url3 = 'match_url3'
+		match_url4 = 'match_url4'
+		match_url5 = 'match_url5'
+		match_fingerprint2 = 'match_fingerprint2'
+		match_fingerprint3 = 'match_fingerprint3'
+		match_fingerprint4 = 'match_fingerprint4'
+		match_fingerprint5 = 'match_fingerprint5'
+		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
+				match_url2, match_fingerprint2, now=None)
+		match_id3 = db.add_match(team1_id, team2_id, time3, self.game, self.league,
+				match_url3, match_fingerprint3, now=None)
+		match_id4 = db.add_match(team1_id, team2_id, time4, self.game, self.league,
+				match_url4, match_fingerprint4, now=None)
+		match_id5 = db.add_match(team1_id, team2_id, time5, self.game, self.league,
+				match_url5, match_fingerprint5, now=None)
+
+		# Create the streaming user.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+		# Stream all matches.
+		for match_id in (match_id1, match_id2, match_id3, match_id4, match_id5):
+			db.add_stream_match(streamer_id, match_id)
+
+		# Assert that the first page of the user's calendar is correct.
+		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2)
+		self.assertEqual(2, len(displayed_calendar.matches))
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the second page of the user's calendar is correct.
+		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+				next_time=displayed_calendar.next_time,
+				next_match_id=displayed_calendar.next_match_id)
+		self.assertEqual(2, len(displayed_calendar.matches))
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the third page of the user's calendar is correct.
+		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+				next_time=displayed_calendar.next_time,
+				next_match_id=displayed_calendar.next_match_id)
+		self.assertEqual(1, len(displayed_calendar.matches))
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1,
+				prev_time=time5, prev_match_id=match_id5)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id5, team1_id, self.team1_name, team2_id, self.team2_name,
+				time5, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the second page of the user's calendar is correct.
+		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+				prev_time=displayed_calendar.prev_time,
+				prev_match_id=displayed_calendar.prev_match_id)
+		self.assertEqual(2, len(displayed_calendar.matches))
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the first page of the user's calendar is correct.
+		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2)
+		self.assertEqual(2, len(displayed_calendar.matches))
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
 
 	"""Test that updates the name of an existing team.
 	"""
