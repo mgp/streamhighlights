@@ -1,10 +1,24 @@
 from datetime import datetime, timedelta
 import db
 from db_test_case import DbTestCase
+import functools
 import sqlalchemy.orm as sa_orm
+import time
 import unittest
 
 import common_db
+
+"""Prints the seconds taken to run a decorated function.
+"""
+def timed(f):
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		start_time = time.time()
+		result = f(*pargs, **kwargs)
+		end_time = time.time()
+		print 'elapsed seconds: %f' % (end_time - start_time)
+		return result
+	return decorated_function
 
 class TestFinderDb(DbTestCase):
 	def setUp(self):
