@@ -243,6 +243,14 @@ def steam_user_logged_in(user_class, users_table,
 	session.commit()
 	return steam_user.user.id
 
+"""Like calling one() on query, but returns None instead of raising NoResultFound.
+"""
+def optional_one(query):
+	results = query.limit(1).all()
+	if results:
+		return results[0] 
+	return None
+
 def create_all():
 	_Base.metadata.create_all(_engine)
 

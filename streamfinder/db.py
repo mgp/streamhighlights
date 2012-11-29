@@ -234,11 +234,19 @@ sa_schema.Index('StarredTeamsByTeamId', StarredTeam.team_id)
 sa_schema.Index('StarredStreamersByStreamerId', StarredStreamer.streamer_id)
 # Used by method _remove_last_stream_calendar_entries.
 sa_schema.Index('CalendarEntriesByMatchId', CalendarEntry.match_id)
-# Used by method _get_displayed_match.
-sa_schema.Index('StreamedMatchesByMatchId', StreamedMatch.match_id)
+
 # Used by method get_displayed_calendar.
 sa_schema.Index('CalendarEntriesByUserIdAndTimeAndMatchId',
 		CalendarEntry.user_id.asc(), CalendarEntry.time.asc(), CalendarEntry.match_id.asc())
+# Used by method get_displayed_match.
+sa_schema.Index('StreamedMatchesByMatchIdAndAddedAndStreamerId',
+		StreamedMatch.match_id.asc(), StreamedMatch.added.asc(), StreamedMatch.streamer_id.asc())
+# Used by method get_displayed_team.
+sa_schema.Index('MatchOpponentsByTeamIdAndTimeAndMatchId',
+		MatchOpponent.team_id.asc(), MatchOpponent.time.asc(), MatchOpponent.match_id.asc())
+# Used by method get_displayed_streamer.
+sa_schema.Index('StreamedMatchesByStreamerIdAndTimeAndMatchId',
+		StreamedMatch.streamer_id.asc(), StreamedMatch.time.asc(), StreamedMatch.match_id.asc())
 
 
 def create_all():
@@ -1244,7 +1252,7 @@ def get_displayed_team(client_id, team_id,
 	is_starred = (starred_team is not None)
 
 	matches = ()
-	first_match_opponent = _get_optional_one(
+	first_match_opponent = common_db.optional_one(
 			session.query(MatchOpponent.match_id)\
 				.filter(MatchOpponent.team_id == team_id)
 				.order_by(MatchOpponent.time.asc(), MatchOpponent.match_id.asc()))
@@ -1308,14 +1316,6 @@ def _displayed_streamer_id_getter(item):
 	match, team1, team2 = item
 	return match.id
 
-"""Like calling one() on query, but returns None instead of raising NoResultFound.
-"""
-def _get_optional_one(query):
-	results = query.limit(1).all()
-	if results:
-		return results[0] 
-	return None
-
 """Returns a DisplayedStreamer containing scheduled streamed matches.
 """
 def get_displayed_streamer(client_id, streamer_id,
@@ -1336,7 +1336,7 @@ def get_displayed_streamer(client_id, streamer_id,
 	is_starred = (starred_streamer is not None)
 
 	matches = ()
-	first_streamed_match = _get_optional_one(
+	first_streamed_match = common_db.optional_one(
 			session.query(StreamedMatch.match_id)\
 				.filter(StreamedMatch.streamer_id == streamer_id)\
 				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
