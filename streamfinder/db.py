@@ -850,7 +850,7 @@ class DisplayedTeamMatch:
 """A detailed view of a team.
 """
 class DisplayedTeam:
-	def __init__(self, team_id, name, game, league, is_starred, num_stars, matches, prev_key, next_key):
+	def __init__(self, team_id, name, game, league, is_starred, num_stars, matches, prev_time, prev_match_id, next_time, next_match_id):
 		self.team_id = team_id
 		self.name = name
 		self.game = game
@@ -858,11 +858,13 @@ class DisplayedTeam:
 		self.is_starred = is_starred
 		self.num_stars = num_stars
 		self.matches = matches
-		self.prev_key = prev_key
-		self.next_key = next_key
+		self.prev_time = prev_time
+		self.prev_match_id = prev_match_id
+		self.next_time = next_time
+		self.next_match_id = next_match_id
 
 	def __repr__(self):
-		return 'DisplayedTeam(team_id=%r, name=%r, game=%r, league=%r, is_starred=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+		return 'DisplayedTeam(team_id=%r, name=%r, game=%r, league=%r, is_starred=%r, num_stars=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.team_id,
 				self.name,
 				self.game,
@@ -870,8 +872,10 @@ class DisplayedTeam:
 				self.is_starred,
 				self.num_stars,
 				self.matches,
-				self.prev_key,
-				self.next_key)
+				self.prev_time,
+				self.prev_match_id,
+				self.next_time,
+				self.next_match_id)
 
 
 """A match for a DisplayedStreamer.
@@ -1212,9 +1216,25 @@ def _get_displayed_team_match(match, opponent_team):
 			match.num_stars,
 			match.num_streams)
 
+def _displayed_team_time_getter(item):
+	match, opponent_team = item
+	return match.time
+
+def _displayed_team_id_getter(item):
+	match, opponent_team = item
+	return match.id
+
 """Returns a DisplayedTeam containing scheduled matches.
 """
-def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
+def get_displayed_team(client_id, team_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	if page_limit is None:
+		page_limit = _PAGE_LIMIT
+	clicked_prev = _clicked_prev(prev_time, prev_match_id)
+	clicked_next = _clicked_next(next_time, next_match_id)
+
+	# Get the team.
 	team, starred_team = session.query(Team, StarredTeam)\
 			.outerjoin(StarredTeam, sa.and_(
 				StarredTeam.team_id == team_id,
@@ -1223,40 +1243,49 @@ def get_displayed_team(client_id, team_id, prev_key=None, next_key=None):
 			.one()
 	is_starred = (starred_team is not None)
 
-	matches_query = session\
-			.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
-			.join(Match, MatchOpponent.match_id == Match.id)\
-			.join(Team, MatchOpponent.opponent_id == Team.id)\
-			.filter(MatchOpponent.team_id == team_id)
-	if prev_key:
-		# TODO: Add filter, limit.
-		pass
-	elif next_key:
-		# TODO: Add filter, limit.
-		pass
+	matches = ()
+	first_match_opponent = _get_optional_one(
+			session.query(MatchOpponent.match_id)\
+				.filter(MatchOpponent.team_id == team_id)
+				.order_by(MatchOpponent.time.asc(), MatchOpponent.match_id.asc()))
+	first_match_id = None
+	if first_match_opponent is not None:
+		first_match_id = first_match_opponent.match_id
+		# Get the partial list of matches.
+		matches_query = session\
+				.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
+				.join(Match, MatchOpponent.match_id == Match.id)\
+				.join(Team, MatchOpponent.opponent_id == Team.id)\
+				.filter(MatchOpponent.team_id == team_id)
+		matches_query = _add_pagination_to_query(
+				matches_query, MatchOpponent.time, MatchOpponent.match_id, page_limit,
+				clicked_prev, clicked_next,
+				prev_time, prev_match_id, next_time, next_match_id)
+		matches = tuple((match, opponent_team)
+				for match_id, team_id, match, opponent_team in matches_query)
+		if clicked_prev:
+			# Reverse the partial list if clicked on Previous.
+			matches = matches[::-1]
 
-	matches = [
-			_get_displayed_team_match(match, opponent_team)
-				for match_id, team_id, match, opponent_team in matches_query]
 	session.close()
 
-	if prev_key:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
-	else:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
+	# Get pagination for the adjacent partial lists.
+	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
+			clicked_prev, clicked_next, matches,
+			_displayed_team_time_getter, _displayed_team_id_getter,
+			first_match_id, page_limit)
 	return DisplayedTeam(team_id,
 			team.name,
 			team.game,
 			team.league,
 			is_starred,
 			team.num_stars,
-			matches,
-			new_prev_key,
-			new_next_key)
+			tuple(_get_displayed_team_match(match, opponent_team)
+					for match, opponent_team in matches),
+			prev_time,
+			prev_match_id,
+			next_time,
+			next_match_id)
 
 
 def _get_displayed_streamer_match(match, team1, team2):
@@ -1279,12 +1308,16 @@ def _displayed_streamer_id_getter(item):
 	match, team1, team2 = item
 	return match.id
 
+"""Like calling one() on query, but returns None instead of raising NoResultFound.
+"""
 def _get_optional_one(query):
 	results = query.limit(1).all()
 	if results:
 		return results[0] 
 	return None
 
+"""Returns a DisplayedStreamer containing scheduled streamed matches.
+"""
 def get_displayed_streamer(client_id, streamer_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
