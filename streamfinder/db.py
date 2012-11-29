@@ -189,13 +189,15 @@ class StreamedMatch(common_db._Base):
 
 	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	time = sa.Column(sa.DateTime, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 	comment = sa.Column(sa.String)
 
 	def __repr__(self):
-		return 'StreamedMatch(streamer_id=%r, match_id=%r, added=%r, comment=%r)' % (
+		return 'StreamedMatch(streamer_id=%r, match_id=%r, time=%r, added=%r, comment=%r)' % (
 				self.streamer_id,
 				self.match_id,
+				self.time,
 				self.added,
 				self.comment)
 
@@ -525,19 +527,20 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 	now = _get_now(now)
 
 	try:
-		# Add the client as a user streaming the match.
-		streamed_match = StreamedMatch(streamer_id=client_id,
-				match_id=match_id,
-				added=now,
-				comment=comment)
-		session.add(streamed_match)
-		session.flush()
-	except sa.exc.IntegrityError:
+		match = session.query(Match).filter(Match.id == match_id).one()
+	except sa.exc.NoResultFound:
 		# The flush failed because the client is already streaming this match.
 		session.rollback()
 		raise common_db.DbException._chain()
 
-	match = session.query(Match).filter(Match.id == match_id).one()
+	# Add the client as a user streaming the match.
+	streamed_match = StreamedMatch(streamer_id=client_id,
+			match_id=match_id,
+			time=match.time,
+			added=now,
+			comment=comment)
+	session.add(streamed_match)
+
 	if match.num_streams > 0:
 		# This is not the first streaming user for the match.
 		match.num_streams += 1
@@ -903,24 +906,28 @@ class DisplayedStreamerMatch:
 """A detailed view of a streamer.
 """
 class DisplayedStreamer:
-	def __init__(self, streamer_id, name, is_starred, num_stars, matches, prev_key, next_key):
+	def __init__(self, streamer_id, name, is_starred, num_stars, matches, prev_time, prev_match_id, next_time, next_match_id):
 		self.streamer_id = streamer_id
 		self.name = name
 		self.is_starred = is_starred
 		self.num_stars = num_stars
 		self.matches = matches
-		self.prev_key = prev_key
-		self.next_key = next_key
+		self.prev_time = prev_time
+		self.prev_match_id = prev_match_id
+		self.next_time = next_time
+		self.next_match_id = next_match_id
 
 	def __repr__(self):
-		return 'DisplayedStreamer(streamer_id=%r, name=%r, is_starred=%r, num_stars=%r, matches=%r, prev_key=%r, next_key=%r)' % (
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, is_starred=%r, num_stars=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.is_starred,
 				self.num_stars,
 				self.matches,
-				self.prev_key,
-				self.next_key)
+				self.prev_time,
+				self.prev_match_id,
+				self.next_time,
+				self.next_match_id)
 
 
 # The number of entities per page.
@@ -1115,11 +1122,11 @@ def _get_displayed_match_streamer(streamer):
 			streamer.url_by_id,
 			streamer.url_by_name)
 
-def _streamed_match_time_getter(item):
+def _displayed_match_time_getter(item):
 	added, user = item
 	return added
 
-def _streamed_match_id_getter(item):
+def _displayed_match_id_getter(item):
 	added, user = item
 	return user.id
 
@@ -1179,8 +1186,8 @@ def get_displayed_match(client_id, match_id,
 	# Get pagination for the adjacent partial lists.
 	prev_time, prev_streamer_id, next_time, next_streamer_id = _get_adjacent_pagination(
 			clicked_prev, clicked_next, streamers,
-			_streamed_match_time_getter, _streamed_match_id_getter, first_streamer_id,
-			page_limit)
+			_displayed_match_time_getter, _displayed_match_id_getter,
+			first_streamer_id, page_limit)
 	# Return the displayed match.
 	return DisplayedMatch(match_id,
 			displayed_team1,
@@ -1264,7 +1271,29 @@ def _get_displayed_streamer_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams)
 
-def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None):
+def _displayed_streamer_time_getter(item):
+	match, team1, team2 = item
+	return match.time
+
+def _displayed_streamer_id_getter(item):
+	match, team1, team2 = item
+	return match.id
+
+def _get_optional_one(query):
+	results = query.limit(1).all()
+	if results:
+		return results[0] 
+	return None
+
+def get_displayed_streamer(client_id, streamer_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	if page_limit is None:
+		page_limit = _PAGE_LIMIT
+	clicked_prev = _clicked_prev(prev_time, prev_match_id)
+	clicked_next = _clicked_next(next_time, next_match_id)
+
+	# Get the streamer.
 	streamer, starred_streamer = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
 				StarredStreamer.streamer_id == streamer_id,
@@ -1273,38 +1302,48 @@ def get_displayed_streamer(client_id, streamer_id, prev_key=None, next_key=None)
 			.one()
 	is_starred = (starred_streamer is not None)
 
-	team_alias1 = sa_orm.aliased(Team)
-	team_alias2 = sa_orm.aliased(Team)
-	matches_query = session.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
-			.join(Match, StreamedMatch.match_id == Match.id)\
-			.join(team_alias1, Match.team1_id == team_alias1.id)\
-			.join(team_alias2, Match.team2_id == team_alias2.id)\
-			.filter(StreamedMatch.streamer_id == streamer_id)
-	if prev_key:
-		# TODO: Add filter, limit.
-		pass
-	elif next_key:
-		# TODO: Add filter, limit.
-		pass
+	matches = ()
+	first_streamed_match = _get_optional_one(
+			session.query(StreamedMatch.match_id)\
+				.filter(StreamedMatch.streamer_id == streamer_id)\
+				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
+	first_match_id = None
+	if first_streamed_match is not None:
+		first_match_id = first_streamed_match.match_id
+		# Get the partial list of matches.
+		team_alias1 = sa_orm.aliased(Team)
+		team_alias2 = sa_orm.aliased(Team)
+		matches_query = session\
+				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
+				.join(Match, StreamedMatch.match_id == Match.id)\
+				.join(team_alias1, Match.team1_id == team_alias1.id)\
+				.join(team_alias2, Match.team2_id == team_alias2.id)\
+				.filter(StreamedMatch.streamer_id == streamer_id)
+		matches_query = _add_pagination_to_query(
+				matches_query, StreamedMatch.time, StreamedMatch.match_id, page_limit,
+				clicked_prev, clicked_next,
+				prev_time, prev_match_id, next_time, next_match_id)
+		matches = tuple(
+				(match, team1, team2) for match_id, match, team1, team2 in matches_query)
+		if clicked_prev:
+			# Reverse the partial list if clicked on Previous.
+			matches = matches[::-1]
 
-	matches = [
-			_get_displayed_streamer_match(match, team1, team2)
-				for match_id, match, team1, team2 in matches_query]
 	session.close()
 
-	if prev_key:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
-	else:
-		# TODO: Set new_prev_key, new_next_key
-		new_prev_key = None
-		new_next_key = None
+	# Get pagination for the adjacent partial lists.
+	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
+			clicked_prev, clicked_next, matches,
+			_displayed_streamer_time_getter, _displayed_streamer_id_getter,
+			first_match_id, page_limit)
 	return DisplayedStreamer(streamer_id,
 			streamer.name,
 			is_starred,
 			streamer.num_stars,
-			matches,
-			new_prev_key,
-			new_next_key)
+			tuple(_get_displayed_streamer_match(match, team1, team2)
+					for match, team1, team2 in matches),
+			prev_time,
+			prev_match_id,
+			next_time,
+			next_match_id)
 

@@ -166,14 +166,19 @@ class TestFinderDb(DbTestCase):
 	"""Utility method to assert the properties of a DisplayedStreamer.
 	"""
 	def _assert_displayed_streamer(self, displayed_streamer,
-			streamer_id, name, is_starred=False, num_stars=0, num_matches=0):
+			streamer_id, name, is_starred=False, num_stars=0, num_matches=0,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		# Begin required arguments.
 		self.assertEqual(streamer_id, displayed_streamer.streamer_id)
 		self.assertEqual(name, displayed_streamer.name)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_streamer.is_starred)
 		self.assertEqual(num_stars, displayed_streamer.num_stars)
-		self.assertEqual(num_matches, len(displayed_streamer.matches))
+		# XXX self.assertEqual(num_matches, len(displayed_streamer.matches))
+		self.assertEqual(prev_time, displayed_streamer.prev_time)
+		self.assertEqual(prev_match_id, displayed_streamer.prev_match_id)
+		self.assertEqual(next_time, displayed_streamer.next_time)
+		self.assertEqual(next_match_id, displayed_streamer.next_match_id)
 
 
 	"""Test that fails to create a match because one team identifier is unknown.
@@ -1030,8 +1035,122 @@ class TestFinderDb(DbTestCase):
 		pass
 	
 	def test_get_displayed_streamer_pagination(self):
-		# TODO
-		pass
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+
+		# The second and third matches happen at the same time.
+		time2 = self.time + timedelta(days=1)
+		time3 = time2
+		time4 = time3 + timedelta(days=1)
+		time5 = time4 + timedelta(days=1)
+		# Create the matches.
+		match_url2 = 'match_url2'
+		match_url3 = 'match_url3'
+		match_url4 = 'match_url4'
+		match_url5 = 'match_url5'
+		match_fingerprint2 = 'match_fingerprint2'
+		match_fingerprint3 = 'match_fingerprint3'
+		match_fingerprint4 = 'match_fingerprint4'
+		match_fingerprint5 = 'match_fingerprint5'
+		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
+				match_url2, match_fingerprint2, now=None)
+		match_id3 = db.add_match(team1_id, team2_id, time3, self.game, self.league,
+				match_url3, match_fingerprint3, now=None)
+		match_id4 = db.add_match(team1_id, team2_id, time4, self.game, self.league,
+				match_url4, match_fingerprint4, now=None)
+		match_id5 = db.add_match(team1_id, team2_id, time5, self.game, self.league,
+				match_url5, match_fingerprint5, now=None)
+
+		# Create the streaming user.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+		# Stream all matches.
+		for match_id in (match_id1, match_id2, match_id3, match_id4, match_id5):
+			db.add_stream_match(streamer_id, match_id)
+
+		# Assert that the first page of the streamer is correct.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2)
+		self.assertEqual(2, len(displayed_streamer.matches))
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=5,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_streamer_match(displayed_streamer.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the second page of the streamer is correct.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
+				next_time=displayed_streamer.next_time,
+				next_match_id=displayed_streamer.next_match_id)
+		self.assertEqual(2, len(displayed_streamer.matches))
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=5,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_streamer_match(displayed_streamer.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the third page of the streamer is correct.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
+				next_time=displayed_streamer.next_time,
+				next_match_id=displayed_streamer.next_match_id)
+		self.assertEqual(1, len(displayed_streamer.matches))
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=5,
+				prev_time=time5, prev_match_id=match_id5)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id5, team1_id, self.team1_name, team2_id, self.team2_name,
+				time5, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the second page of the streamer is correct.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
+				prev_time=displayed_streamer.prev_time,
+				prev_match_id=displayed_streamer.prev_match_id)
+		self.assertEqual(2, len(displayed_streamer.matches))
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=5,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_streamer_match(displayed_streamer.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the first page of the streamer is correct.
+		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
+				prev_time=displayed_streamer.prev_time,
+				prev_match_id=displayed_streamer.prev_match_id)
+		self.assertEqual(2, len(displayed_streamer.matches))
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, self.streamer_name, num_matches=5,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_streamer_match(displayed_streamer.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_streamer_match(displayed_streamer.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
 
 	"""Test that updates the name of an existing team.
 	"""
