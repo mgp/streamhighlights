@@ -1465,6 +1465,77 @@ class TestFinderDb(DbTestCase):
 				match_id2, team2_id, self.team2_name, team3_id, team3_name,
 				time2, self.game, self.league, num_streams=1)
 
+	"""Test that clients see their own stars for streamers.
+	"""
+	def test_client_stars_streamers(self):
+		# Create the first client.
+		client_steam_id1, client_id1 = self._create_steam_user(self.client_name)
+		# Create the second client.
+		client_name2 = 'client_name2'
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
+
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		# Create the first match.
+		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		# Create the second match.
+		time2 = self.time + timedelta(days=1)
+		match_url2 = 'match_url2'
+		match_fingerprint2 = 'match_fingerprint2'
+		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
+				match_url2, match_fingerprint2, now=None)
+
+		# Create the first streaming user and stream the first match.
+		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
+		db.add_stream_match(streamer_id1, match_id1)
+		# Create the second streaming user and stream the second match.
+		streamer_name2 = 'streamer_name2'
+		streamer_steam_id2, streamer_id2 = self._create_steam_user(streamer_name2)
+		db.add_stream_match(streamer_id2, match_id2)
+
+		# The first user adds a star for the first streaming user.
+		db.add_star_streamer(client_id1, streamer_id1)
+		# The second user adds a star for the second streaming user.
+		db.add_star_streamer(client_id2, streamer_id2)
+
+		# Assert that the first streamer has a star by the first user.
+		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id1, self.streamer_name, is_starred=True, num_stars=1)
+		# Assert that the second streamer has no star by the first user.
+		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id2, streamer_name2, num_stars=1)
+
+		# Assert that the first team has no star by the second user.
+		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id1, self.streamer_name, num_stars=1)
+		# Assert that the second team has a star by the second user.
+		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id2, streamer_name2, is_starred=True, num_stars=1)
+
+		# Assert that the first user's calendar has the first match.
+		displayed_calendar = db.get_displayed_calendar(client_id1)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+
+		# Assert that the second user's calendar has the second match.
+		displayed_calendar = db.get_displayed_calendar(client_id2)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1)
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
 	"""Test that clients see their own streams for matches.
 	"""
 	def test_client_streams_matches(self):
