@@ -237,16 +237,16 @@ sa_schema.Index('CalendarEntriesByMatchId', CalendarEntry.match_id)
 
 # Used by method get_displayed_calendar.
 sa_schema.Index('CalendarEntriesByUserIdAndTimeAndMatchId',
-		CalendarEntry.user_id.asc(), CalendarEntry.time.asc(), CalendarEntry.match_id.asc())
+		CalendarEntry.user_id, CalendarEntry.time, CalendarEntry.match_id)
 # Used by method get_displayed_match.
 sa_schema.Index('StreamedMatchesByMatchIdAndAddedAndStreamerId',
-		StreamedMatch.match_id.asc(), StreamedMatch.added.asc(), StreamedMatch.streamer_id.asc())
+		StreamedMatch.match_id, StreamedMatch.added, StreamedMatch.streamer_id)
 # Used by method get_displayed_team.
 sa_schema.Index('MatchOpponentsByTeamIdAndTimeAndMatchId',
-		MatchOpponent.team_id.asc(), MatchOpponent.time.asc(), MatchOpponent.match_id.asc())
+		MatchOpponent.team_id, MatchOpponent.time, MatchOpponent.match_id)
 # Used by method get_displayed_streamer.
 sa_schema.Index('StreamedMatchesByStreamerIdAndTimeAndMatchId',
-		StreamedMatch.streamer_id.asc(), StreamedMatch.time.asc(), StreamedMatch.match_id.asc())
+		StreamedMatch.streamer_id, StreamedMatch.time, StreamedMatch.match_id)
 
 
 def create_all():
