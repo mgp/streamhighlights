@@ -1132,21 +1132,15 @@ def _get_streamed_match_query(streamer_id, team_alias1, team_alias2):
 			.filter(StreamedMatch.streamer_id == streamer_id)
 
 def _get_next_streamer_match(client_id, team_alias1, team_alias2):
-	try:
-		next_streamed_match_query = _get_streamed_match_query(
-					client_id, team_alias1, team_alias2)\
-				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc())\
-				.limit(1)
-		(next_match_id,
-				next_match,
-				next_match_team1,
-				next_match_team2) = next_streamed_match_query.one()
-		return _get_displayed_calendar_match(
-				next_match, next_match_team1, next_match_team2)
-	except sa_orm.exc.NoResultFound:
-		# There are no matches.
-		session.close()
-	return None
+	result = common_db.optional_one(
+			_get_streamed_match_query(client_id, team_alias1, team_alias2)
+				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
+	if result is None:
+		return None
+
+	next_match_id, next_match, next_match_team1, next_match_team2 = result
+	return _get_displayed_calendar_match(
+			next_match, next_match_team1, next_match_team2)
 
 """Returns a DisplayedCalendar containing calendar entries for matches that the
 client is streaming.
@@ -1420,12 +1414,7 @@ def get_displayed_streamer(client_id, streamer_id,
 		# Get the partial list of matches.
 		team_alias1 = sa_orm.aliased(Team)
 		team_alias2 = sa_orm.aliased(Team)
-		matches_query = session\
-				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
-				.join(Match, StreamedMatch.match_id == Match.id)\
-				.join(team_alias1, Match.team1_id == team_alias1.id)\
-				.join(team_alias2, Match.team2_id == team_alias2.id)\
-				.filter(StreamedMatch.streamer_id == streamer_id)
+		matches_query = _get_streamed_match_query(streamer_id, team_alias1, team_alias2)
 		matches_query = _add_pagination_to_query(
 				matches_query, StreamedMatch.time, StreamedMatch.match_id, page_limit,
 				clicked_prev, clicked_next,
