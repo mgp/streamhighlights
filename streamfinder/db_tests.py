@@ -290,7 +290,7 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Add a star for the match again.
@@ -305,7 +305,7 @@ class TestFinderDb(DbTestCase):
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the match.
@@ -318,7 +318,7 @@ class TestFinderDb(DbTestCase):
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the match again.
@@ -331,7 +331,7 @@ class TestFinderDb(DbTestCase):
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
 				team2_id, self.team2_name)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	"""Test that adds and removes a star for a match that is casted.
@@ -367,7 +367,7 @@ class TestFinderDb(DbTestCase):
 				streamer_id, self.streamer_name,
 				common_db._get_steam_url_by_id(streamer_steam_id))
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -388,7 +388,7 @@ class TestFinderDb(DbTestCase):
 				streamer_id, self.streamer_name,
 				common_db._get_steam_url_by_id(streamer_steam_id))
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 	"""Test that adds and removes a star for a team in a match that is not casted.
@@ -414,7 +414,7 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 		
 		# Add a star for team2 again.
@@ -427,7 +427,7 @@ class TestFinderDb(DbTestCase):
 				is_starred=True, num_stars=1, num_matches=1)
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 		
 		# Remove the star for team2.
@@ -438,7 +438,7 @@ class TestFinderDb(DbTestCase):
 				team2_id, self.team2_name, self.game, self.league, num_matches=1)
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 		# Remove the star for team2 again.
@@ -449,7 +449,7 @@ class TestFinderDb(DbTestCase):
 				team2_id, self.team2_name, self.game, self.league, num_matches=1)
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 	"""Test that adds and removes a star for a team in a match that is casted.
@@ -480,7 +480,7 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time, num_streams=1)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -496,7 +496,7 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_team_match(displayed_team.matches[0],
 				team1_id, self.team1_name, match_id, self.time, num_streams=1)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 	"""Test that adds and removes a star for a streamer that is not casting a
@@ -515,7 +515,7 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, self.streamer_name, is_starred=True, num_stars=1)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Add the star for the streamer again.
@@ -525,7 +525,7 @@ class TestFinderDb(DbTestCase):
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, self.streamer_name, is_starred=True, num_stars=1)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 		# Remove the star for the streamer.
@@ -534,7 +534,7 @@ class TestFinderDb(DbTestCase):
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, self.streamer_name)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the streamer.
@@ -543,7 +543,7 @@ class TestFinderDb(DbTestCase):
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, self.streamer_name)
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	"""Test that adds and removes a star for a streamer that is casting a match.
@@ -578,7 +578,7 @@ class TestFinderDb(DbTestCase):
 				match_id, team1_id, self.team1_name, team2_id, self.team2_name,
 				self.time, self.game, self.league, num_streams=1)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -592,13 +592,13 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, self.streamer_name, num_matches=1)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	def _remove_multi_stars(self, client_id, streamer_id,
 			team1_id, team2_id, match_id):
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -608,7 +608,7 @@ class TestFinderDb(DbTestCase):
 		# Remove the star for the match.
 		db.remove_star_match(client_id, match_id, now=self.now)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -619,7 +619,7 @@ class TestFinderDb(DbTestCase):
 		db.remove_star_team(client_id, team1_id, now=self.now)
 		db.remove_star_team(client_id, team2_id, now=self.now)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -629,7 +629,7 @@ class TestFinderDb(DbTestCase):
 		# Remove the star from the streamer.
 		db.remove_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Assert that the match should no longer have a star.
@@ -747,7 +747,7 @@ class TestFinderDb(DbTestCase):
 		# The first streamer streams the match.
 		db.add_stream_match(streamer_id1, match_id)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -757,7 +757,7 @@ class TestFinderDb(DbTestCase):
 		# The second streamer streams the match.
 		db.add_stream_match(streamer_id2, match_id)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -767,7 +767,7 @@ class TestFinderDb(DbTestCase):
 		# The first streamer is no longer streaming the match.
 		db.remove_stream_match(streamer_id1, match_id)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -777,7 +777,7 @@ class TestFinderDb(DbTestCase):
 		# The second streamer is no longer streaming the match.
 		db.remove_stream_match(streamer_id2, match_id)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	# TODO: Test remove_stream_match.
@@ -829,7 +829,7 @@ class TestFinderDb(DbTestCase):
 			db.add_stream_match(streamer_id, match_id)
 
 		# Assert that the first page of the user's calendar is correct.
-		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2)
 		self.assertEqual(2, len(displayed_calendar.matches))
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=2,
@@ -847,7 +847,7 @@ class TestFinderDb(DbTestCase):
 				time2, self.game, self.league, num_streams=1)
 
 		# Assert that, clicking Next, the second page of the user's calendar is correct.
-		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2,
 				next_time=displayed_calendar.next_time,
 				next_match_id=displayed_calendar.next_match_id)
 		self.assertEqual(2, len(displayed_calendar.matches))
@@ -868,7 +868,7 @@ class TestFinderDb(DbTestCase):
 				time4, self.game, self.league, num_streams=1)
 
 		# Assert that, clicking Next, the third page of the user's calendar is correct.
-		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2,
 				next_time=displayed_calendar.next_time,
 				next_match_id=displayed_calendar.next_match_id)
 		self.assertEqual(1, len(displayed_calendar.matches))
@@ -885,7 +885,7 @@ class TestFinderDb(DbTestCase):
 				time5, self.game, self.league, num_streams=1)
 
 		# Assert that, clicking Previous, the second page of the user's calendar is correct.
-		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2,
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2,
 				prev_time=displayed_calendar.prev_time,
 				prev_match_id=displayed_calendar.prev_match_id)
 		self.assertEqual(2, len(displayed_calendar.matches))
@@ -906,7 +906,7 @@ class TestFinderDb(DbTestCase):
 				time4, self.game, self.league, num_streams=1)
 
 		# Assert that, clicking Previous, the first page of the user's calendar is correct.
-		displayed_calendar = db.get_displayed_calendar(client_id, page_limit=2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2)
 		self.assertEqual(2, len(displayed_calendar.matches))
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=2,
@@ -1142,6 +1142,140 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_team_match(displayed_team.matches[1],
 				team3_id, team3_name, match_id2, time2)
 
+	"""Tests pagination of matches when displaying the client's streaming calendar.
+	"""
+	def test_get_displayed_streamer_calendar(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+
+		# The second and third matches happen at the same time.
+		time2 = self.time + timedelta(days=1)
+		time3 = time2
+		time4 = time3 + timedelta(days=1)
+		time5 = time4 + timedelta(days=1)
+		# Create the matches.
+		match_url2 = 'match_url2'
+		match_url3 = 'match_url3'
+		match_url4 = 'match_url4'
+		match_url5 = 'match_url5'
+		match_fingerprint2 = 'match_fingerprint2'
+		match_fingerprint3 = 'match_fingerprint3'
+		match_fingerprint4 = 'match_fingerprint4'
+		match_fingerprint5 = 'match_fingerprint5'
+		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
+				self.match_url, self.match_fingerprint, now=None)
+		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
+				match_url2, match_fingerprint2, now=None)
+		match_id3 = db.add_match(team1_id, team2_id, time3, self.game, self.league,
+				match_url3, match_fingerprint3, now=None)
+		match_id4 = db.add_match(team1_id, team2_id, time4, self.game, self.league,
+				match_url4, match_fingerprint4, now=None)
+		match_id5 = db.add_match(team1_id, team2_id, time5, self.game, self.league,
+				match_url5, match_fingerprint5, now=None)
+
+		# The client streams all matches.
+		for match_id in (match_id1, match_id2, match_id3, match_id4, match_id5):
+			db.add_stream_match(client_id, match_id)
+
+		# Assert that the first page of the calendar is correct.
+		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the second page of the calendar is correct.
+		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2,
+				next_time=displayed_calendar.next_time,
+				next_match_id=displayed_calendar.next_match_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Next, the third page of the calendar is correct.
+		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2,
+				next_time=displayed_calendar.next_time,
+				next_match_id=displayed_calendar.next_match_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=1,
+				prev_time=time5, prev_match_id=match_id5)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id5, team1_id, self.team1_name, team2_id, self.team2_name,
+				time5, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the second page of the calendar is correct.
+		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2,
+				prev_time=displayed_calendar.prev_time,
+				prev_match_id=displayed_calendar.prev_match_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				prev_time=time3, prev_match_id=match_id3,
+				next_time=time4, next_match_id=match_id4)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
+				time3, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id4, team1_id, self.team1_name, team2_id, self.team2_name,
+				time4, self.game, self.league, num_streams=1)
+
+		# Assert that, clicking Previous, the first page of the calendar is correct.
+		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2,
+				prev_time=displayed_calendar.prev_time,
+				prev_match_id=displayed_calendar.prev_match_id)
+		self._assert_displayed_calendar(displayed_calendar,
+				has_next_match=True, num_matches=2,
+				next_time=time2, next_match_id=match_id2)
+		# Assert the next match.
+		self._assert_displayed_calendar_match(displayed_calendar.next_match,
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		# Assert the partial list of paginated matches.
+		self._assert_displayed_calendar_match(displayed_calendar.matches[0],
+				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+				self.time, self.game, self.league, num_streams=1)
+		self._assert_displayed_calendar_match(displayed_calendar.matches[1],
+				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
+				time2, self.game, self.league, num_streams=1)
+
+	"""Tests pagination of matches when displaying a streaming user.
+	"""
 	def test_get_displayed_streamer_pagination(self):
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -1371,7 +1505,7 @@ class TestFinderDb(DbTestCase):
 				is_starred=True, num_stars=1, num_streamers=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1379,7 +1513,7 @@ class TestFinderDb(DbTestCase):
 				self.time, self.game, self.league, num_stars=1, num_streams=1)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1450,7 +1584,7 @@ class TestFinderDb(DbTestCase):
 				is_starred=True, num_stars=1, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1458,7 +1592,7 @@ class TestFinderDb(DbTestCase):
 				self.time, self.game, self.league, num_streams=1)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1521,7 +1655,7 @@ class TestFinderDb(DbTestCase):
 				streamer_id2, streamer_name2, is_starred=True, num_stars=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1529,7 +1663,7 @@ class TestFinderDb(DbTestCase):
 				self.time, self.game, self.league, num_streams=1)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1596,7 +1730,7 @@ class TestFinderDb(DbTestCase):
 				is_starred=True, num_stars=1, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,
@@ -1604,7 +1738,7 @@ class TestFinderDb(DbTestCase):
 				self.time, self.game, self.league, num_streams=1)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		self._assert_displayed_calendar_match(displayed_calendar.next_match,

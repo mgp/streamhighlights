@@ -1015,6 +1015,8 @@ def _get_adjacent_pagination(
 	return (prev_time, prev_id, next_time, next_id)
 
 
+"""Returns a DisplayedCalendarMatch from the given match and teams.
+"""
 def _get_displayed_calendar_match(match, team1, team2):
 	return DisplayedCalendarMatch(match.id,
 			team1.id,
@@ -1027,7 +1029,7 @@ def _get_displayed_calendar_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams)
 
-def _get_next_match(client_id, team_alias1, team_alias2):
+def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 	try:
 		next_match_id, next_match, next_match_team1, next_match_team2 = session\
 				.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
@@ -1046,9 +1048,10 @@ def _get_next_match(client_id, team_alias1, team_alias2):
 		session.close()
 	return None
 
-"""Returns a DisplayedCalendar containing calendar entries for the given user.
+"""Returns a DisplayedCalendar containing calendar entries for streamed matches
+where the client has starred the match, either team, or a streamer.
 """
-def get_displayed_calendar(client_id,
+def get_displayed_viewer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
 	if page_limit is None:
@@ -1057,7 +1060,7 @@ def get_displayed_calendar(client_id,
 	team_alias2 = sa_orm.aliased(Team)
 
 	# Get the next match.
-	next_match = _get_next_match(client_id, team_alias1, team_alias2)
+	next_match = _get_next_viewer_match(client_id, team_alias1, team_alias2)
 	if next_match is None:
 		return DisplayedCalendar(None, ())
 	matches_query = session\
@@ -1119,6 +1122,77 @@ def get_displayed_calendar(client_id,
 	
 	return DisplayedCalendar(next_match, matches,
 			prev_time, prev_match_id, next_time, next_match_id)
+
+def _get_streamed_match_query(streamer_id, team_alias1, team_alias2):
+	return session\
+			.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
+			.join(Match, StreamedMatch.match_id == Match.id)\
+			.join(team_alias1, Match.team1_id == team_alias1.id)\
+			.join(team_alias2, Match.team2_id == team_alias2.id)\
+			.filter(StreamedMatch.streamer_id == streamer_id)
+
+def _get_next_streamer_match(client_id, team_alias1, team_alias2):
+	try:
+		next_streamed_match_query = _get_streamed_match_query(
+					client_id, team_alias1, team_alias2)\
+				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc())\
+				.limit(1)
+		(next_match_id,
+				next_match,
+				next_match_team1,
+				next_match_team2) = next_streamed_match_query.one()
+		return _get_displayed_calendar_match(
+				next_match, next_match_team1, next_match_team2)
+	except sa_orm.exc.NoResultFound:
+		# There are no matches.
+		session.close()
+	return None
+
+"""Returns a DisplayedCalendar containing calendar entries for matches that the
+client is streaming.
+"""
+def get_displayed_streamer_calendar(client_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	if page_limit is None:
+		page_limit = _PAGE_LIMIT
+	clicked_prev = _clicked_prev(prev_time, prev_match_id)
+	clicked_next = _clicked_next(next_time, next_match_id)
+
+	# Get the next match streamed by the client.
+	team_alias1 = sa_orm.aliased(Team)
+	team_alias2 = sa_orm.aliased(Team)
+	first_match = _get_next_streamer_match(client_id, team_alias1, team_alias2)
+	if first_match is None:
+		# No next match, so return an empty calendar.
+		session.close()
+		return DisplayedCalendar(None, ())
+
+	# Get the partial list of matches.
+	matches_query = _get_streamed_match_query(client_id, team_alias1, team_alias2)
+	matches_query = _add_pagination_to_query(
+			matches_query, StreamedMatch.time, StreamedMatch.match_id, page_limit,
+			clicked_prev, clicked_next,
+			prev_time, prev_match_id, next_time, next_match_id)
+	matches = tuple(
+			(match, team1, team2) for match_id, match, team1, team2 in matches_query)
+	if clicked_prev:
+		# Reverse the partial list if clicked on Previous.
+		matches = matches[::-1]
+	session.close()
+
+	# Get pagination for the adjacent partial lists.
+	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
+			clicked_prev, clicked_next, matches,
+			_displayed_streamer_time_getter, _displayed_streamer_id_getter,
+			first_match.match_id, page_limit)
+	return DisplayedCalendar(first_match,
+			tuple(_get_displayed_calendar_match(match, team1, team2)
+					for match, team1, team2 in matches),
+			prev_time,
+			prev_match_id,
+			next_time,
+			next_match_id)
 
 
 def _get_displayed_match_team(team):
