@@ -837,15 +837,17 @@ class TestFinderDb(DbTestCase):
 					prev_time=displayed_calendar.prev_time,
 					prev_match_id=displayed_calendar.prev_match_id)
 
+		def _assert_next_match():
+			self._assert_displayed_calendar_match(displayed_calendar.next_match,
+					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+					self.time, self.game, self.league, num_streams=1)
+
 		def _assert_first_page():
 			self.assertEqual(2, len(displayed_calendar.matches))
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=2,
 					next_time=time2, next_match_id=match_id2)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
@@ -860,10 +862,7 @@ class TestFinderDb(DbTestCase):
 					has_next_match=True, num_matches=2,
 					prev_time=time3, prev_match_id=match_id3,
 					next_time=time4, next_match_id=match_id4)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
@@ -877,10 +876,7 @@ class TestFinderDb(DbTestCase):
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=1,
 					prev_time=time5, prev_match_id=match_id5)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id5, team1_id, self.team1_name, team2_id, self.team2_name,
@@ -950,14 +946,16 @@ class TestFinderDb(DbTestCase):
 					prev_time=displayed_calendar.prev_time,
 					prev_match_id=displayed_calendar.prev_match_id)
 
+		def _assert_next_match():
+			self._assert_displayed_calendar_match(displayed_calendar.next_match,
+					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
+					self.time, self.game, self.league, num_streams=1)
+
 		def _assert_first_page():
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=2,
 					next_time=time2, next_match_id=match_id2)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
@@ -971,10 +969,7 @@ class TestFinderDb(DbTestCase):
 					has_next_match=True, num_matches=2,
 					prev_time=time3, prev_match_id=match_id3,
 					next_time=time4, next_match_id=match_id4)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id3, team1_id, self.team1_name, team2_id, self.team2_name,
@@ -987,10 +982,7 @@ class TestFinderDb(DbTestCase):
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=1,
 					prev_time=time5, prev_match_id=match_id5)
-			# Assert the next match.
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			_assert_next_match()
 			# Assert the partial list of paginated matches.
 			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
 					match_id5, team1_id, self.team1_name, team2_id, self.team2_name,
