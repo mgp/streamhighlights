@@ -1294,7 +1294,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit)
 		elif clicked_next:
 			query = query\
 					.filter(sa.or_(
-						sa.and_(col1 == prev_col1, col2 > prev_col2), col2 > prev_col2))\
+						sa.and_(col1 == next_col1, col2 > next_col2), col2 > next_col2))\
 					.order_by(col1.asc(), col2.asc())
 		else:
 			# Show the first page.
@@ -1305,7 +1305,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit)
 		session.close()
 		if clicked_prev:
 			# Reverse the partial list if clicked on Previous.
-			matches = matches[::-1]
+			items = items[::-1]
 
 		prev_col1 = None
 		prev_col2 = None
@@ -1317,7 +1317,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit)
 			if len(items) == page_limit:
 				next_col1, next_col2 = paginator.get_pagination_values(last_item)
 		elif clicked_prev:
-			if (len(items) == page_limit) and (id_getter(first_item) != first_id):
+			if (len(items) == page_limit) and not paginator.has_first_id(first_id, first_item):
 				prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
 			# Came from the following page, so display a Next link.
 			next_col1, next_col2 = paginator.get_pagination_values(last_item)
@@ -1604,24 +1604,43 @@ def _get_displayed_match_streamer(streamer):
 			streamer.url_by_id,
 			streamer.url_by_name)
 
-def _displayed_match_time_getter(item):
-	added, user = item
-	return added
+"""A paginator for streaming users of a match.
+"""
+class MatchStreamersPaginator:
+	def __init__(self, match_id):
+		self.match_id = match_id
 
-def _displayed_match_id_getter(item):
-	added, user = item
-	return user.id
+	def get_first_id(self):
+		first_streamed_match = common_db.optional_one(
+				session.query(StreamedMatch.streamer_id)
+					.filter(StreamedMatch.match_id == self.match_id)
+					.order_by(StreamedMatch.added.asc(), StreamedMatch.streamer_id.asc()))
+		return first_streamed_match.streamer_id if first_streamed_match else None
+
+	def get_partial_list_query(self):
+		return session.query(StreamedMatch.streamer_id, StreamedMatch.added, User)\
+				.join(User, StreamedMatch.streamer_id == User.id)\
+				.filter(StreamedMatch.match_id == self.match_id)
+
+	def get_order_by_columns(self):
+		return (StreamedMatch.added, StreamedMatch.streamer_id)
+
+	def execute_query(self, streamers_query):
+		return tuple((added, streamer) for streamer_id, added, streamer in streamers_query)
+
+	def get_pagination_values(self, item):
+		added, streamer = item
+		return (added, streamer.id)
+
+	def has_first_id(self, first_id, item):
+		added, streamer = item
+		return (streamer.id == first_id)
 
 """Returns a DisplayedMatch containing streaming users.
 """
 def get_displayed_match(client_id, match_id,
 		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_streamer_id)
-	clicked_next = _clicked_next(next_time, next_streamer_id)
-
 	# Get the match and teams.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
@@ -1638,38 +1657,18 @@ def get_displayed_match(client_id, match_id,
 	displayed_team2 = _get_displayed_match_team(team2)
 	is_starred = (starred_match is not None)
 	
-	streamers = ()
-	first_streamer_id = None
+	# Get the partial list of streamers for this match.
 	if match.num_streams:
-		first_streamer_id = session.query(StreamedMatch.streamer_id)\
-				.filter(StreamedMatch.match_id == match_id)\
-				.order_by(StreamedMatch.added.asc(), StreamedMatch.streamer_id.asc())\
-				.limit(1)\
-				.one()\
-				.streamer_id
+		paginator = MatchStreamersPaginator(match_id)
+		streamers, prev_time, prev_streamer_id, next_time, next_streamer_id = _paginate(
+				paginator, prev_time, prev_streamer_id, next_time, next_streamer_id, page_limit)
+	else:
+		streamers = ()
+		prev_time = None
+		prev_streamer_id = None
+		next_time = None
+		next_streamer_id = None
 
-		# Get the partial list of streamers.
-		streamers_query = session\
-				.query(StreamedMatch.streamer_id, StreamedMatch.added, User)\
-				.join(User, StreamedMatch.streamer_id == User.id)\
-				.filter(StreamedMatch.match_id == match_id)
-		streamers_query = _add_pagination_to_query(
-				streamers_query, StreamedMatch.added, StreamedMatch.streamer_id, page_limit,
-				clicked_prev, clicked_next,
-				prev_time, prev_streamer_id, next_time, next_streamer_id)
-		streamers = tuple(
-				(added, streamer) for streamer_id, added, streamer in streamers_query)
-		if clicked_prev:
-			# Reverse the partial list if clicked on Previous.
-			streamers = streamers[::-1]
-
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_streamer_id, next_time, next_streamer_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, streamers,
-			_displayed_match_time_getter, _displayed_match_id_getter,
-			first_streamer_id, page_limit)
 	# Return the displayed match.
 	return DisplayedMatch(match_id,
 			displayed_team1,
