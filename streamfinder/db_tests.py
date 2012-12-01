@@ -781,9 +781,8 @@ class TestFinderDb(DbTestCase):
 		self._assert_displayed_calendar(displayed_calendar)
 
 	# TODO: Test remove_stream_match.
-	# TODO: Test multiple entries in calendar.
 
-	"""Tests pagination when displaying the client's viewing calendar.
+	"""Tests pagination of matches when displaying the client's viewing calendar.
 	"""
 	def test_get_displayed_calendar_pagination(self):
 		# Create the client.
@@ -1011,7 +1010,7 @@ class TestFinderDb(DbTestCase):
 		displayed_calendar = _get_prev_page()
 		_assert_first_page()
 
-	"""Tests pagination when displaying a match.
+	"""Tests pagination of streamers when displaying a match.
 	"""
 	def test_get_displayed_match_pagination(self):
 		# Create the client.
@@ -1107,7 +1106,7 @@ class TestFinderDb(DbTestCase):
 		displayed_match = _get_prev_page()
 		_assert_first_page()
 
-	"""Tests pagination when displaying a team.
+	"""Tests pagination of matches when displaying a team.
 	"""
 	def test_get_displayed_team_pagination(self):
 		# Create the client.
