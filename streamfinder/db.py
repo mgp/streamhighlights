@@ -1047,76 +1047,72 @@ class DisplayedStreamerList:
 				self.next_streamer_id)
 
 
-# The number of entities per page.
+# The default number of entities per page.
 _PAGE_LIMIT = 30
 
-"""Returns whether the user clicked Previous.
-"""
-def _clicked_prev(prev_time, prev_id):
-	return (prev_time and prev_id)
+def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
+		first_id=None):
+	if first_id is None:
+		first_id = paginator.get_first_id()
+	if first_id is not None:
+		query = paginator.get_partial_list_query()
 
-"""Returns whether the user clicked Next.
-"""
-def _clicked_next(next_time, next_id):
-	return (next_time and next_id)
+		# Add pagination to the query.
+		col1, col2 = paginator.get_order_by_columns()
+		clicked_prev = prev_col1 and prev_col2
+		clicked_next = next_col1 and next_col2
+		if clicked_prev:
+			query = query\
+					.filter(sa.or_(
+						sa.and_(col1 == prev_col1, col2 < prev_col2), col1 < prev_col1))\
+					.order_by(col1.desc(), col2.desc())
+		elif clicked_next:
+			query = query\
+					.filter(sa.or_(
+						sa.and_(col1 == next_col1, col2 > next_col2), col2 > next_col2))\
+					.order_by(col1.asc(), col2.asc())
+		else:
+			# Show the first page.
+			query = query.order_by(col1.asc(), col2.asc())
 
-"""Returns a query that adds pagination to the given query.
-"""
-def _add_pagination_to_query(query, time_column, id_column, page_limit,
-		clicked_prev, clicked_next, prev_time, prev_id, next_time, next_id):
-	if clicked_prev:
-		query = query\
-				.filter(sa.or_(
-					sa.and_(time_column == prev_time, id_column < prev_id),
-					time_column < prev_time))\
-				.order_by(time_column.desc(), id_column.desc())
-	elif clicked_next:
-		query = query\
-				.filter(sa.or_(
-					sa.and_(time_column == next_time, id_column > next_id),
-					time_column > next_time))\
-				.order_by(time_column.asc(), id_column.asc())
-	else:
-		# Show the first page.
-		query = query.order_by(time_column.asc(), id_column.asc())
+		if page_limit is None:
+			page_limit = _PAGE_LIMIT
+		query = query.limit(page_limit)
 
-	return query.limit(page_limit)
+		items = paginator.execute_query(query)
+		if clicked_prev:
+			# Reverse the partial list if clicked on Previous.
+			items = items[::-1]
 
-def _get_next_pagination(last_item, time_getter, id_getter):
-	return time_getter(last_item), id_getter(last_item)
-
-def _get_prev_pagination(first_item, time_getter, id_getter):
-	return time_getter(first_item), id_getter(first_item)
-
-"""Returns the pagination query parameters from the given partial list of items.
-"""
-def _get_adjacent_pagination(
-		clicked_prev, clicked_next, items, time_getter, id_getter, first_id,
-		page_limit):
-	prev_time = None
-	prev_id = None
-	next_time = None
-	next_id = None
-
-	# No pagination for an empty list.
-	if items:
+		prev_col1 = None
+		prev_col2 = None
+		next_col1 = None
+		next_col2 = None
 		first_item = items[0]
 		last_item = items[-1]
 		if not clicked_prev and not clicked_next:
 			if len(items) == page_limit:
-				next_time, next_id = _get_next_pagination(last_item, time_getter, id_getter)
+				next_col1, next_col2 = paginator.get_pagination_values(last_item)
 		elif clicked_prev:
-			if (len(items) == page_limit) and (id_getter(first_item) != first_id):
-				prev_time, prev_id = _get_prev_pagination(first_item, time_getter, id_getter)
+			if (len(items) == page_limit) and not paginator.has_first_id(first_id, first_item):
+				prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
 			# Came from the following page, so display a Next link.
-			next_time, next_id = _get_next_pagination(last_item, time_getter, id_getter)
+			next_col1, next_col2 = paginator.get_pagination_values(last_item)
 		elif clicked_next:
 			if len(items) == page_limit:
-				next_time, next_id = _get_next_pagination(last_item, time_getter, id_getter)
+				next_col1, next_col2 = paginator.get_pagination_values(last_item)
 			# Came from the previous page, so display a Previous link.
-			prev_time, prev_id = _get_prev_pagination(first_item, time_getter, id_getter)
+			prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
+	else:
+		items = ()
+		prev_col1 = None
+		prev_col2 = None
+		next_col1 = None
+		next_col2 = None
 
-	return (prev_time, prev_id, next_time, next_id)
+	session.close()
+	return (items, prev_col1, prev_col2, next_col1, next_col2)
+
 
 """Returns a DisplayedCalendarMatch from the given match and teams.
 """
@@ -1132,15 +1128,6 @@ def _get_displayed_calendar_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams)
 
-def _match_first_time_getter(item):
-	match = item[0]
-	return match.time
-
-def _match_first_id_getter(item):
-	match = item[0]
-	return match.id
-
-
 def _get_calendar_entry_query(client_id, team_alias1, team_alias2):
 	return session\
 			.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
@@ -1152,7 +1139,7 @@ def _get_calendar_entry_query(client_id, team_alias1, team_alias2):
 def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 	result = common_db.optional_one(
 			_get_calendar_entry_query(client_id, team_alias1, team_alias2)
-				.order_by(CalendarEntry.time.asc()))
+				.order_by(CalendarEntry.time.asc(), CalendarEntry.match_id.asc()))
 	if result is None:
 		return None
 
@@ -1160,17 +1147,39 @@ def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 	return _get_displayed_calendar_match(
 			next_match, next_match_team1, next_match_team2)
 
+"""A paginator for entries on the client's viewing calendar.
+"""
+class CalendarEntriesPaginator:
+	def __init__(self, client_id, team_alias1, team_alias2):
+		self.client_id = client_id
+		self.team_alias1 = team_alias1
+		self.team_alias2 = team_alias2
+	
+	def get_partial_list_query(self):
+		return _get_calendar_entry_query(
+				self.client_id, self.team_alias1, self.team_alias2)
+
+	def get_order_by_columns(self):
+		return (CalendarEntry.time, CalendarEntry.match_id)
+	
+	def execute_query(self, matches_query):
+		return tuple((match, team1, team2)
+				for match_id, match, team1, team2 in matches_query)
+	
+	def get_pagination_values(self, item):
+		match, team1, team2 = item
+		return (match.time, match.id)
+	
+	def has_first_id(self, first_id, item):
+		match, team1, team2 = item
+		return (match.id == first_id)
+
 """Returns a DisplayedCalendar containing calendar entries for streamed matches
 where the client has starred the match, either team, or a streamer.
 """
 def get_displayed_viewer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-
 	# Get the next match for viewing by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
@@ -1181,23 +1190,12 @@ def get_displayed_viewer_calendar(client_id,
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
-	matches_query = _get_calendar_entry_query(client_id, team_alias1, team_alias2)
-	matches_query = _add_pagination_to_query(
-			matches_query, CalendarEntry.time, CalendarEntry.match_id, page_limit,
-			clicked_prev, clicked_next,
-			prev_time, prev_match_id, next_time, next_match_id)
-	matches = tuple(
-			(match, team1, team2) for match_id, match, team1, team2 in matches_query)
-	if clicked_prev:
-		# Reverse the partial list if clicked on Previous.
-		matches = matches[::-1]
-	session.close()
+	paginator = CalendarEntriesPaginator(client_id, team_alias1, team_alias2)
+	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
+			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit,
+			first_id=first_match.match_id)
 
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, matches,
-			_match_first_time_getter, _match_first_id_getter,
-			first_match.match_id, page_limit)
+	# Return the calendar.
 	return DisplayedCalendar(first_match,
 			tuple(_get_displayed_calendar_match(match, team1, team2)
 					for match, team1, team2 in matches),
@@ -1232,11 +1230,6 @@ client is streaming.
 def get_displayed_streamer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-
 	# Get the next match streamed by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
@@ -1247,23 +1240,12 @@ def get_displayed_streamer_calendar(client_id,
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
-	matches_query = _get_streamed_match_query(client_id, team_alias1, team_alias2)
-	matches_query = _add_pagination_to_query(
-			matches_query, StreamedMatch.time, StreamedMatch.match_id, page_limit,
-			clicked_prev, clicked_next,
-			prev_time, prev_match_id, next_time, next_match_id)
-	matches = tuple(
-			(match, team1, team2) for match_id, match, team1, team2 in matches_query)
-	if clicked_prev:
-		# Reverse the partial list if clicked on Previous.
-		matches = matches[::-1]
-	session.close()
+	paginator = StreamedMatchesPaginator(client_id, team_alias1, team_alias2)
+	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
+			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit,
+			first_id=first_match.match_id)
 
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, matches,
-			_match_first_time_getter, _match_first_id_getter,
-			first_match.match_id, page_limit)
+	# Return the calendar.
 	return DisplayedCalendar(first_match,
 			tuple(_get_displayed_calendar_match(match, team1, team2)
 					for match, team1, team2 in matches),
@@ -1271,69 +1253,6 @@ def get_displayed_streamer_calendar(client_id,
 			prev_match_id,
 			next_time,
 			next_match_id)
-
-
-def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_col1, prev_col2)
-	clicked_next = _clicked_next(next_col1, next_col2)
-
-	items = ()
-	first_id = paginator.get_first_id()
-	if first_id is not None:
-		query = paginator.get_partial_list_query()
-
-		# Add pagination to the query.
-		col1, col2 = paginator.get_order_by_columns()
-		if clicked_prev:
-			query = query\
-					.filter(sa.or_(
-						sa.and_(col1 == prev_col1, col2 < prev_col2), col1 < prev_col1))\
-					.order_by(col1.desc(), col2.desc())
-		elif clicked_next:
-			query = query\
-					.filter(sa.or_(
-						sa.and_(col1 == next_col1, col2 > next_col2), col2 > next_col2))\
-					.order_by(col1.asc(), col2.asc())
-		else:
-			# Show the first page.
-			query = query.order_by(col1.asc(), col2.asc())
-		query = query.limit(page_limit)
-
-		items = paginator.execute_query(query)
-		session.close()
-		if clicked_prev:
-			# Reverse the partial list if clicked on Previous.
-			items = items[::-1]
-
-		prev_col1 = None
-		prev_col2 = None
-		next_col1 = None
-		next_col2 = None
-		first_item = items[0]
-		last_item = items[-1]
-		if not clicked_prev and not clicked_next:
-			if len(items) == page_limit:
-				next_col1, next_col2 = paginator.get_pagination_values(last_item)
-		elif clicked_prev:
-			if (len(items) == page_limit) and not paginator.has_first_id(first_id, first_item):
-				prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
-			# Came from the following page, so display a Next link.
-			next_col1, next_col2 = paginator.get_pagination_values(last_item)
-		elif clicked_next:
-			if len(items) == page_limit:
-				next_col1, next_col2 = paginator.get_pagination_values(last_item)
-			# Came from the previous page, so display a Previous link.
-			prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
-	else:
-		session.close()
-		prev_col1 = None
-		prev_col2 = None
-		next_col1 = None
-		next_col2 = None
-
-	return (items, prev_col1, prev_col2, next_col1, next_col2)
 
 
 class _MatchesPaginator:
@@ -1777,10 +1696,10 @@ def _get_displayed_streamer_match(match, team1, team2):
 """A paginator for matches streamed by a user.
 """
 class StreamedMatchesPaginator:
-	def __init__(self, streamer_id):
+	def __init__(self, streamer_id, team_alias1=None, team_alias2=None):
 		self.streamer_id = streamer_id
-		self.team_alias1 = sa_orm.aliased(Team)
-		self.team_alias2 = sa_orm.aliased(Team)
+		self.team_alias1 = team_alias1 if team_alias1 else sa_orm.aliased(Team)
+		self.team_alias2 = team_alias2 if team_alias2 else sa_orm.aliased(Team)
 
 	def get_first_id(self):
 		first_streamed_match = common_db.optional_one(
@@ -1790,13 +1709,8 @@ class StreamedMatchesPaginator:
 		return first_streamed_match.match_id if first_streamed_match else None
 
 	def get_partial_list_query(self):
-		# TODO: Can factor this out when getting client's calendar of matches to stream?
-		return session\
-			.query(StreamedMatch.match_id, Match, self.team_alias1, self.team_alias2)\
-			.join(Match, StreamedMatch.match_id == Match.id)\
-			.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
-			.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
-			.filter(StreamedMatch.streamer_id == self.streamer_id)
+		return _get_streamed_match_query(
+				self.streamer_id, self.team_alias1, self.team_alias2)
 
 	def get_order_by_columns(self):
 		return (StreamedMatch.time, StreamedMatch.match_id)
