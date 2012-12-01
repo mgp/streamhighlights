@@ -1307,6 +1307,41 @@ class TestFinderDb(DbTestCase):
 		displayed_streamer = _get_prev_page()
 		_assert_first_page()
 
+	"""Tests pagination when displaying all matches.
+	"""
+	def test_get_all_matches_pagination(self):
+		# TODO
+		pass
+	
+	"""Tests pagination when displaying all teams.
+	"""
+	def test_get_all_teams_pagination(self):
+		# TODO
+		pass
+	
+	"""Tests pagination when displaying all streaming users.
+	"""
+	def test_get_all_streamers_pagination(self):
+		# TODO
+		pass
+	
+	"""Tests pagination when dispaying matches starred by the client.
+	"""
+	def test_get_starred_matches_pagination(self):
+		# TODO
+		pass
+	
+	"""Tests pagination when displaying teams starred by the client.
+	"""
+	def test_get_starred_teams_pagination(self):
+		# TODO
+		pass
+
+	"""Tests pagination when displaying streaming users starred by the client.
+	"""
+	def test_get_starred_streamers_pagination(self):
+		# TODO
+		pass
 
 	"""Test that updates the name of an existing team.
 	"""
