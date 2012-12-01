@@ -1693,16 +1693,46 @@ def _get_displayed_team_match(match, opponent_team):
 			match.num_stars,
 			match.num_streams)
 
+"""A paginator for opponents of a team.
+"""
+class MatchOpponentsPaginator:
+	def __init__(self, team_id):
+		self.team_id = team_id
+
+	def get_first_id(self):
+		first_match_opponent = common_db.optional_one(
+				session.query(MatchOpponent.match_id)
+					.filter(MatchOpponent.team_id == self.team_id)
+					.order_by(MatchOpponent.time.asc(), MatchOpponent.match_id.asc()))
+		return first_match_opponent.match_id if first_match_opponent else None
+
+	def get_partial_list_query(self):
+		return session\
+				.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
+				.join(Match, MatchOpponent.match_id == Match.id)\
+				.join(Team, MatchOpponent.opponent_id == Team.id)\
+				.filter(MatchOpponent.team_id == self.team_id)
+
+	def get_order_by_columns(self):
+		return (MatchOpponent.time, MatchOpponent.match_id)
+
+	def execute_query(self, matches_query):
+		return tuple((match, opponent_team)
+				for match_id, team_id, match, opponent_team in matches_query)
+
+	def get_pagination_values(self, item):
+		match, opponent_team = item
+		return (match.time, match.id)
+
+	def has_first_id(self, first_id, item):
+		match, opponent_team = item
+		return (match.id == first_id)
+
 """Returns a DisplayedTeam containing scheduled matches.
 """
 def get_displayed_team(client_id, team_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-
 	# Get the team.
 	team, starred_team = session.query(Team, StarredTeam)\
 			.outerjoin(StarredTeam, sa.and_(
@@ -1712,37 +1742,12 @@ def get_displayed_team(client_id, team_id,
 			.one()
 	is_starred = (starred_team is not None)
 
-	matches = ()
-	first_match_opponent = common_db.optional_one(
-			session.query(MatchOpponent.match_id)\
-				.filter(MatchOpponent.team_id == team_id)
-				.order_by(MatchOpponent.time.asc(), MatchOpponent.match_id.asc()))
-	first_match_id = None
-	if first_match_opponent is not None:
-		first_match_id = first_match_opponent.match_id
-		# Get the partial list of matches.
-		matches_query = session\
-				.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
-				.join(Match, MatchOpponent.match_id == Match.id)\
-				.join(Team, MatchOpponent.opponent_id == Team.id)\
-				.filter(MatchOpponent.team_id == team_id)
-		matches_query = _add_pagination_to_query(
-				matches_query, MatchOpponent.time, MatchOpponent.match_id, page_limit,
-				clicked_prev, clicked_next,
-				prev_time, prev_match_id, next_time, next_match_id)
-		matches = tuple((match, opponent_team)
-				for match_id, team_id, match, opponent_team in matches_query)
-		if clicked_prev:
-			# Reverse the partial list if clicked on Previous.
-			matches = matches[::-1]
-
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, matches,
-			_match_first_time_getter, _match_first_id_getter,
-			first_match_id, page_limit)
+	# Get the partial list of matches for this team.
+	paginator = MatchOpponentsPaginator(team_id)
+	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
+			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
+	
+	# Return the displayed team.
 	return DisplayedTeam(team_id,
 			team.name,
 			team.game,
