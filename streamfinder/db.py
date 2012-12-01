@@ -942,6 +942,111 @@ class DisplayedStreamer:
 				self.next_match_id)
 
 
+"""An entry in the partial list of matches.
+"""
+class DisplayedMatchListEntry:
+	def __init__(self, match_id, team1, team2, time, game, league):
+		self.match_id = match_id
+		self.team1 = team1
+		self.team2 = team2
+		self.time = time
+		self.game = game
+		self.league = league
+	
+	def __repr__(self):
+		return 'DisplayedMatchListEntry(match_id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r)' % (
+				self.match_id,
+				self.team1,
+				self.team2,
+				self.time,
+				self.game,
+				self.league)
+
+"""A partial list of matches.
+"""
+class DisplayedMatchList:
+	def __init__(self, matches, prev_time, prev_match_id, next_time, next_match_id):
+		self.matches = matches
+		self.prev_time = prev_time
+		self.prev_match_id = prev_match_id
+		self.next_time = next_time
+		self.next_match_id = next_match_id
+
+	def __repr__(self):
+		return 'DisplayedMatchList(matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+				self.matches,
+				self.prev_time,
+				self.prev_match_id,
+				self.next_time,
+				self.next_match_id)
+
+
+"""An entry in the partial list of teams.
+"""
+class DisplayedTeamListEntry:
+	def __init__(self, team_id, name, game, league):
+		self.team_id = team_id
+		self.name = name
+		self.game = game
+		self.league = league
+	
+	def __repr__(self):
+		return 'DisplayedTeamListEntry(team_id=%r, name=%r, game=%r, league=%r)' % (
+				self.team_id,
+				self.name,
+				self.game,
+				self.league)
+
+"""A partial list of teams.
+"""
+class DisplayedTeamList:
+	def __init__(self, teams, prev_name, prev_team_id, next_name, next_team_id):
+		self.teams = teams
+		self.prev_name = prev_name
+		self.prev_team_id = prev_team_id
+		self.next_name = next_name
+		self.next_team_id = next_team_id
+
+	def __repr__(self):
+		return 'DisplayedTeamList(teams=%r, prev_name=%r, prev_team_id=%r, next_name=%r, next_team_id=%r)' % (
+				self.teams,
+				self.prev_name,
+				self.prev_team_id,
+				self.next_name,
+				self.next_team_id)
+
+
+"""An entry in the partial list of streaming users.
+"""
+class DisplayedStreamerListEntry:
+	def __init__(self, streamer_id, name):
+		self.streamer_id = streamer_id
+		self.name = name
+	
+	def __repr__(self):
+		return 'DisplayedStreamerListEntry(streamer_id=%r, name=%r)' % (
+				self.streamer_id,
+				self.name)
+
+"""A partial list of streaming users.
+"""
+class DisplayedStreamerList:
+	def __init__(self, streamers, prev_name, prev_streamer_id, next_name, next_streamer_id):
+		self.streamers = streamers
+		self.prev_name = prev_name
+		self.prev_streamer_id = prev_streamer_id
+		self.next_name = next_name
+		self.next_streamer_id = next_streamer_id
+
+	def __repr__(self):
+		return 'DisplayedStreamerList(streamers=%r, prev_name=%r, prev_streamer_id=%r, next_name=%r, next_streamer_id=%r)' % (
+				self.streamers,
+				self.prev_name,
+				self.prev_streamer_id,
+				self.next_name,
+				self.next_streamer_id)
+
+
 # The number of entities per page.
 _PAGE_LIMIT = 30
 
@@ -1169,138 +1274,236 @@ def get_displayed_streamer_calendar(client_id,
 			next_match_id)
 
 
+"""A paginator for matches starred by the client.
+"""
+class StarredMatchesPaginator:
+	def __init__(self, client_id):
+		self.team_alias1 = sa_orm.aliased(Team)
+		self.team_alias2 = sa_orm.aliased(Team)
+		self.client_id = client_id
+
+	def get_first_id(self):
+		first_starred_match = common_db.optional_one(
+				session.query(StarredMatch.match_id)
+					.order_by(StarredMatch.time.asc(), StarredMatch.match_id.asc()))
+		return first_starred_match.match_id if first_starred_match else None
+	
+	def get_partial_list_query(self):
+		return session\
+				.query(StarredMatch.match_id, Match, self.team_alias1, self.team_alias2)\
+				.join(Match, StarredMatch.match_id == Match.id)\
+				.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
+				.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
+				.filter(StarredMatch.user_id == self.client_id)
+	
+	def get_order_by_columns(self):
+		return (StarredMatch.time, StarredMatch.match_id)
+
+	def execute_query(self, matches_query):
+		return tuple(
+				(match, team1, team2) for match_id, match, team1, team2 in matches_query)
+
+"""A paginator for all matches.
+"""
+class AllMatchesPaginator:
+	def __init__(self):
+		self.team_alias1 = sa_orm.aliased(Team)
+		self.team_alias2 = sa_orm.aliased(Team)
+
+	def get_first_id(self):
+		first_match = common_db.optional_one(
+				session.query(Match.id).order_by(Match.time.asc(), Match.id.asc()))
+		return first_match.id if first_match else None
+	
+	def get_partial_list_query(self):
+		return session.query(Match, team_alias1, team_alias2)\
+				.join(team_alias1, Match.team1_id == team_alias1.id)\
+				.join(team_alias2, Match.team2_id == team_alias2.id)
+
+	def get_order_by_columns(self):
+		return (Match.time, Match.id)
+
+	def execute_query(self, matches_query):
+		return tuple(matches_query)
+
+
+"""A paginator for teams starred by the client.
+"""
+class StarredTeamsPaginator:
+	def __init__(self, client_id):
+		self.client_id = client_id
+	
+	def get_first_id(self):
+		first_starred_team = common_db.optional_one(
+				session.query(StarredTeam.team_id)
+					.order_by(StarredTeam.name.asc(), StarredTeam.team_id.asc()))
+		return first_starred_team.team_id if first_starred_team else None
+	
+	def get_partial_list_query(self):
+		return session.query(StarredTeam.team_id, Team)\
+				.join(Team, StarredTeam.team_id == Team.id)\
+				.filter(StarredTeam.user_id == self.client_id)
+
+	def get_order_by_columns(self):
+		return (StarredTeam.name, StarredTeam.team_id)
+
+	def execute_query(self, teams_query):
+		return tuple(team for team_id, team in teams_query)
+
+"""A paginator for all teams.
+"""
+class AllTeamsPaginator:
+	def __init__(self, client_id):
+		self.client_id = client_id
+	
+	def get_first_id(self):
+		first_team = common_db.optional_one(
+				session.query(Team.id).order_by(Team.name.asc(), Team.id.asc()))
+		return first_team.id if first_team else None
+
+	def get_partial_list_query(self):
+		return session.query(Team)
+	
+	def get_order_by_columns(self):
+		return (Team.name, Team.id)
+
+	def execute_query(self, teams_query):
+		return tuple(teams_query)
+
+
+"""A paginator for streaming users starred by the client.
+"""
+class StarredStreamersPaginator:
+	def __init__(self, client_id):
+		self.client_id = client_id
+	
+	def get_first_id(self):
+		first_starred_streamer = common_db.optional_one(
+				session.query(StarredStreamer.streamer_id)
+					.order_by(StarredStreamer.name.asc(), StarredStreamer.streamer_id.asc()))
+		return first_starred_streamer.streamer_id if first_starred_streamer else None
+	
+	def get_partial_list_query(self):
+		return session.query(StarredStreamer.streamer_id, User)\
+				.join(User, StarredStreamer.streamer_id == User.id)\
+				.filter(StarredStreamer.user_id == self.client_id)
+	
+	def get_columns(self):
+		return (StarredStreamer.name, StarredStreamer.streamer_id)
+
+	def execute_query(self, streamers_query):
+		return tuple(streamer for streamer_id, streamer in streamers_query)
+
+"""A paginator for all streaming users.
+"""
+class AllStreamersPaginator:
+	def get_first_id(self):
+		first_streamer = common_db.optional_one(
+				session.query(User.id)
+					.filter(User.can_stream == True)
+					.order_by(User.name.asc(), User.id.asc()))
+		return first_streamer.id if first_streamer else None
+	
+	def get_partial_list_query(self):
+		return session.query(User).filter(User.can_stream == True)
+
+	def get_columns(self):
+		return (User.name, User.id)
+	
+	def execute_query(self, streamers_query):
+		return tuple(streamers_query)
+
+
+def _get_match_list(
+		client_id, prev_time, prev_match_id, next_time, next_match_id, page_limit,
+		paginator):
+	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
+			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
+	return DisplayedMatchList(
+			tuple(_get_displayed_match_list_entry(match, team1, team2)
+				for match, team1, team2 in matches),
+			prev_time,
+			prev_match_id,
+			next_time,
+			next_match_id)
+
 """Returns matches starred by the client.
 """
 def get_starred_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-
-	# Get the partial list of matches.
-	team_alias1 = sa_orm.aliased(Team)
-	team_alias2 = sa_orm.aliased(Team)
-	matches_query = session\
-			.query(StarredMatch.match_id, Match, team_alias1, team_alias2)\
-			.join(Match, StarredMatch.match_id == Match.id)\
-			.join(team_alias1, Match.team1_id == team_alias1.id)\
-			.join(team_alias2, Match.team2_id == team_alias2.id)\
-			.filter(StarredMatch.user_id == client_id)
-	matches_query = _add_pagination_to_query(
-			matches_query, StarredMatch.time, StarredMatch.match_id, page_limit,
-			clicked_prev, clicked_next,
-			prev_time, prev_match_id, next_time, next_match_id)
-	matches = tuple(
-			(match, team1, team2) for match_id, match, team1, team2 in matches_query)
-	if clicked_prev:
-		# Reverse the partial list if clicked on Previous.
-		matches = matches[::-1]
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, matches,
-			_match_first_time_getter, _match_first_id_getter,
-			first_match.match_id, page_limit)
-	# TODO: Return something.
-
-"""Returns teams starred by the client.
-"""
-def get_starred_teams(client_id,
-		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
-		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_team_id)
-	clicked_next = _clicked_next(next_time, next_team_id)
-
-	# Get the partial list of teams.
-	teams_query = session.query(StarredTeam.team_id, Team)\
-			.join(Team, StarredTeam.team_id == Team.id)\
-			.filter(StarredTeam.user_id == client_id)
-	teams_query = _add_pagination_to_query(
-			teams_query, StarredTeam.name, StarredTeam.team_id, page_limit,
-			clicked_prev, clicked_next,
-			prev_name, prev_team_id, next_name, next_team_id)
-	teams = tuple(team for team_id, team in teams_query)
-	if clicked_prev:
-		# Reverse the partial list if clicked on Previous.
-		teams = teams[::-1]
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_name, prev_team_id, next_name, next_team_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, teams,
-			_team_name_getter, _team_id_getter,
-			first_match.match_id, page_limit)
-	# TODO: Return something.
-
-"""Returns streaming users starred by the client.
-"""
-def get_starred_streamers(client_id,
-		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
-		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_streamer_id)
-	clicked_next = _clicked_next(next_time, next_streamer_id)
-
-	# Get the partial list of streaming users.
-	streamers_query = session.query(StarredStreamer.streamer_id, User)\
-			.join(User, StarredStreamer.streamer_id == User.id)\
-			.filter(StarredStreamer.user_id == client_id)
-	streamers_query = _add_pagination_to_query(
-			streamers_query, StarredStreamer.name, StarredStreamer.streamer_id, page_limit,
-			clicked_prev, clicked_next,
-			prev_name, prev_team_id, next_name, next_team_id)
-	streamers = tuple(streamer for streamer_id, streamer in streamers_query)
-	if clicked_prev:
-		# Reverse the partial list if clicked on Previous.
-		streamers = streamers[::-1]
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_name, prev_streamer_id, next_name, next_streamer_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, teams,
-			_streamer_name_getter, _streamer_id_getter,
-			first_match.match_id, page_limit)
-	# TODO: Return something.
-
+	paginator = StarredMatchesPaginator(client_id)
+	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
+			paginator)
 
 """Returns all matches.
 """
 def get_all_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-	# TODO
+	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
+			_ALL_MATCHES_PAGINATOR)
+
+
+def _get_team_list(
+		client_id, prev_name, prev_team_id, next_name, next_team_id, page_limit,
+		paginator):
+	teams, prev_name, prev_team_id, next_name, next_team_id = _paginate(
+			paginator, prev_name, prev_team_id, next_name, next_team_id, page_limit)
+	return DisplayedTeamList(
+			tuple(_get_displayed_team_list_entry(team) for team in teams),
+			prev_name,
+			prev_team_id,
+			next_name,
+			next_team_id)
+
+"""Returns teams starred by the client.
+"""
+def get_starred_teams(client_id,
+		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
+		page_limit=None):
+	paginator = StarredTeamsPaginator(client_id)
+	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
+			paginator)
 
 """Returns all teams.
 """
 def get_all_teams(client_id,
 		prev_time=None, prev_team_id=None, next_time=None, next_team_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_team_id)
-	clicked_next = _clicked_next(next_time, next_team_id)
-	# TODO
+	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
+			_ALL_TEAMS_PAGINATOR)
+
+
+def _get_streamer_list(
+		client_id, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
+		paginator):
+	streamers, prev_name, prev_streamer_id, next_name, next_streamer_id = _paginate(
+			paginator, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit)
+	return DisplayedStreamerList(
+			tuple(_get_displayed_streamer_list_entry(streamer) for streamer in streamers),
+			prev_name,
+			prev_streamer_id,
+			next_name,
+			next_streamer_id)
+
+"""Returns streaming users starred by the client.
+"""
+def get_starred_streamers(client_id,
+		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
+		page_limit=None):
+	paginator = StarredStreamersPaginator(client_id)
+	return _get_streamer_list(
+			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit, paginator)
 
 """Returns all streaming users.
 """
 def get_all_streamers(client_id,
 		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_streamer_id)
-	clicked_next = _clicked_next(next_time, next_streamer_id)
-	# TODO
+	return _get_streamer_list(
+			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
+			_ALL_STREAMERS_PAGINATOR)
 
 
 def _get_displayed_match_team(team):
