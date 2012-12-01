@@ -1774,16 +1774,50 @@ def _get_displayed_streamer_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams)
 
+"""A paginator for matches streamed by a user.
+"""
+class StreamedMatchesPaginator:
+	def __init__(self, streamer_id):
+		self.streamer_id = streamer_id
+		self.team_alias1 = sa_orm.aliased(Team)
+		self.team_alias2 = sa_orm.aliased(Team)
+
+	def get_first_id(self):
+		first_streamed_match = common_db.optional_one(
+				session.query(StreamedMatch.match_id)\
+					.filter(StreamedMatch.streamer_id == self.streamer_id)\
+					.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
+		return first_streamed_match.match_id if first_streamed_match else None
+
+	def get_partial_list_query(self):
+		# TODO: Can factor this out when getting client's calendar of matches to stream?
+		return session\
+			.query(StreamedMatch.match_id, Match, self.team_alias1, self.team_alias2)\
+			.join(Match, StreamedMatch.match_id == Match.id)\
+			.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
+			.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
+			.filter(StreamedMatch.streamer_id == self.streamer_id)
+
+	def get_order_by_columns(self):
+		return (StreamedMatch.time, StreamedMatch.match_id)
+
+	def execute_query(self, matches_query):
+		return tuple((match, team1, team2)
+				for match_id, match, team1, team2 in matches_query)
+
+	def get_pagination_values(self, item):
+		match, team1, team2 = item
+		return (match.time, match.id)
+
+	def has_first_id(self, first_id, item):
+		match, team1, team2 = item
+		return (match.id == first_id)
+
 """Returns a DisplayedStreamer containing scheduled streamed matches.
 """
 def get_displayed_streamer(client_id, streamer_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
-	if page_limit is None:
-		page_limit = _PAGE_LIMIT
-	clicked_prev = _clicked_prev(prev_time, prev_match_id)
-	clicked_next = _clicked_next(next_time, next_match_id)
-
 	# Get the streamer.
 	streamer, starred_streamer = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
@@ -1793,35 +1827,12 @@ def get_displayed_streamer(client_id, streamer_id,
 			.one()
 	is_starred = (starred_streamer is not None)
 
-	matches = ()
-	first_streamed_match = common_db.optional_one(
-			session.query(StreamedMatch.match_id)\
-				.filter(StreamedMatch.streamer_id == streamer_id)\
-				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
-	first_match_id = None
-	if first_streamed_match is not None:
-		first_match_id = first_streamed_match.match_id
-		# Get the partial list of matches.
-		team_alias1 = sa_orm.aliased(Team)
-		team_alias2 = sa_orm.aliased(Team)
-		matches_query = _get_streamed_match_query(streamer_id, team_alias1, team_alias2)
-		matches_query = _add_pagination_to_query(
-				matches_query, StreamedMatch.time, StreamedMatch.match_id, page_limit,
-				clicked_prev, clicked_next,
-				prev_time, prev_match_id, next_time, next_match_id)
-		matches = tuple(
-				(match, team1, team2) for match_id, match, team1, team2 in matches_query)
-		if clicked_prev:
-			# Reverse the partial list if clicked on Previous.
-			matches = matches[::-1]
-
-	session.close()
-
-	# Get pagination for the adjacent partial lists.
-	prev_time, prev_match_id, next_time, next_match_id = _get_adjacent_pagination(
-			clicked_prev, clicked_next, matches,
-			_match_first_time_getter, _match_first_id_getter,
-			first_match_id, page_limit)
+	# Get the partial list of matches streamed by this user.
+	paginator = StreamedMatchesPaginator(streamer_id)
+	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
+			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
+	
+	# Return the displayed streaming user.
 	return DisplayedStreamer(streamer_id,
 			streamer.name,
 			is_starred,
