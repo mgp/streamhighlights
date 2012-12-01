@@ -1076,7 +1076,6 @@ def _add_pagination_to_query(query, time_column, id_column, page_limit,
 					sa.and_(time_column == next_time, id_column > next_id),
 					time_column > next_time))\
 				.order_by(time_column.asc(), id_column.asc())
-		pass
 	else:
 		# Show the first page.
 		query = query.order_by(time_column.asc(), id_column.asc())
@@ -1274,9 +1273,81 @@ def get_displayed_streamer_calendar(client_id,
 			next_match_id)
 
 
+def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit):
+	if page_limit is None:
+		page_limit = _PAGE_LIMIT
+	clicked_prev = _clicked_prev(prev_col1, prev_col2)
+	clicked_next = _clicked_next(next_col1, next_col2)
+
+	items = ()
+	first_id = paginator.get_first_id()
+	if first_id is not None:
+		query = paginator.get_partial_list_query()
+
+		# Add pagination to the query.
+		col1, col2 = paginator.get_order_by_columns()
+		if clicked_prev:
+			query = query\
+					.filter(sa.or_(
+						sa.and_(col1 == prev_col1, col2 < prev_col2), col1 < prev_col1))\
+					.order_by(col1.desc(), col2.desc())
+		elif clicked_next:
+			query = query\
+					.filter(sa.or_(
+						sa.and_(col1 == prev_col1, col2 > prev_col2), col2 > prev_col2))\
+					.order_by(col1.asc(), col2.asc())
+		else:
+			# Show the first page.
+			query = query.order_by(col1.asc(), col2.asc())
+		query = query.limit(page_limit)
+
+		items = paginator.execute_query(query)
+		session.close()
+		if clicked_prev:
+			# Reverse the partial list if clicked on Previous.
+			matches = matches[::-1]
+
+		prev_col1 = None
+		prev_col2 = None
+		next_col1 = None
+		next_col2 = None
+		first_item = items[0]
+		last_item = items[-1]
+		if not clicked_prev and not clicked_next:
+			if len(items) == page_limit:
+				next_col1, next_col2 = paginator.get_pagination_values(last_item)
+		elif clicked_prev:
+			if (len(items) == page_limit) and (id_getter(first_item) != first_id):
+				prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
+			# Came from the following page, so display a Next link.
+			next_col1, next_col2 = paginator.get_pagination_values(last_item)
+		elif clicked_next:
+			if len(items) == page_limit:
+				next_col1, next_col2 = paginator.get_pagination_values(last_item)
+			# Came from the previous page, so display a Previous link.
+			prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
+	else:
+		session.close()
+		prev_col1 = None
+		prev_col2 = None
+		next_col1 = None
+		next_col2 = None
+
+	return (items, prev_col1, prev_col2, next_col1, next_col2)
+
+
+class _MatchesPaginator:
+	def get_pagination_values(self, item):
+		match, team1, team2 = item
+		return (match.time, match.id)
+
+	def has_first_id(self, first_id, item):
+		match, team1, team2 = item
+		return (match.id == first_id)
+
 """A paginator for matches starred by the client.
 """
-class StarredMatchesPaginator:
+class StarredMatchesPaginator(_MatchesPaginator):
 	def __init__(self, client_id):
 		self.team_alias1 = sa_orm.aliased(Team)
 		self.team_alias2 = sa_orm.aliased(Team)
@@ -1305,7 +1376,7 @@ class StarredMatchesPaginator:
 
 """A paginator for all matches.
 """
-class AllMatchesPaginator:
+class AllMatchesPaginator(_MatchesPaginator):
 	def __init__(self):
 		self.team_alias1 = sa_orm.aliased(Team)
 		self.team_alias2 = sa_orm.aliased(Team)
@@ -1327,9 +1398,16 @@ class AllMatchesPaginator:
 		return tuple(matches_query)
 
 
+class _TeamsPaginator:
+	def get_pagination_values(self, team):
+		return (team.name, team.id)
+
+	def has_first_id(self, first_id, team):
+		return (team.id == first_id)
+
 """A paginator for teams starred by the client.
 """
-class StarredTeamsPaginator:
+class StarredTeamsPaginator(_TeamsPaginator):
 	def __init__(self, client_id):
 		self.client_id = client_id
 	
@@ -1352,7 +1430,7 @@ class StarredTeamsPaginator:
 
 """A paginator for all teams.
 """
-class AllTeamsPaginator:
+class AllTeamsPaginator(_TeamsPaginator):
 	def __init__(self, client_id):
 		self.client_id = client_id
 	
@@ -1371,9 +1449,16 @@ class AllTeamsPaginator:
 		return tuple(teams_query)
 
 
+class _StreamersPaginator:
+	def get_pagination_values(self, streamer):
+		return (streamer.name, streamer.id)
+	
+	def has_first_id(self, first_id, streamer):
+		return (streamer.id == first_id)
+
 """A paginator for streaming users starred by the client.
 """
-class StarredStreamersPaginator:
+class StarredStreamersPaginator(_StreamersPaginator):
 	def __init__(self, client_id):
 		self.client_id = client_id
 	
@@ -1388,7 +1473,7 @@ class StarredStreamersPaginator:
 				.join(User, StarredStreamer.streamer_id == User.id)\
 				.filter(StarredStreamer.user_id == self.client_id)
 	
-	def get_columns(self):
+	def get_order_by_columns(self):
 		return (StarredStreamer.name, StarredStreamer.streamer_id)
 
 	def execute_query(self, streamers_query):
@@ -1396,7 +1481,7 @@ class StarredStreamersPaginator:
 
 """A paginator for all streaming users.
 """
-class AllStreamersPaginator:
+class AllStreamersPaginator(_StreamersPaginator):
 	def get_first_id(self):
 		first_streamer = common_db.optional_one(
 				session.query(User.id)
@@ -1407,7 +1492,7 @@ class AllStreamersPaginator:
 	def get_partial_list_query(self):
 		return session.query(User).filter(User.can_stream == True)
 
-	def get_columns(self):
+	def get_order_by_columns(self):
 		return (User.name, User.id)
 	
 	def execute_query(self, streamers_query):
