@@ -12,19 +12,35 @@ class DbTestCase(unittest.TestCase):
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
 		self.session = common_db.session
 		self._next_steam_id = 0
+		self._next_twitch_id = 0
 		db.create_all()
 	
 	def tearDown(self):
 		db.drop_all()
 		unittest.TestCase.tearDown(self)
 
-	"""Utility method for creating a Steam user."""
+	def _configure_twitch_user(self, user):
+		user.can_stream = True
+
+	"""Utility method for creating a Steam user.
+	"""
 	def _create_steam_user(self, name):
 		steam_id = self._next_steam_id
 		self._next_steam_id += 1
 		user_id = common_db.steam_user_logged_in(
 				db.User, db.Users, steam_id, name, None, None, None)
 		return steam_id, user_id
+
+	"""Utility method for creating a Twitch user.
+	"""
+	def _create_twitch_user(self, name):
+		twitch_id = self._next_twitch_id
+		self._next_twitch_id += 1
+		display_name = name
+		user_id = common_db.twitch_user_logged_in(
+				db.User, db.Users, twitch_id, name, display_name, None, None,
+				configure_user=self._configure_twitch_user)
+		return twitch_id, user_id
 
 	"""Utility method to create a URL for a user given its Steam identifier.
 	"""

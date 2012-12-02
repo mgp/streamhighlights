@@ -188,7 +188,8 @@ def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 """Called whenever a Twitch user has been authenticated and logged in.
 """
 def twitch_user_logged_in(user_class, users_table,
-		twitch_id, name, display_name, logo, access_token, now=None):
+		twitch_id, name, display_name, logo, access_token,
+		configure_user=None, now=None):
 	now = _get_now(now)
 	url_by_name = _get_twitch_url_by_name(name)
 	try:
@@ -199,7 +200,10 @@ def twitch_user_logged_in(user_class, users_table,
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
-		twitch_user.user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
+		user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
+		if configure_user is not None:
+			configure_user(user)
+		twitch_user.user = user
 		session.add(twitch_user)
 
 	# Update the User.
@@ -217,7 +221,8 @@ def twitch_user_logged_in(user_class, users_table,
 """Called whenever a Steam user has been authenticated and logged in.
 """
 def steam_user_logged_in(user_class, users_table,
-		steam_id, personaname, profile_url, avatar, avatar_full, now=None):
+		steam_id, personaname, profile_url, avatar, avatar_full,
+		configure_user=None, now=None):
 	now = _get_now(now)
 	url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
 	try:
@@ -228,7 +233,10 @@ def steam_user_logged_in(user_class, users_table,
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
-		steam_user.user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id))
+		user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id))
+		if configure_user is not None:
+			configure_user(user)
+		steam_user.user = user
 		session.add(steam_user)
 	
 	# Update the User.

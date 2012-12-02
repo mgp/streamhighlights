@@ -1304,18 +1304,181 @@ class TestFinderDb(DbTestCase):
 		# TODO
 		pass
 	
+	def _assert_displayed_team_list_entry(self, displayed_team_list_entry,
+			team_id, name, game, league):
+		# Begin required arguments.
+		self.assertEqual(team_id, displayed_team_list_entry.team_id)
+		self.assertEqual(name, displayed_team_list_entry.name)
+		self.assertEqual(game, displayed_team_list_entry.game)
+		self.assertEqual(league, displayed_team_list_entry.league)
+
+	def _assert_displayed_team_list(self, displayed_team_list, num_teams=0,
+			prev_name=None, prev_team_id=None, next_name=None, next_team_id=None):
+		# Begin optional arguments.
+		self.assertEqual(num_teams, len(displayed_team_list.teams))
+		self.assertEqual(prev_name, displayed_team_list.prev_name)
+		self.assertEqual(prev_team_id, displayed_team_list.prev_team_id)
+		self.assertEqual(next_name, displayed_team_list.next_name)
+		self.assertEqual(next_team_id, displayed_team_list.next_team_id)
+
 	"""Tests pagination when displaying all teams.
 	"""
 	def test_get_all_teams_pagination(self):
-		# TODO
-		pass
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Create the teams.
+		team1_id = db.add_team(self.team1_name, self.game, self.league,
+				self.team1_url, self.team1_fingerprint)
+		team2_id = db.add_team(self.team2_name, self.game, self.league,
+				self.team2_url, self.team2_fingerprint)
+		team3_name = 'team3_name'
+		team3_url = 'team3_url'
+		team3_fingerprint = 'team3_fingerprint'
+		team3_id = db.add_team(team3_name, self.game, self.league,
+				team3_url, team3_fingerprint)
+		team4_name = 'team4_name'
+		team4_url = 'team4_url'
+		team4_fingerprint = 'team4_fingerprint'
+		team4_id = db.add_team(team4_name, self.game, self.league,
+				team4_url, team4_fingerprint)
+		team5_name = 'team5_name'
+		team5_url = 'team5_url'
+		team5_fingerprint = 'team5_fingerprint'
+		team5_id = db.add_team(team5_name, self.game, self.league,
+				team5_url, team5_fingerprint)
+
+		def _get_next_page():
+			return db.get_all_teams(client_id, page_limit=2,
+					next_name=displayed_teams.next_name,
+					next_team_id=displayed_teams.next_team_id)
+		
+		def _get_prev_page():
+			return db.get_all_teams(client_id, page_limit=2,
+					prev_name=displayed_teams.prev_name,
+					prev_team_id=displayed_teams.prev_team_id)
+
+		def _assert_first_page():
+			self._assert_displayed_team_list(displayed_teams, num_teams=2,
+					next_name=self.team2_name, next_team_id=team2_id)
+			# Assert the partial list of paginated teams.
+			self._assert_displayed_team_list_entry(displayed_teams.teams[0],
+					team1_id, self.team1_name, self.game, self.league)
+			self._assert_displayed_team_list_entry(displayed_teams.teams[1],
+					team2_id, self.team2_name, self.game, self.league)
+
+		def _assert_second_page():
+			self._assert_displayed_team_list(displayed_teams, num_teams=2,
+					prev_name=team3_name, prev_team_id=team3_id,
+					next_name=team4_name, next_team_id=team4_id)
+			# Assert the partial list of paginated teams.
+			self._assert_displayed_team_list_entry(displayed_teams.teams[0],
+					team3_id, team3_name, self.game, self.league)
+			self._assert_displayed_team_list_entry(displayed_teams.teams[1],
+					team4_id, team4_name, self.game, self.league)
+
+		def _assert_third_page():
+			self._assert_displayed_team_list(displayed_teams, num_teams=1,
+					prev_name=team5_name, prev_team_id=team5_id)
+			# Assert the partial list of paginated teams.
+			self._assert_displayed_team_list_entry(displayed_teams.teams[0],
+					team5_id, team5_name, self.game, self.league)
+
+		# Assert that, clicking Next, the pages are correct.
+		displayed_teams = db.get_all_teams(client_id, page_limit=2)
+		_assert_first_page()
+		displayed_teams = _get_next_page()
+		_assert_second_page()
+		displayed_teams = _get_next_page()
+		_assert_third_page()
+
+		# Assert that, clicking Previous, the pages are correct.
+		displayed_teams = _get_prev_page()
+		_assert_second_page()
+		displayed_teams = _get_prev_page()
+		_assert_first_page()
 	
+	def _assert_displayed_streamer_list_entry(self, displayed_streamer_list_entry,
+			streamer_id, name):
+		# Begin required arguments.
+		self.assertEqual(streamer_id, displayed_streamer_list_entry.streamer_id)
+		self.assertEqual(name, displayed_streamer_list_entry.name)
+
+	def _assert_displayed_streamer_list(self, displayed_streamer_list, num_streamers=0,
+			prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None):
+		# Begin optional arguments.
+		self.assertEqual(num_streamers, len(displayed_streamer_list.streamers))
+		self.assertEqual(prev_name, displayed_streamer_list.prev_name)
+		self.assertEqual(prev_streamer_id, displayed_streamer_list.prev_streamer_id)
+		self.assertEqual(next_name, displayed_streamer_list.next_name)
+		self.assertEqual(next_streamer_id, displayed_streamer_list.next_streamer_id)
+
 	"""Tests pagination when displaying all streaming users.
 	"""
 	def test_get_all_streamers_pagination(self):
-		# TODO
-		pass
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		# Create the streamers.
+		streamer_twitch_id1, streamer_id1 = self._create_twitch_user(self.streamer_name)
+		streamer_name2 = 'streamer_name2'
+		streamer_twitch_id2, streamer_id2 = self._create_twitch_user(streamer_name2)
+		streamer_name3 = 'streamer_name3'
+		streamer_twitch_id3, streamer_id3 = self._create_twitch_user(streamer_name3)
+		streamer_name4 = 'streamer_name4'
+		streamer_twitch_id4, streamer_id4 = self._create_twitch_user(streamer_name4)
+		streamer_name5 = 'streamer_name5'
+		streamer_twitch_id5, streamer_id5 = self._create_twitch_user(streamer_name5)
 	
+		def _get_next_page():
+			return db.get_all_streamers(client_id, page_limit=2,
+					next_name=displayed_streamers.next_name,
+					next_streamer_id=displayed_streamers.next_streamer_id)
+		
+		def _get_prev_page():
+			return db.get_all_streamers(client_id, page_limit=2,
+					prev_name=displayed_streamers.prev_name,
+					prev_streamer_id=displayed_streamers.prev_streamer_id)
+
+		def _assert_first_page():
+			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=2,
+					next_name=streamer_name2, next_streamer_id=streamer_id2)
+			# Assert the partial list of paginated streamers.
+			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
+					streamer_id1, self.streamer_name)
+			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[1],
+					streamer_id2, streamer_name2)
+
+		def _assert_second_page():
+			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=2,
+					prev_name=streamer_name3, prev_streamer_id=streamer_id3,
+					next_name=streamer_name4, next_streamer_id=streamer_id4)
+			# Assert the partial list of paginated streamers.
+			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
+					streamer_id3, streamer_name3)
+			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[1],
+					streamer_id4, streamer_name4)
+
+		def _assert_third_page():
+			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=1,
+					prev_name=streamer_name5, prev_streamer_id=streamer_id5)
+			# Assert the partial list of paginated streamers.
+			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
+					streamer_id5, streamer_name5)
+
+		# Assert that, clicking Next, the pages are correct.
+		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
+		_assert_first_page()
+		displayed_streamers = _get_next_page()
+		_assert_second_page()
+		displayed_streamers = _get_next_page()
+		_assert_third_page()
+
+		# Assert that, clicking Previous, the pages are correct.
+		displayed_streamers = _get_prev_page()
+		_assert_second_page()
+		displayed_streamers = _get_prev_page()
+		_assert_first_page()
+
 	"""Tests pagination when dispaying matches starred by the client.
 	"""
 	def test_get_starred_matches_pagination(self):

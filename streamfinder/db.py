@@ -1350,9 +1350,6 @@ class StarredTeamsPaginator(_TeamsPaginator):
 """A paginator for all teams.
 """
 class AllTeamsPaginator(_TeamsPaginator):
-	def __init__(self, client_id):
-		self.client_id = client_id
-	
 	def get_first_id(self):
 		first_team = common_db.optional_one(
 				session.query(Team.id).order_by(Team.name.asc(), Team.id.asc()))
@@ -1440,6 +1437,8 @@ def get_starred_matches(client_id,
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			paginator)
 
+_ALL_MATCHES_PAGINATOR = AllMatchesPaginator()
+
 """Returns all matches.
 """
 def get_all_matches(client_id,
@@ -1449,13 +1448,16 @@ def get_all_matches(client_id,
 			_ALL_MATCHES_PAGINATOR)
 
 
+def _get_team_list_entry(team):
+	return DisplayedTeamListEntry(team.id, team.name, team.game, team.league)
+
 def _get_team_list(
-		client_id, prev_name, prev_team_id, next_name, next_team_id, page_limit,
+		prev_name, prev_team_id, next_name, next_team_id, page_limit,
 		paginator):
 	teams, prev_name, prev_team_id, next_name, next_team_id = _paginate(
 			paginator, prev_name, prev_team_id, next_name, next_team_id, page_limit)
 	return DisplayedTeamList(
-			tuple(_get_displayed_team_list_entry(team) for team in teams),
+			tuple(_get_team_list_entry(team) for team in teams),
 			prev_name,
 			prev_team_id,
 			next_name,
@@ -1470,22 +1472,27 @@ def get_starred_teams(client_id,
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
 			paginator)
 
+_ALL_TEAMS_PAGINATOR = AllTeamsPaginator()
+
 """Returns all teams.
 """
 def get_all_teams(client_id,
-		prev_time=None, prev_team_id=None, next_time=None, next_team_id=None,
+		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
 		page_limit=None):
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
 			_ALL_TEAMS_PAGINATOR)
 
 
+def _get_streamer_list_entry(streamer):
+	return DisplayedStreamerListEntry(streamer.id, streamer.name)
+
 def _get_streamer_list(
-		client_id, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
+		prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
 		paginator):
 	streamers, prev_name, prev_streamer_id, next_name, next_streamer_id = _paginate(
 			paginator, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit)
 	return DisplayedStreamerList(
-			tuple(_get_displayed_streamer_list_entry(streamer) for streamer in streamers),
+			tuple(_get_streamer_list_entry(streamer) for streamer in streamers),
 			prev_name,
 			prev_streamer_id,
 			next_name,
@@ -1500,10 +1507,12 @@ def get_starred_streamers(client_id,
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit, paginator)
 
+_ALL_STREAMERS_PAGINATOR = AllStreamersPaginator()
+
 """Returns all streaming users.
 """
 def get_all_streamers(client_id,
-		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
+		prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None,
 		page_limit=None):
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
