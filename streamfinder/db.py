@@ -157,12 +157,14 @@ class StarredTeam(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
+	name = sa.Column(sa.String, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 
 	def __repr__(self):
-		return 'StarredTeam(user_id=%r, team_id=%r, added=%r)' % (
+		return 'StarredTeam(user_id=%r, team_id=%r, name=%r, added=%r)' % (
 				self.user_id,
 				self.team_id,
+				self.name,
 				self.added)
 
 
@@ -413,12 +415,21 @@ def add_star_team(client_id, team_id, now=None):
 	now = _get_now(now)
 
 	try:
+		# Get the name of the team.
+		team_name = session.query(Team.name)\
+				.filter(Team.id == team_id)\
+				.one()\
+				.name
 		# Add the client's star for the team.
 		starred_team = StarredTeam(user_id=client_id,
 				team_id=team_id,
+				name=team_name,
 				added=now)
 		session.add(starred_team)
 		session.flush()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this team.
 		session.rollback()
@@ -536,7 +547,7 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 
 	try:
 		match = session.query(Match).filter(Match.id == match_id).one()
-	except sa.exc.NoResultFound:
+	except sa_orm.exc.NoResultFound:
 		# The flush failed because the client is already streaming this match.
 		session.rollback()
 		raise common_db.DbException._chain()
