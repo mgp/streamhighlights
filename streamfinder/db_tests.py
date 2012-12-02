@@ -584,31 +584,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.match_id5 = db.add_match(self.team1_id, self.team3_id, self.time5,
 				self.game, self.league, self.match_url5, self.match_fingerprint5, now=None)
 
-	"""Tests pagination of matches when displaying the client's viewing calendar.
-	"""
-	def test_get_displayed_calendar_pagination(self):
-		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(self.client_name)
-		# Add stars for both teams.
-		db.add_star_team(client_id, self.team1_id)
-		db.add_star_team(client_id, self.team2_id)
-
-		# Create the streaming user, who streams all matches.
-		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
-		for match_id in (
-				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
-			db.add_stream_match(streamer_id, match_id)
-
-		def _get_next_page():
-			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
-					next_time=displayed_calendar.next_time,
-					next_match_id=displayed_calendar.next_match_id)
-
-		def _get_prev_page():
-			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
-					prev_time=displayed_calendar.prev_time,
-					prev_match_id=displayed_calendar.prev_match_id)
-
+	def _test_get_displayed_calendar_pagination(self,
+			displayed_calendar, get_next_page, get_prev_page):
 		def _assert_next_match():
 			self._assert_displayed_calendar_match(displayed_calendar.next_match,
 					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
@@ -655,93 +632,75 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					self.time5, self.game, self.league, num_streams=1)
 
 		# Assert that, clicking Next, the pages are correct.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2)
 		_assert_first_page()
-		displayed_calendar = _get_next_page()
+		displayed_calendar = get_next_page(displayed_calendar)
 		_assert_second_page()
-		displayed_calendar = _get_next_page()
+		displayed_calendar = get_next_page(displayed_calendar)
 		_assert_third_page()
 
 		# Assert that, clicking Previous, the pages are correct.
-		displayed_calendar = _get_prev_page()
+		displayed_calendar = get_prev_page(displayed_calendar)
 		_assert_second_page()
-		displayed_calendar = _get_prev_page()
+		displayed_calendar = get_prev_page(displayed_calendar)
 		_assert_first_page()
+
+	"""Tests pagination of matches when displaying the client's viewing calendar.
+	"""
+	def test_get_displayed_viewer_calendar_pagination(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		# Add stars for both teams.
+		db.add_star_team(client_id, self.team1_id)
+		db.add_star_team(client_id, self.team2_id)
+
+		# Create the streaming user, who streams all matches.
+		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+		for match_id in (
+				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+			db.add_stream_match(streamer_id, match_id)
+
+		def _get_next_page(displayed_calendar):
+			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
+					next_time=displayed_calendar.next_time,
+					next_match_id=displayed_calendar.next_match_id)
+
+		def _get_prev_page(displayed_calendar):
+			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
+					prev_time=displayed_calendar.prev_time,
+					prev_match_id=displayed_calendar.prev_match_id)
+
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2)
+		self._test_get_displayed_calendar_pagination(
+				displayed_calendar, _get_next_page, _get_prev_page)
 
 	"""Tests pagination of matches when displaying the client's streaming calendar.
 	"""
 	def test_get_displayed_streamer_calendar_pagination(self):
-		# Create the client, who streams all matches.
+		# Add a match that will not be streamed.
+		match_url6 = 'match_url6'
+		match_fingerprint6 = 'match_fingerprint6'
+		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
+				self.game, self.league, match_url6, match_fingerprint6, now=None)
+
+		# Create the client, who streams the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		for match_id in (
 				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
 			db.add_stream_match(client_id, match_id)
 
-		def _get_next_page():
+		def _get_next_page(displayed_calendar):
 			return db.get_displayed_streamer_calendar(client_id, page_limit=2,
 					next_time=displayed_calendar.next_time,
 					next_match_id=displayed_calendar.next_match_id)
 			
-		def _get_prev_page():
+		def _get_prev_page(displayed_calendar):
 			return db.get_displayed_streamer_calendar(client_id, page_limit=2,
 					prev_time=displayed_calendar.prev_time,
 					prev_match_id=displayed_calendar.prev_match_id)
 
-		def _assert_next_match():
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
-
-		def _assert_first_page():
-			self._assert_displayed_calendar(displayed_calendar,
-					has_next_match=True, num_matches=2,
-					next_time=self.time2, next_match_id=self.match_id2)
-			_assert_next_match()
-			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
-			self._assert_displayed_calendar_match(displayed_calendar.matches[1],
-					self.match_id2, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time2, self.game, self.league, num_streams=1)
-
-		def _assert_second_page():
-			self._assert_displayed_calendar(displayed_calendar,
-					has_next_match=True, num_matches=2,
-					prev_time=self.time3, prev_match_id=self.match_id3,
-					next_time=self.time4, next_match_id=self.match_id4)
-			_assert_next_match()
-			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id3, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time3, self.game, self.league, num_streams=1)
-			self._assert_displayed_calendar_match(displayed_calendar.matches[1],
-					self.match_id4, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time4, self.game, self.league, num_streams=1)
-
-		def _assert_third_page():
-			self._assert_displayed_calendar(displayed_calendar,
-					has_next_match=True, num_matches=1,
-					prev_time=self.time5, prev_match_id=self.match_id5)
-			_assert_next_match()
-			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id5, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time5, self.game, self.league, num_streams=1)
-
-		# Assert that, clicking Next, the pages are correct.
 		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2)
-		_assert_first_page()
-		displayed_calendar = _get_next_page()
-		_assert_second_page()
-		displayed_calendar = _get_next_page()
-		_assert_third_page()
-
-		# Assert that, clicking Previous, the pages are correct.
-		displayed_calendar = _get_prev_page()
-		_assert_second_page()
-		displayed_calendar = _get_prev_page()
-		_assert_first_page()
+		self._test_get_displayed_calendar_pagination(
+				displayed_calendar, _get_next_page, _get_prev_page)
 
 	"""Tests pagination of matches when displaying a streaming user.
 	"""
