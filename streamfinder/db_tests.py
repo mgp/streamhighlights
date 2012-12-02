@@ -223,22 +223,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_name, displayed_streamer_list.next_name)
 		self.assertEqual(next_streamer_id, displayed_streamer_list.next_streamer_id)
 
-	"""Tests pagination when displaying all streaming users.
-	"""
-	def test_get_all_streamers_pagination(self):
-		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(self.client_name)
-
-		def _get_next_page():
-			return db.get_all_streamers(client_id, page_limit=2,
-					next_name=displayed_streamers.next_name,
-					next_streamer_id=displayed_streamers.next_streamer_id)
-		
-		def _get_prev_page():
-			return db.get_all_streamers(client_id, page_limit=2,
-					prev_name=displayed_streamers.prev_name,
-					prev_streamer_id=displayed_streamers.prev_streamer_id)
-
+	def _test_get_streamers_pagination(self,
+			displayed_streamers, get_next_page, get_prev_page):
 		def _assert_first_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=2,
 					next_name=self.streamer_name2, next_streamer_id=self.streamer_id2)
@@ -266,18 +252,68 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 					self.streamer_id5, self.streamer_name5)
 
 		# Assert that, clicking Next, the pages are correct.
-		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
 		_assert_first_page()
-		displayed_streamers = _get_next_page()
+		displayed_streamers = get_next_page(displayed_streamers)
 		_assert_second_page()
-		displayed_streamers = _get_next_page()
+		displayed_streamers = get_next_page(displayed_streamers)
 		_assert_third_page()
 
 		# Assert that, clicking Previous, the pages are correct.
-		displayed_streamers = _get_prev_page()
+		displayed_streamers = get_prev_page(displayed_streamers)
 		_assert_second_page()
-		displayed_streamers = _get_prev_page()
+		displayed_streamers = get_prev_page(displayed_streamers)
 		_assert_first_page()
+
+	"""Tests pagination when displaying all streaming users.
+	"""
+	def test_get_all_streamers_pagination(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		def _get_next_page(displayed_streamers):
+			return db.get_all_streamers(client_id, page_limit=2,
+					next_name=displayed_streamers.next_name,
+					next_streamer_id=displayed_streamers.next_streamer_id)
+		
+		def _get_prev_page(displayed_streamers):
+			return db.get_all_streamers(client_id, page_limit=2,
+					prev_name=displayed_streamers.prev_name,
+					prev_streamer_id=displayed_streamers.prev_streamer_id)
+
+		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
+		self._test_get_streamers_pagination(
+				displayed_streamers, _get_next_page, _get_prev_page)
+
+	"""Tests pagination when displaying streaming users starred by the client.
+	"""
+	def test_get_starred_streamers_pagination(self):
+		# Add a streaming user that will not be starred.
+		streamer_name6 = 'streamer_name6'
+		streamer_twitch_id6, streamer_id6 = self._create_twitch_user(streamer_name6)
+
+		# Create the client, who stars the other five streaming users.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		for streamer_id in (
+				self.streamer_id1,
+				self.streamer_id2,
+				self.streamer_id3,
+				self.streamer_id4,
+				self.streamer_id5):
+			db.add_star_streamer(client_id, streamer_id)
+
+		def _get_next_page(displayed_streamers):
+			return db.get_starred_streamers(client_id, page_limit=2,
+					next_name=displayed_streamers.next_name,
+					next_streamer_id=displayed_streamers.next_streamer_id)
+		
+		def _get_prev_page(displayed_streamers):
+			return db.get_starred_streamers(client_id, page_limit=2,
+					prev_name=displayed_streamers.prev_name,
+					prev_streamer_id=displayed_streamers.prev_streamer_id)
+
+		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
+		self._test_get_streamers_pagination(
+				displayed_streamers, _get_next_page, _get_prev_page)
 
 	"""Tests pagination of streamers when displaying a match.
 	"""
@@ -478,14 +514,14 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 	"""Tests pagination when displaying teams starred by the client.
 	"""
 	def test_get_starred_teams_pagination(self):
-		# Add a team that will not starred.
+		# Add a team that will not be starred.
 		team6_name = 'team6_name'
 		team6_url = 'team6_url'
 		team6_fingerprint = 'team6_fingerprint'
 		team6_id = db.add_team(
 				team6_name, self.game, self.league, team6_url, team6_fingerprint)
 
-		# Create the client, who stars all teams.
+		# Create the client, who stars the other five teams.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		for team_id in (
 				self.team1_id, self.team2_id, self.team3_id, self.team4_id, self.team5_id):
@@ -1452,12 +1488,6 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# TODO
 		pass
 	
-	"""Tests pagination when displaying streaming users starred by the client.
-	"""
-	def test_get_starred_streamers_pagination(self):
-		# TODO
-		pass
-
 	"""Test that updates the name of an existing team.
 	"""
 	def test_update_existing_team(self):

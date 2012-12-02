@@ -175,12 +175,14 @@ class StarredStreamer(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	name = sa.Column(sa.String, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 
 	def __repr__(self):
-		return 'StarredStreamer(user_id=%r, streamer_id=%r, added=%r)' % (
+		return 'StarredStreamer(user_id=%r, streamer_id=%r, name=%r, added=%r)' % (
 				self.user_id,
 				self.streamer_id,
+				self.name,
 				self.added)
 
 
@@ -483,12 +485,21 @@ def add_star_streamer(client_id, streamer_id, now=None):
 	now = _get_now(now)
 
 	try:
+		# Get the name of the streaming user.
+		streamer_name = session.query(User.name)\
+				.filter(User.id == streamer_id)\
+				.one()\
+				.name
 		# Add the client's star for the streaming user.
 		starred_streamer = StarredStreamer(user_id=client_id,
 				streamer_id=streamer_id,
+				name=streamer_name,
 				added=now)
 		session.add(starred_streamer)
 		session.flush()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this streaming user.
 		session.rollback()
@@ -1512,7 +1523,7 @@ def _get_streamer_list(
 """Returns streaming users starred by the client.
 """
 def get_starred_streamers(client_id,
-		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
+		prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None,
 		page_limit=None):
 	paginator = StarredStreamersPaginator(client_id)
 	return _get_streamer_list(
