@@ -141,12 +141,14 @@ class StarredMatch(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	time = sa.Column(sa.DateTime, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 
 	def __repr__(self):
-		return 'StarredMatch(user_id=%r, match_id=%r, added=%r)' % (
+		return 'StarredMatch(user_id=%r, match_id=%r, time=%r, added=%r)' % (
 				self.user_id,
 				self.match_id,
+				self.time,
 				self.added)
 
 
@@ -361,12 +363,21 @@ def add_star_match(client_id, match_id, now=None):
 	now = _get_now(now)
 
 	try:
+		# Get the time of the match.
+		match_time = session.query(Match.time)\
+				.filter(Match.id == match_id)\
+				.one()\
+				.time
 		# Add the client's star for the match.
 		starred_match = StarredMatch(user_id=client_id,
 				match_id=match_id,
+				time=match_time,
 				added=now)
 		session.add(starred_match)
 		session.flush()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	except sa.exc.IntegrityError:
 		# The flush failed because the client has already starred this match.
 		session.rollback()
@@ -967,19 +978,24 @@ class DisplayedStreamer:
 """An entry in the partial list of matches.
 """
 class DisplayedMatchListEntry:
-	def __init__(self, match_id, team1, team2, time, game, league):
+	# TODO: Create a team object?
+	def __init__(self, match_id, team1_id, team1_name, team2_id, team2_name, time, game, league):
 		self.match_id = match_id
-		self.team1 = team1
-		self.team2 = team2
+		self.team1_id = team1_id
+		self.team1_name = team1_name
+		self.team2_id = team2_id
+		self.team2_name = team2_name
 		self.time = time
 		self.game = game
 		self.league = league
 	
 	def __repr__(self):
-		return 'DisplayedMatchListEntry(match_id=%r, team1=%r, team2=%r, time=%r, game=%r, league=%r)' % (
+		return 'DisplayedMatchListEntry(match_id=%r, team1_id=%r, team1_name=%r, team2_id=%r, team2_name=%r, time=%r, game=%r, league=%r)' % (
 				self.match_id,
-				self.team1,
-				self.team2,
+				self.team1_id,
+				self.team1_name,
+				self.team2_id,
+				self.team2_name,
 				self.time,
 				self.game,
 				self.league)
@@ -1297,6 +1313,7 @@ class StarredMatchesPaginator(_MatchesPaginator):
 	def get_first_id(self):
 		first_starred_match = common_db.optional_one(
 				session.query(StarredMatch.match_id)
+					.filter(StarredMatch.user_id == self.client_id)
 					.order_by(StarredMatch.time.asc(), StarredMatch.match_id.asc()))
 		return first_starred_match.match_id if first_starred_match else None
 	
@@ -1328,9 +1345,9 @@ class AllMatchesPaginator(_MatchesPaginator):
 		return first_match.id if first_match else None
 	
 	def get_partial_list_query(self):
-		return session.query(Match, team_alias1, team_alias2)\
-				.join(team_alias1, Match.team1_id == team_alias1.id)\
-				.join(team_alias2, Match.team2_id == team_alias2.id)
+		return session.query(Match, self.team_alias1, self.team_alias2)\
+				.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
+				.join(self.team_alias2, Match.team2_id == self.team_alias2.id)
 
 	def get_order_by_columns(self):
 		return (Match.time, Match.id)
@@ -1355,6 +1372,7 @@ class StarredTeamsPaginator(_TeamsPaginator):
 	def get_first_id(self):
 		first_starred_team = common_db.optional_one(
 				session.query(StarredTeam.team_id)
+					.filter(StarredTeam.user_id == self.client_id)
 					.order_by(StarredTeam.name.asc(), StarredTeam.team_id.asc()))
 		return first_starred_team.team_id if first_starred_team else None
 	
@@ -1403,6 +1421,7 @@ class StarredStreamersPaginator(_StreamersPaginator):
 	def get_first_id(self):
 		first_starred_streamer = common_db.optional_one(
 				session.query(StarredStreamer.streamer_id)
+					.filter(StarredStreamer.user_id == self.client_id)
 					.order_by(StarredStreamer.name.asc(), StarredStreamer.streamer_id.asc()))
 		return first_starred_streamer.streamer_id if first_starred_streamer else None
 	
@@ -1437,8 +1456,18 @@ class AllStreamersPaginator(_StreamersPaginator):
 		return tuple(streamers_query)
 
 
+def _get_displayed_match_list_entry(match, team1, team2):
+	return DisplayedMatchListEntry(match.id,
+			team1.id,
+			team1.name,
+			team2.id,
+			team2.name,
+			match.time,
+			match.game,
+			match.league)
+
 def _get_match_list(
-		client_id, prev_time, prev_match_id, next_time, next_match_id, page_limit,
+		prev_time, prev_match_id, next_time, next_match_id, page_limit,
 		paginator):
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)

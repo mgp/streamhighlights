@@ -837,6 +837,123 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		displayed_team = _get_prev_page()
 		_assert_first_page()
 
+	def _assert_displayed_match_list_entry(self, displayed_match_list_entry,
+			match_id, team1_id, team1_name, team2_id, team2_name,
+			time, game, league):
+		# Begin required arguments.
+		self.assertEqual(match_id, displayed_match_list_entry.match_id)
+		self.assertEqual(team1_id, displayed_match_list_entry.team1_id)
+		self.assertEqual(team1_name, displayed_match_list_entry.team1_name)
+		self.assertEqual(team2_id, displayed_match_list_entry.team2_id)
+		self.assertEqual(team2_name, displayed_match_list_entry.team2_name)
+		self.assertEqual(time, displayed_match_list_entry.time)
+		self.assertEqual(game, displayed_match_list_entry.game)
+		self.assertEqual(league, displayed_match_list_entry.league)
+
+	def _assert_displayed_match_list(self, displayed_match_list, num_matches=0,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
+		# Begin optional arguments.
+		self.assertEqual(num_matches, len(displayed_match_list.matches))
+		self.assertEqual(prev_time, displayed_match_list.prev_time)
+		self.assertEqual(prev_match_id, displayed_match_list.prev_match_id)
+		self.assertEqual(next_time, displayed_match_list.next_time)
+		self.assertEqual(next_match_id, displayed_match_list.next_match_id)
+
+	def _test_get_matches_pagination(self,
+			displayed_matches, get_next_page, get_prev_page):
+		def _assert_first_page():
+			self._assert_displayed_match_list(displayed_matches, num_matches=2,
+					next_time=self.time2, next_match_id=self.match_id2)
+			# Assert the partial list of paginated matches.
+			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
+					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
+					self.time, self.game, self.league)
+			self._assert_displayed_match_list_entry(displayed_matches.matches[1],
+					self.match_id2, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
+					self.time2, self.game, self.league)
+
+		def _assert_second_page():
+			self._assert_displayed_match_list(displayed_matches, num_matches=2,
+					prev_time=self.time3, prev_match_id=self.match_id3,
+					next_time=self.time4, next_match_id=self.match_id4)
+			# Assert the partial list of paginated matches.
+			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
+					self.match_id3, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
+					self.time3, self.game, self.league)
+			self._assert_displayed_match_list_entry(displayed_matches.matches[1],
+					self.match_id4, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
+					self.time4, self.game, self.league)
+
+		def _assert_third_page():
+			self._assert_displayed_match_list(displayed_matches, num_matches=1,
+					prev_time=self.time5, prev_match_id=self.match_id5)
+			# Assert the partial list of paginated matches.
+			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
+					self.match_id5, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
+					self.time5, self.game, self.league)
+
+		# Assert that, clicking Next, the pages are correct.
+		_assert_first_page()
+		displayed_matches = get_next_page(displayed_matches)
+		_assert_second_page()
+		displayed_matches = get_next_page(displayed_matches)
+		_assert_third_page()
+
+		# Assert that, clicking Previous, the pages are correct.
+		displayed_matches = get_prev_page(displayed_matches)
+		_assert_second_page()
+		displayed_matches = get_prev_page(displayed_matches)
+		_assert_first_page()
+
+	"""Tests pagination when displaying all matches.
+	"""
+	def test_get_all_matches_pagination(self):
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		def _get_next_page(displayed_matches):
+			return db.get_all_matches(client_id, page_limit=2,
+					next_time=displayed_matches.next_time,
+					next_match_id=displayed_matches.next_match_id)
+		
+		def _get_prev_page(displayed_matches):
+			return db.get_all_matches(client_id, page_limit=2,
+					prev_time=displayed_matches.prev_time,
+					prev_match_id=displayed_matches.prev_match_id)
+
+		displayed_matches = db.get_all_matches(client_id, page_limit=2)
+		self._test_get_matches_pagination(
+				displayed_matches, _get_next_page, _get_prev_page)
+	
+	"""Tests pagination when dispaying matches starred by the client.
+	"""
+	def test_get_starred_matches_pagination(self):
+		# Add a match that will not be streamed.
+		match_url6 = 'match_url6'
+		match_fingerprint6 = 'match_fingerprint6'
+		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
+				self.game, self.league, match_url6, match_fingerprint6, now=None)
+
+		# Create the client, who stars the other five matches.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+		for match_id in (
+				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+			db.add_star_match(client_id, match_id)
+
+		def _get_next_page(displayed_matches):
+			return db.get_starred_matches(client_id, page_limit=2,
+					next_time=displayed_matches.next_time,
+					next_match_id=displayed_matches.next_match_id)
+		
+		def _get_prev_page(displayed_matches):
+			return db.get_starred_matches(client_id, page_limit=2,
+					prev_time=displayed_matches.prev_time,
+					prev_match_id=displayed_matches.prev_match_id)
+
+		displayed_matches = db.get_starred_matches(client_id, page_limit=2)
+		self._test_get_matches_pagination(
+				displayed_matches, _get_next_page, _get_prev_page)
+
 
 class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to create a match because one team identifier is unknown.
@@ -1435,18 +1552,6 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 	# TODO: Test remove_stream_match.
 
-	"""Tests pagination when displaying all matches.
-	"""
-	def test_get_all_matches_pagination(self):
-		# TODO
-		pass
-
-	"""Tests pagination when dispaying matches starred by the client.
-	"""
-	def test_get_starred_matches_pagination(self):
-		# TODO
-		pass
-	
 	"""Test that updates the name of an existing team.
 	"""
 	def test_update_existing_team(self):
