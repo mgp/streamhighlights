@@ -8,9 +8,8 @@ import unittest
 
 import common_db
 
-"""Prints the seconds taken to run a decorated function.
-"""
 def timed(f):
+	"""Prints the seconds taken to run a decorated function."""
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		start_time = time.time()
@@ -39,30 +38,82 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.time = datetime(2012, 11, 3, 18, 0, 0)
 		self.now = datetime(2012, 11, 5, 12, 0, 0)
 
+	def _assert_displayed_team(self, displayed_team,
+			team_id, name, num_stars=0, game=None, league=None):
+		"""Utility method to assert the attributes of a DisplayedTeam."""
 
-	"""Utility method to assert the properties of a DisplayedCalendarMatch.
-	"""
-	def _assert_displayed_calendar_match(self, displayed_calendar_match,
-			match_id, team1_id, team1_name, team2_id, team2_name, time, game, league,
-			num_stars=0, num_streams=0):
-		# Begin required arguments.
-		self.assertEqual(match_id, displayed_calendar_match.match_id)
-		self.assertEqual(team1_id, displayed_calendar_match.team1_id)
-		self.assertEqual(team1_name, displayed_calendar_match.team1_name)
-		self.assertEqual(team2_id, displayed_calendar_match.team2_id)
-		self.assertEqual(team2_name, displayed_calendar_match.team2_name)
-		self.assertEqual(time, displayed_calendar_match.time)
-		self.assertEqual(game, displayed_calendar_match.game)
-		self.assertEqual(league, displayed_calendar_match.league)
+		self.assertIsNotNone(displayed_team)
+		self.assertEqual(team_id, displayed_team.team_id)
+		self.assertEqual(name, displayed_team.name)
 		# Begin optional arguments.
-		self.assertEqual(num_stars, displayed_calendar_match.num_stars)
-		self.assertEqual(num_streams, displayed_calendar_match.num_streams)
+		self.assertEqual(num_stars, displayed_team.num_stars)
+		self.assertEqual(game, displayed_team.game)
+		self.assertEqual(league, displayed_team.league)
 
-	"""Utilty method to assert the properties of a DisplayedCalendar.
-	"""
+	def _assert_displayed_team_details(self, displayed_team,
+			team_id, name, game, league, external_url,
+			num_stars=0, is_starred=False, num_matches=0,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
+		"""Utility method to assert the attributes of a DisplayedTeamDetails.
+
+		This does not assert the matches attribute, but only its length.
+		"""
+
+		self._assert_displayed_team(displayed_team,
+				team_id, name, num_stars, game, league)
+		self.assertEqual(external_url, displayed_team.external_url)
+		# Begin optional arguments.
+		self.assertEqual(is_starred, displayed_team.is_starred)
+		self.assertEqual(num_matches, len(displayed_team.matches))
+		self.assertEqual(prev_time, displayed_team.prev_time)
+		self.assertEqual(prev_match_id, displayed_team.prev_match_id)
+		self.assertEqual(next_time, displayed_team.next_time)
+		self.assertEqual(next_match_id, displayed_team.next_match_id)
+
+	def _assert_displayed_match(self, displayed_match,
+			match_id, time, num_stars=0, num_streams=0, game=None, league=None):
+		"""Utility method to assert the attributes of a DisplayedMatch.
+		
+		This does not assert the team1 and team2 attributes, however.
+		"""
+
+		self.assertEqual(match_id, displayed_match.match_id)
+		self.assertEqual(time, displayed_match.time)
+		# Begin optional arguments.
+		self.assertEqual(num_stars, displayed_match.num_stars)
+		self.assertEqual(num_streams, displayed_match.num_streams)
+		self.assertEqual(game, displayed_match.game)
+		self.assertEqual(league, displayed_match.league)
+
+	def _assert_displayed_match_details(self, displayed_match,
+			match_id, time, game, league, external_url,
+			num_stars=0, num_streams=0, is_starred=False,
+			prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None):
+		"""Utility method to assert the properties of a DisplayedMatchDetails.
+
+		This does not assert the streamers attribute, but only its length.
+		"""
+
+		self._assert_displayed_match(displayed_match,
+				match_id, time, num_stars, num_streams, game, league)
+		self.assertEqual(external_url, displayed_match.external_url)
+		# Begin optional arguments.
+		self.assertEqual(is_starred, displayed_match.is_starred)
+		self.assertEqual(num_streams, len(displayed_match.streamers))
+		self.assertEqual(prev_time, displayed_match.prev_time)
+		self.assertEqual(prev_streamer_id, displayed_match.prev_streamer_id)
+		self.assertEqual(next_time, displayed_match.next_time)
+		self.assertEqual(next_streamer_id, displayed_match.next_streamer_id)
+
 	def _assert_displayed_calendar(self, displayed_calendar,
 			has_next_match=False, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
+		"""Utilty method to assert the attributes of a DisplayedCalendar.
+		
+		This does not assert the next_match or matches attributes, but only its
+		existence and its length, respectively.
+		"""
+
 		# Begin optional arguments.
 		self.assertEqual(has_next_match, displayed_calendar.next_match is not None)
 		self.assertEqual(num_matches, len(displayed_calendar.matches))
@@ -71,115 +122,33 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(next_time, displayed_calendar.next_time)
 		self.assertEqual(next_match_id, displayed_calendar.next_match_id)
 
-
-	"""Utility method to assert the properties of a DisplayedMatchTeam.
-	"""
-	def _assert_displayed_match_team(self, displayed_match_team, team_id, name,
-			num_stars=0):
-		# Begin required arguments.
-		self.assertEqual(team_id, displayed_match_team.team_id)
-		self.assertEqual(name, displayed_match_team.name)
-		# Begin optional arguments.
-		self.assertEqual(num_stars, displayed_match_team.num_stars)
-
-	"""Utility method to assert the properties of a DisplayedMatchStreamer.
-	"""
-	def _assert_displayed_match_streamer(self, displayed_match_streamer,
-			user_id, name, url_by_id, num_stars=0, image_url=None, url_by_name=None):
-		# Begin required arguments.
-		self.assertEqual(user_id, displayed_match_streamer.user_id)
-		self.assertEqual(name, displayed_match_streamer.name)
-		self.assertEqual(url_by_id, displayed_match_streamer.url_by_id)
-		# Begin optional arguments.
-		self.assertEqual(num_stars, displayed_match_streamer.num_stars)
-		self.assertEqual(image_url, displayed_match_streamer.image_url)
-		self.assertEqual(url_by_name, displayed_match_streamer.url_by_name)
-
-	"""Utility method to assert the properties of a DisplayedMatch.
-	"""
-	def _assert_displayed_match(self, displayed_match, match_id, time, game, league,
-			is_starred=False, num_stars=0, num_streamers=0,
-			prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None):
-		# Begin required arguments.
-		self.assertEqual(match_id, displayed_match.match_id)
-		self.assertIsNotNone(displayed_match.team1)
-		self.assertIsNotNone(displayed_match.team2)
-		self.assertEqual(time, displayed_match.time)
-		self.assertEqual(game, displayed_match.game)
-		self.assertEqual(league, displayed_match.league)
-		# Begin optional arguments.
-		self.assertEqual(is_starred, displayed_match.is_starred)
-		self.assertEqual(num_stars, displayed_match.num_stars)
-		# XXX: self.assertEqual(num_streamers, len(displayed_match.streamers))
-		self.assertEqual(prev_time, displayed_match.prev_time)
-		self.assertEqual(prev_streamer_id, displayed_match.prev_streamer_id)
-		self.assertEqual(next_time, displayed_match.next_time)
-		self.assertEqual(next_streamer_id, displayed_match.next_streamer_id)
-
-
-	"""Utility method to assert the properties of a DisplayedTeamMatch.
-	"""
-	def _assert_displayed_team_match(self, displayed_team_match,
-			opponent_id, opponent_name, match_id, time, num_stars=0, num_streams=0):
-		# Begin required arguments.
-		self.assertEqual(opponent_id, displayed_team_match.opponent_id)
-		self.assertEqual(opponent_name, displayed_team_match.opponent_name)
-		self.assertEqual(match_id, displayed_team_match.match_id)
-		self.assertEqual(time, displayed_team_match.time)
-		# Begin optional arguments.
-		self.assertEqual(num_stars, displayed_team_match.num_stars)
-		self.assertEqual(num_streams, displayed_team_match.num_streams)
-
-	"""Utility method to assert the properties of a DisplayedTeam.
-	"""
-	def _assert_displayed_team(self, displayed_team, team_id, name, game, league,
-			is_starred=False, num_stars=0, num_matches=0,
-			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
-		# Begin required arguments.
-		self.assertEqual(team_id, displayed_team.team_id)
-		self.assertEqual(name, displayed_team.name)
-		self.assertEqual(game, displayed_team.game)
-		self.assertEqual(league, displayed_team.league)
-		# Begin optional arguments.
-		self.assertEqual(is_starred, displayed_team.is_starred)
-		self.assertEqual(num_stars, displayed_team.num_stars)
-		# XXX self.assertEqual(num_matches, len(displayed_team.matches))
-		self.assertEqual(prev_time, displayed_team.prev_time)
-		self.assertEqual(prev_match_id, displayed_team.prev_match_id)
-		self.assertEqual(next_time, displayed_team.next_time)
-		self.assertEqual(next_match_id, displayed_team.next_match_id)
-
-
-	"""Utility method to assert the properties of a DisplayedStreamerMatch.
-	"""
-	def _assert_displayed_streamer_match(self, displayed_streamer_match,
-			match_id, team1_id, team1_name, team2_id, team2_name, time, game, league,
-			num_stars=0, num_streams=0):
-		# Begin required arguments.
-		self.assertEqual(match_id, displayed_streamer_match.match_id)
-		self.assertEqual(team1_id, displayed_streamer_match.team1_id)
-		self.assertEqual(team1_name, displayed_streamer_match.team1_name)
-		self.assertEqual(team2_id, displayed_streamer_match.team2_id)
-		self.assertEqual(team2_name, displayed_streamer_match.team2_name)
-		self.assertEqual(time, displayed_streamer_match.time)
-		self.assertEqual(game, displayed_streamer_match.game)
-		self.assertEqual(league, displayed_streamer_match.league)
-		# Begin optional arguments.
-		self.assertEqual(num_stars, displayed_streamer_match.num_stars)
-		self.assertEqual(num_streams, displayed_streamer_match.num_streams)
-
-	"""Utility method to assert the properties of a DisplayedStreamer.
-	"""
 	def _assert_displayed_streamer(self, displayed_streamer,
-			streamer_id, name, is_starred=False, num_stars=0, num_matches=0,
-			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
-		# Begin required arguments.
+			streamer_id, name, url_by_id, num_stars=0, image_url=None, url_by_name=None):
+		"""Utility method to assert the properties of a DisplayedStreamer."""
+
 		self.assertEqual(streamer_id, displayed_streamer.streamer_id)
 		self.assertEqual(name, displayed_streamer.name)
+		self.assertEqual(url_by_id, displayed_streamer.url_by_id)
+		# Begin optional arguments.
+		self.assertEqual(num_stars, displayed_streamer.num_stars)
+		self.assertEqual(image_url, displayed_streamer.image_url)
+		self.assertEqual(url_by_name, displayed_streamer.url_by_name)
+
+	def _assert_displayed_streamer_details(self, displayed_streamer,
+			streamer_id, name, url_by_id, external_url,
+			num_stars=0, image_url=None, url_by_name=None, is_starred=False, num_matches=0,
+			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
+		"""Utility method to assert the properties of a DisplayedMatchDetails.
+
+		This does not assert the streamers attribute, but only its length.
+		"""
+
+		self._assert_displayed_streamer(displayed_streamer,
+				streamer_id, name, url_by_id, num_stars, image_url, url_by_name)
+		self.assertEqual(external_url, displayed_streamer.external_url)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_streamer.is_starred)
-		self.assertEqual(num_stars, displayed_streamer.num_stars)
-		# XXX self.assertEqual(num_matches, len(displayed_streamer.matches))
+		self.assertEqual(num_matches, len(displayed_streamer.matches))
 		self.assertEqual(prev_time, displayed_streamer.prev_time)
 		self.assertEqual(prev_match_id, displayed_streamer.prev_match_id)
 		self.assertEqual(next_time, displayed_streamer.next_time)
@@ -214,10 +183,10 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(streamer_id, displayed_streamer_list_entry.streamer_id)
 		self.assertEqual(name, displayed_streamer_list_entry.name)
 
-	def _assert_displayed_streamer_list(self, displayed_streamer_list, num_streamers=0,
+	def _assert_displayed_streamer_list(self, displayed_streamer_list, num_streams=0,
 			prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None):
 		# Begin optional arguments.
-		self.assertEqual(num_streamers, len(displayed_streamer_list.streamers))
+		self.assertEqual(num_streams, len(displayed_streamer_list.streamers))
 		self.assertEqual(prev_name, displayed_streamer_list.prev_name)
 		self.assertEqual(prev_streamer_id, displayed_streamer_list.prev_streamer_id)
 		self.assertEqual(next_name, displayed_streamer_list.next_name)
@@ -226,7 +195,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 	def _test_get_streamers_pagination(self,
 			displayed_streamers, get_next_page, get_prev_page):
 		def _assert_first_page():
-			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=2,
+			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					next_name=self.streamer_name2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
@@ -235,7 +204,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 					self.streamer_id2, self.streamer_name2)
 
 		def _assert_second_page():
-			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=2,
+			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					prev_name=self.streamer_name3, prev_streamer_id=self.streamer_id3,
 					next_name=self.streamer_name4, next_streamer_id=self.streamer_id4)
 			# Assert the partial list of paginated streamers.
@@ -245,7 +214,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 					self.streamer_id4, self.streamer_name4)
 
 		def _assert_third_page():
-			self._assert_displayed_streamer_list(displayed_streamers, num_streamers=1,
+			self._assert_displayed_streamer_list(displayed_streamers, num_streams=1,
 					prev_name=self.streamer_name5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
@@ -353,7 +322,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_first_page():
 			self.assertEqual(2, len(displayed_match.streamers))
 			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streamers=2,
+					match_id, self.time, self.game, self.league, num_streams=2,
 					next_time=streamer_added_time2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_match_streamer(displayed_match.streamers[0],
@@ -368,7 +337,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_second_page():
 			self.assertEqual(2, len(displayed_match.streamers))
 			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streamers=2,
+					match_id, self.time, self.game, self.league, num_streams=2,
 					prev_time=streamer_added_time3, prev_streamer_id=self.streamer_id3,
 					next_time=streamer_added_time4, next_streamer_id=self.streamer_id4)
 			# Assert the partial list of paginated streamers.
@@ -384,7 +353,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_third_page():
 			self.assertEqual(1, len(displayed_match.streamers))
 			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streamers=1,
+					match_id, self.time, self.game, self.league, num_streams=1,
 					prev_time=streamer_added_time5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_match_streamer(displayed_match.streamers[0],
@@ -1128,7 +1097,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		displayed_match = db.get_displayed_match(client_id, match_id)
 		self._assert_displayed_match(displayed_match,
 				match_id, self.time, self.game, self.league,
-				is_starred=True, num_stars=1, num_streamers=1)
+				is_starred=True, num_stars=1, num_streams=1)
 		self._assert_displayed_match_team(displayed_match.team1,
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
@@ -1149,7 +1118,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the match no longer has a star.
 		displayed_match = db.get_displayed_match(client_id, match_id)
 		self._assert_displayed_match(displayed_match,
-				match_id, self.time, self.game, self.league, num_streamers=1)
+				match_id, self.time, self.game, self.league, num_streams=1)
 		self._assert_displayed_match_team(displayed_match.team1,
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
@@ -1405,7 +1374,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the match should no longer have a star.
 		displayed_match = db.get_displayed_match(client_id, match_id)
 		self._assert_displayed_match(displayed_match,
-				match_id, self.time, self.game, self.league, num_streamers=1)
+				match_id, self.time, self.game, self.league, num_streams=1)
 		self._assert_displayed_match_team(displayed_match.team1,
 				team1_id, self.team1_name)
 		self._assert_displayed_match_team(displayed_match.team2,
@@ -1573,8 +1542,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that only the name was updated.
 		self.assertEqual(team_id, updated_team_id)
 		displayed_team = db.get_displayed_team(client_id, team_id)
-		self._assert_displayed_team(displayed_team,
-				team_id, updated_team_name, self.game, self.league)
+		self._assert_displayed_team_details(displayed_team,
+				team_id, updated_team_name, self.game, self.league, self.team1_url)
 
 	"""Test that fails to add a duplicate of an existing match.
 	"""
@@ -1602,8 +1571,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that this had no effect.
 		self.assertEqual(match_id, updated_match_id)
 		displayed_match = db.get_displayed_match(client_id, match_id)
-		self._assert_displayed_match(displayed_match,
-				match_id, self.time, self.game, self.league)
+		self._assert_displayed_match_details(displayed_match,
+				match_id, self.time, self.game, self.league, self.match_url)
 
 	"""Test that clients see their own stars for matches.
 	"""
@@ -1642,41 +1611,53 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Assert that the first match has a star by the first user.
 		displayed_match = db.get_displayed_match(client_id1, match_id1)
-		self._assert_displayed_match(displayed_match,
-				match_id1, self.time, self.game, self.league,
-				is_starred=True, num_stars=1, num_streamers=1)
+		self._assert_displayed_match_details(displayed_match,
+				match_id1, self.time, self.game, self.league, self.match_url,
+				num_stars=1, num_streams=1, is_starred=True)
+		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the second match has no star by the first user.
 		displayed_match = db.get_displayed_match(client_id1, match_id2)
-		self._assert_displayed_match(displayed_match,
-				match_id2, time2, self.game, self.league,
-				num_stars=1, num_streamers=1)
+		self._assert_displayed_match_details(displayed_match,
+				match_id2, time2, self.game, self.league, match_url2,
+				num_stars=1, num_streams=1)
+		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 	
 		# Assert that the first match has no star by the second user.
 		displayed_match = db.get_displayed_match(client_id2, match_id1)
-		self._assert_displayed_match(displayed_match,
-				match_id1, self.time, self.game, self.league,
-				num_stars=1, num_streamers=1)
+		self._assert_displayed_match_details(displayed_match,
+				match_id1, self.time, self.game, self.league, self.match_url,
+				num_stars=1, num_streams=1)
+		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the second match has a star by the second user.
 		displayed_match = db.get_displayed_match(client_id2, match_id2)
-		self._assert_displayed_match(displayed_match,
-				match_id2, time2, self.game, self.league,
-				is_starred=True, num_stars=1, num_streamers=1)
+		self._assert_displayed_match_details(displayed_match,
+				match_id2, time2, self.game, self.league, match_url2,
+				num_stars=1, num_streams=1, is_starred=True)
+		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 
 		# Assert that the first user's calendar has the first match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-				self.time, self.game, self.league, num_stars=1, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id1,
+				self.time, num_stars=1, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
-				time2, self.game, self.league, num_stars=1, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id2,
+				time2, num_stars=1, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 	"""Test that clients see their own stars for teams.
 	"""
@@ -1721,41 +1702,47 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Assert that the first team has a star by the first user.
 		displayed_team = db.get_displayed_team(client_id1, team1_id)
-		self._assert_displayed_team(displayed_team,
-				team1_id, self.team1_name, self.game, self.league,
-				is_starred=True, num_stars=1, num_matches=1)
+		self._assert_displayed_team_details(displayed_team,
+				team1_id, self.team1_name, self.game, self.league, self.team1_url,
+				num_stars=1, is_starred=True, num_matches=1)
 		# Assert that the second team has no star by the first user.
 		displayed_team = db.get_displayed_team(client_id1, team2_id)
-		self._assert_displayed_team(displayed_team,
-				team2_id, self.team2_name, self.game, self.league,
+		self._assert_displayed_team_details(displayed_team,
+				team2_id, self.team2_name, self.game, self.league, self.team2_url,
 				num_stars=1, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
 		displayed_team = db.get_displayed_team(client_id2, team1_id)
-		self._assert_displayed_team(displayed_team,
-				team1_id, self.team1_name, self.game, self.league,
+		self._assert_displayed_team_details(displayed_team,
+				team1_id, self.team1_name, self.game, self.league, self.team1_url,
 				num_stars=1, num_matches=1)
 		# Assert that the second team has a star by the second user.
 		displayed_team = db.get_displayed_team(client_id2, team2_id)
-		self._assert_displayed_team(displayed_team,
-				team2_id, self.team2_name, self.game, self.league,
-				is_starred=True, num_stars=1, num_matches=1)
+		self._assert_displayed_team_details(displayed_team,
+				team2_id, self.team2_name, self.game, self.league, self.team2_url,
+				num_stars=1, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id1, team1_id, self.team1_name, team3_id, team3_name,
-				self.time, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id1,
+				self.time, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name,
+				num_stars=1)
+		self._assert_displayed_team(next_match.team2, team3_id, team3_name)
 
 		# Assert that the second user's calendar has the second match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id2, team2_id, self.team2_name, team3_id, team3_name,
-				time2, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id2,
+				time2, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team2_id, self.team2_name,
+				num_stars=1)
+		self._assert_displayed_team(next_match.team2, team3_id, team3_name)
 
 	"""Test that clients see their own stars for streamers.
 	"""
@@ -1796,37 +1783,45 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Assert that the first streamer has a star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id1, self.streamer_name, is_starred=True, num_stars=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id1, self.streamer_name, 'url_by_id', 'external_url',
+				num_stars=1, is_starred=True, num_matches=1)
 		# Assert that the second streamer has no star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id2, streamer_name2, num_stars=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id2, streamer_name2, 'url_by_id', 'external_url',
+				num_stars=1, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id1, self.streamer_name, num_stars=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id1, self.streamer_name, 'url_by_id', 'external_url',
+				num_stars=1, num_matches=1)
 		# Assert that the second team has a star by the second user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id2, streamer_name2, is_starred=True, num_stars=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id2, streamer_name2, 'url_by_id', 'external_url',
+				num_stars=1, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-				self.time, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id1,
+				self.time, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
-				time2, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_calendar_match(next_match, match_id2,
+				time2, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 	"""Test that clients see their own streams for matches.
 	"""

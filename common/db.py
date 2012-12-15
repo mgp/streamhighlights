@@ -106,23 +106,16 @@ class TwitchUser(_Base):
 				self.access_token)
 
 
-def _get_now(now):
-	if now is None:
-		return datetime.utcnow()
-	return now
-
 _USER_URL_SEPARATOR = ':'
 _USER_URL_STEAM_PREFIX = 's'
 _USER_URL_TWITCH_PREFIX = 't'
 
-"""Returns the url_by_id value for a User from Steam.
-"""
 def _get_steam_url_by_id(steam_id):
+	"""Returns the url_by_id value for a User from Steam."""
 	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, str(steam_id)))
 
-"""Returns the url_by_id value for a User from Twitch.
-"""
 def _get_twitch_url_by_id(twitch_id):
+	"""Returns the url_by_id value for a User from Twitch."""
 	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, str(twitch_id)))
 
 _GET_COMMUNITY_ID_REGEX = re.compile('steamcommunity\.com/id/(?P<community_id>\w+)$')
@@ -130,10 +123,10 @@ _GET_COMMUNITY_ID_REGEX = re.compile('steamcommunity\.com/id/(?P<community_id>\w
 def _get_steam_url_by_name_from_community_id(community_id):
 	return _USER_URL_SEPARATOR.join((_USER_URL_STEAM_PREFIX, community_id))
 
-"""Returns the url_by_name value for a User from Steam, or None if one cannot
-be created from the profile URL.
-"""
 def _get_steam_url_by_name_from_profile_url(profile_url):
+	"""Returns the url_by_name value for a User from Steam, or None if one cannot
+	be created from the profile URL.
+	"""
 	if profile_url is None:
 		return None
 	community_id_match = _GET_COMMUNITY_ID_REGEX.search(profile_url)
@@ -142,14 +135,12 @@ def _get_steam_url_by_name_from_profile_url(profile_url):
 	community_id = community_id_match.group('community_id')
 	return _get_steam_url_by_name_from_community_id(community_id)
 
-"""Returns the url_by_name value for a User from Twitch.
-"""
 def _get_twitch_url_by_name(name):
+	"""Returns the url_by_name value for a User from Twitch."""
 	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, name))
 
-"""Returns the best URL for a given User.
-"""
 def _get_user_url(url_by_id, url_by_name):
+	"""Returns the best URL for a given User."""
 	if url_by_name is not None:
 		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
 		if prefix == _USER_URL_STEAM_PREFIX:
@@ -171,13 +162,32 @@ def _get_user_url(url_by_id, url_by_name):
 	else:
 		raise ValueError('Invalid url_by_id=%s' % url_by_id)
 
-def _get_twitch_url(user):
-	if user.url_by_name is not None:
-		return '/user/twitch/%s' % name
-	prefix, twitch_id = user.url_by_id.split(_USER_URL_SEPARATOR, 1)
-	return '/user/twitch_id/%s' % twitch_id
+def _get_external_url(url_by_id, url_by_name):
+	"""Returns the best external URL for a given User."""
+	if url_by_name is not None:
+		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
+		if prefix == _USER_URL_STEAM_PREFIX:
+			# The remainder is the Steam community identifier.
+			return 'http://steamcommunity.com/id/%s' % remainder
+		elif prefix == _USER_URL_TWITCH_PREFIX:
+			# The remainder is the Twitch user name.
+			return 'http://twitch.tv/%s' % remainder
+		else:
+			raise ValueError('Invalid url_by_name=%s' % url_by_name)
+
+	prefix, remainder = url_by_id.split(_USER_URL_SEPARATOR, 1)
+	if prefix == _USER_URL_STEAM_PREFIX:
+		# The remainder is the Steam identifier.
+		return 'http://steamcommunity.com/profiles/%s' % remainder
+	else:
+		raise ValueError('Invalid url_by_id=%s' % url_by_id)
+
 
 def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
+	"""If another user has the same url_by_name value, clear it; the user logging
+	in has now "claimed ownership" of it.
+	"""
+
 	if url_by_name is not None:
 		# The url_by_name must be unique.
 		update_statement = users_table.update().where(user_class.url_by_name == url_by_name)
@@ -185,11 +195,18 @@ def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 			update_statement = update_statement.where(user_class.id != user_id)
 		session.execute(update_statement.values({user_class.url_by_name: None}))
 
-"""Called whenever a Twitch user has been authenticated and logged in.
-"""
 def twitch_user_logged_in(user_class, users_table,
 		twitch_id, name, display_name, logo, access_token,
-		configure_user=None, now=None):
+		user_class_extra_kwargs={}, now=None):
+	"""Called whenever a Twitch user has been authenticated and logged in.
+
+	The following parameters are provided by the Twitch API:
+	* twitch_id: The user's unique numerical identifier by Twitch.
+	* name: The user's unique username on Twitch.
+	* display_name: A capitalized variant of the username.
+	* logo: The profile picture of the user on Twitch.
+	* access_token: The access token returned after authenticating the user on Twitch.
+	"""
 	now = _get_now(now)
 	url_by_name = _get_twitch_url_by_name(name)
 	try:
@@ -200,9 +217,8 @@ def twitch_user_logged_in(user_class, users_table,
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
-		user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id))
-		if configure_user is not None:
-			configure_user(user)
+		user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id),
+				**user_class_extra_kwargs)
 		twitch_user.user = user
 		session.add(twitch_user)
 
@@ -218,11 +234,18 @@ def twitch_user_logged_in(user_class, users_table,
 	session.commit()
 	return twitch_user.user.id
 
-"""Called whenever a Steam user has been authenticated and logged in.
-"""
 def steam_user_logged_in(user_class, users_table,
 		steam_id, personaname, profile_url, avatar, avatar_full,
-		configure_user=None, now=None):
+		user_class_extra_kwargs={}, now=None):
+	"""Called whenever a Steam user has been authenticated and logged in.
+
+	The following parameters are provided by the Steam Web API:
+	* steam_id: The user's unique 64-bit Steam identifier.
+	* personaname: The user's optional, but unique, display name on Steam.
+	* profile_url: The unique URL of the user's Steam Community profile.
+	* avatar: The small picture on the user's Steam Community profile.
+	* avatar_full: The large picture on the user's Steam Community profile.
+	"""
 	now = _get_now(now)
 	url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
 	try:
@@ -233,9 +256,8 @@ def steam_user_logged_in(user_class, users_table,
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
-		user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id))
-		if configure_user is not None:
-			configure_user(user)
+		user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id),
+				**user_class_extra_kwargs)
 		steam_user.user = user
 		session.add(steam_user)
 	
@@ -251,9 +273,16 @@ def steam_user_logged_in(user_class, users_table,
 	session.commit()
 	return steam_user.user.id
 
-"""Like calling one() on query, but returns None instead of raising NoResultFound.
-"""
+
+def _get_now(now):
+	if now is None:
+		return datetime.utcnow()
+	return now
+
 def optional_one(query):
+	"""Like calling one() on query, but returns None instead of raising
+	NoResultFound.
+	"""
 	results = query.limit(1).all()
 	if results:
 		return results[0] 
