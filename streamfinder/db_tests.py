@@ -40,6 +40,11 @@ class AbstractFinderDbTestCase(DbTestCase):
 		url_by_name = common_db._get_steam_url_by_name_from_community_id(name)
 		return (url_by_id, url_by_name)
 
+	def _get_twitch_urls(self, twitch_id, name):
+		url_by_id = common_db._get_twitch_url_by_id(twitch_id)
+		url_by_name = common_db._get_twitch_url_by_name(name)
+		return url_by_id, url_by_name
+
 	def _assert_displayed_team(self, displayed_team,
 			team_id, name, num_stars=0, game=None, league=None):
 		"""Utility method to assert the attributes of a DisplayedTeam."""
@@ -101,7 +106,6 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(fingerprint, displayed_match.fingerprint)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_match.is_starred)
-		self.assertEqual(num_streams, len(displayed_match.streamers))
 		self.assertEqual(prev_time, displayed_match.prev_time)
 		self.assertEqual(prev_streamer_id, displayed_match.prev_streamer_id)
 		self.assertEqual(next_time, displayed_match.next_time)
@@ -165,18 +169,28 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		# Create the streamers.
 		self.streamer_twitch_id1, self.streamer_id1 = self._create_twitch_user(
 				self.streamer_name)
+		self.url_by_id1, self.url_by_name1 = self._get_twitch_urls(
+				self.streamer_twitch_id1, self.streamer_name)
 		self.streamer_name2 = 'streamer_name2'
 		self.streamer_twitch_id2, self.streamer_id2 = self._create_twitch_user(
 				self.streamer_name2)
+		self.url_by_id2, self.url_by_name2 = self._get_twitch_urls(
+				self.streamer_twitch_id2, self.streamer_name2)
 		self.streamer_name3 = 'streamer_name3'
 		self.streamer_twitch_id3, self.streamer_id3 = self._create_twitch_user(
 				self.streamer_name3)
+		self.url_by_id3, self.url_by_name3 = self._get_twitch_urls(
+				self.streamer_twitch_id3, self.streamer_name3)
 		self.streamer_name4 = 'streamer_name4'
 		self.streamer_twitch_id4, self.streamer_id4 = self._create_twitch_user(
 				self.streamer_name4)
+		self.url_by_id4, self.url_by_name4 = self._get_twitch_urls(
+				self.streamer_twitch_id4, self.streamer_name4)
 		self.streamer_name5 = 'streamer_name5'
 		self.streamer_twitch_id5, self.streamer_id5 = self._create_twitch_user(
 				self.streamer_name5)
+		self.url_by_id5, self.url_by_name5 = self._get_twitch_urls(
+				self.streamer_twitch_id5, self.streamer_name5)
 	
 	def _assert_displayed_streamer_list(self, displayed_streamer_list, num_streams=0,
 			prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None):
@@ -188,32 +202,37 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_streamer_id, displayed_streamer_list.next_streamer_id)
 
 	def _test_get_streamers_pagination(self,
-			displayed_streamers, get_next_page, get_prev_page):
+			displayed_streamers, get_next_page, get_prev_page, streamer_num_stars=0):
 		def _assert_first_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					next_name=self.streamer_name2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
-					self.streamer_id1, self.streamer_name)
-			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[1],
-					self.streamer_id2, self.streamer_name2)
+			self._assert_displayed_streamer(displayed_streamers.streamers[0],
+					self.streamer_id1, self.streamer_name, self.url_by_id1,
+					num_stars=streamer_num_stars, url_by_name=self.url_by_name1)
+			self._assert_displayed_streamer(displayed_streamers.streamers[1],
+					self.streamer_id2, self.streamer_name2, self.url_by_id2,
+					num_stars=streamer_num_stars, url_by_name=self.url_by_name2)
 
 		def _assert_second_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					prev_name=self.streamer_name3, prev_streamer_id=self.streamer_id3,
 					next_name=self.streamer_name4, next_streamer_id=self.streamer_id4)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
-					self.streamer_id3, self.streamer_name3)
-			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[1],
-					self.streamer_id4, self.streamer_name4)
+			self._assert_displayed_streamer(displayed_streamers.streamers[0],
+					self.streamer_id3, self.streamer_name3, self.url_by_id3,
+					num_stars=streamer_num_stars, url_by_name=self.url_by_name3)
+			self._assert_displayed_streamer(displayed_streamers.streamers[1],
+					self.streamer_id4, self.streamer_name4, self.url_by_id4,
+					num_stars=streamer_num_stars, url_by_name=self.url_by_name4)
 
 		def _assert_third_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=1,
 					prev_name=self.streamer_name5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_streamer_list_entry(displayed_streamers.streamers[0],
-					self.streamer_id5, self.streamer_name5)
+			self._assert_displayed_streamer(displayed_streamers.streamers[0],
+					self.streamer_id5, self.streamer_name5, self.url_by_id5,
+					num_stars=streamer_num_stars, url_by_name=self.url_by_name5)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -277,7 +296,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 
 		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
 		self._test_get_streamers_pagination(
-				displayed_streamers, _get_next_page, _get_prev_page)
+				displayed_streamers, _get_next_page, _get_prev_page, streamer_num_stars=1)
 
 	"""Tests pagination of streamers when displaying a match.
 	"""
@@ -316,45 +335,43 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 
 		def _assert_first_page():
 			self.assertEqual(2, len(displayed_match.streamers))
-			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streams=2,
+			self._assert_displayed_match_details(displayed_match,
+					match_id, self.time, self.game, self.league, self.match_fingerprint,
+					num_streams=5,
 					next_time=streamer_added_time2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_match_streamer(displayed_match.streamers[0],
-					self.streamer_id1, self.streamer_name,
-					common_db._get_twitch_url_by_id(self.streamer_twitch_id1),
-					url_by_name=common_db._get_twitch_url_by_name(self.streamer_name))
-			self._assert_displayed_match_streamer(displayed_match.streamers[1],
-					self.streamer_id2, self.streamer_name2,
-					common_db._get_twitch_url_by_id(self.streamer_twitch_id2),
-					url_by_name=common_db._get_twitch_url_by_name(self.streamer_name2))
+			self._assert_displayed_streamer(displayed_match.streamers[0],
+					self.streamer_id1, self.streamer_name, self.url_by_id1,
+					url_by_name=self.url_by_name1)
+			self._assert_displayed_streamer(displayed_match.streamers[1],
+					self.streamer_id2, self.streamer_name2, self.url_by_id2,
+					url_by_name=self.url_by_name2)
 
 		def _assert_second_page():
 			self.assertEqual(2, len(displayed_match.streamers))
-			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streams=2,
+			self._assert_displayed_match_details(displayed_match,
+					match_id, self.time, self.game, self.league, self.match_fingerprint,
+					num_streams=5,
 					prev_time=streamer_added_time3, prev_streamer_id=self.streamer_id3,
 					next_time=streamer_added_time4, next_streamer_id=self.streamer_id4)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_match_streamer(displayed_match.streamers[0],
-					self.streamer_id3, self.streamer_name3,
-					common_db._get_twitch_url_by_id(self.streamer_twitch_id3),
-					url_by_name=common_db._get_twitch_url_by_name(self.streamer_name3))
-			self._assert_displayed_match_streamer(displayed_match.streamers[1],
-					self.streamer_id4, self.streamer_name4,
-					common_db._get_twitch_url_by_id(self.streamer_twitch_id4),
-					url_by_name=common_db._get_twitch_url_by_name(self.streamer_name4))
+			self._assert_displayed_streamer(displayed_match.streamers[0],
+					self.streamer_id3, self.streamer_name3, self.url_by_id3,
+					url_by_name=self.url_by_name3)
+			self._assert_displayed_streamer(displayed_match.streamers[1],
+					self.streamer_id4, self.streamer_name4, self.url_by_id4,
+					url_by_name=self.url_by_name4)
 
 		def _assert_third_page():
 			self.assertEqual(1, len(displayed_match.streamers))
-			self._assert_displayed_match(displayed_match,
-					match_id, self.time, self.game, self.league, num_streams=1,
+			self._assert_displayed_match_details(displayed_match,
+					match_id, self.time, self.game, self.league, self.match_fingerprint,
+					num_streams=5,
 					prev_time=streamer_added_time5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
-			self._assert_displayed_match_streamer(displayed_match.streamers[0],
-					self.streamer_id5, self.streamer_name5,
-					common_db._get_twitch_url_by_id(self.streamer_twitch_id5),
-					url_by_name=common_db._get_twitch_url_by_name(self.streamer_name5))
+			self._assert_displayed_streamer(displayed_match.streamers[0],
+					self.streamer_id5, self.streamer_name5, self.url_by_id5,
+					url_by_name=self.url_by_name5)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_match = db.get_displayed_match(client_id, match_id, page_limit=2)

@@ -870,7 +870,7 @@ class DisplayedStreamer:
 		self.url_by_name = url_by_name
 
 	def __repr__(self):
-		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name)' % (
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.num_stars,
