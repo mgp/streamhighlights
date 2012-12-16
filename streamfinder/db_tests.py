@@ -35,6 +35,11 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.time = datetime(2012, 11, 3, 18, 0, 0)
 		self.now = datetime(2012, 11, 5, 12, 0, 0)
 
+	def _get_steam_urls(self, steam_id, name):
+		url_by_id = common_db._get_steam_url_by_id(steam_id)
+		url_by_name = common_db._get_steam_url_by_name_from_community_id(name)
+		return (url_by_id, url_by_name)
+
 	def _assert_displayed_team(self, displayed_team,
 			team_id, name, num_stars=0, game=None, league=None):
 		"""Utility method to assert the attributes of a DisplayedTeam."""
@@ -548,9 +553,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	def _test_get_displayed_calendar_pagination(self,
 			displayed_calendar, get_next_page, get_prev_page):
 		def _assert_next_match():
-			self._assert_displayed_calendar_match(displayed_calendar.next_match,
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
+			next_match = displayed_calendar.next_match
+			self._assert_displayed_match(next_match, self.match_id1,
+					self.time, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(next_match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(next_match.team2, self.team2_id, self.team2_name)
 
 		def _assert_first_page():
 			self.assertEqual(2, len(displayed_calendar.matches))
@@ -559,12 +566,16 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					next_time=self.time2, next_match_id=self.match_id2)
 			_assert_next_match()
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
-			self._assert_displayed_calendar_match(displayed_calendar.matches[1],
-					self.match_id2, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time2, self.game, self.league, num_streams=1)
+			match = displayed_calendar.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id1, self.time, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
+			match = displayed_calendar.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id2, self.time2, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		def _assert_second_page():
 			self.assertEqual(2, len(displayed_calendar.matches))
@@ -574,12 +585,16 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					next_time=self.time4, next_match_id=self.match_id4)
 			_assert_next_match()
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id3, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time3, self.game, self.league, num_streams=1)
-			self._assert_displayed_calendar_match(displayed_calendar.matches[1],
-					self.match_id4, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time4, self.game, self.league, num_streams=1)
+			match = displayed_calendar.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id3, self.time3, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_calendar.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id4, self.time4, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
 			self.assertEqual(1, len(displayed_calendar.matches))
@@ -588,9 +603,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			_assert_next_match()
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_calendar_match(displayed_calendar.matches[0],
-					self.match_id5, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time5, self.game, self.league, num_streams=1)
+			match = displayed_calendar.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id5, self.time5, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -610,15 +627,14 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	def test_get_displayed_viewer_calendar_pagination(self):
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
-		# Add stars for both teams.
-		db.add_star_team(client_id, self.team1_id)
-		db.add_star_team(client_id, self.team2_id)
 
 		# Create the streaming user, who streams all matches.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		for match_id in (
 				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
 			db.add_stream_match(streamer_id, match_id)
+		# Star the streamer.
+		db.add_star_streamer(client_id, streamer_id)
 
 		def _get_next_page(displayed_calendar):
 			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
@@ -670,6 +686,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the streaming user, who streams all matches.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
+		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 		for match_id in (
 				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
 			db.add_stream_match(streamer_id, match_id)
@@ -685,41 +702,51 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					prev_match_id=displayed_streamer.prev_match_id)
 
 		def _assert_first_page():
-			self.assertEqual(2, len(displayed_streamer.matches))
-			self._assert_displayed_streamer(displayed_streamer,
-					streamer_id, self.streamer_name, num_matches=5,
+			self._assert_displayed_streamer_details(displayed_streamer,
+					streamer_id, self.streamer_name, url_by_id,
+					url_by_name=url_by_name, num_matches=2,
 					next_time=self.time2, next_match_id=self.match_id2)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_streamer_match(displayed_streamer.matches[0],
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league, num_streams=1)
-			self._assert_displayed_streamer_match(displayed_streamer.matches[1],
-					self.match_id2, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time2, self.game, self.league, num_streams=1)
+			match = displayed_streamer.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id1, self.time, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
+			match = displayed_streamer.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id2, self.time2, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		def _assert_second_page():
-			self.assertEqual(2, len(displayed_streamer.matches))
-			self._assert_displayed_streamer(displayed_streamer,
-					streamer_id, self.streamer_name, num_matches=5,
+			self._assert_displayed_streamer_details(displayed_streamer,
+					streamer_id, self.streamer_name, url_by_id,
+					url_by_name=url_by_name, num_matches=2,
 					prev_time=self.time3, prev_match_id=self.match_id3,
 					next_time=self.time4, next_match_id=self.match_id4)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_streamer_match(displayed_streamer.matches[0],
-					self.match_id3, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time3, self.game, self.league, num_streams=1)
-			self._assert_displayed_streamer_match(displayed_streamer.matches[1],
-					self.match_id4, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time4, self.game, self.league, num_streams=1)
+			match = displayed_streamer.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id3, self.time3, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_streamer.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id4, self.time4, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
-			self.assertEqual(1, len(displayed_streamer.matches))
-			self._assert_displayed_streamer(displayed_streamer,
-					streamer_id, self.streamer_name, num_matches=5,
+			self._assert_displayed_streamer_details(displayed_streamer,
+					streamer_id, self.streamer_name, url_by_id,
+					url_by_name=url_by_name, num_matches=1,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_streamer_match(displayed_streamer.matches[0],
-					self.match_id5, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time5, self.game, self.league, num_streams=1)
+			match = displayed_streamer.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id5, self.time5, num_streams=1, game=self.game, league=self.league)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2)
@@ -752,36 +779,46 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					prev_match_id=displayed_team.prev_match_id)
 	
 		def _assert_first_page():
-			self.assertEqual(2, len(displayed_team.matches))
-			self._assert_displayed_team(displayed_team,
-					self.team1_id, self.team1_name, self.game, self.league, num_matches=5,
+			self._assert_displayed_team_details(displayed_team,
+					self.team1_id, self.team1_name, self.game, self.league,
+					self.team1_fingerprint, num_matches=2,
 					next_time=self.time2, next_match_id=self.match_id2)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_team_match(displayed_team.matches[0],
-					self.team2_id, self.team2_name, self.match_id1, self.time)
-			self._assert_displayed_team_match(displayed_team.matches[1],
-					self.team3_id, self.team3_name, self.match_id2, self.time2)
+			match = displayed_team.matches[0]
+			self._assert_displayed_match(match, self.match_id1, self.time)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
+			match = displayed_team.matches[1]
+			self._assert_displayed_match(match, self.match_id2, self.time2)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		def _assert_second_page():		
-			self.assertEqual(2, len(displayed_team.matches))
-			self._assert_displayed_team(displayed_team,
-					self.team1_id, self.team1_name, self.game, self.league, num_matches=5,
+			self._assert_displayed_team_details(displayed_team,
+					self.team1_id, self.team1_name, self.game, self.league,
+					self.team1_fingerprint, num_matches=2,
 					prev_time=self.time3, prev_match_id=self.match_id3,
 					next_time=self.time4, next_match_id=self.match_id4)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_team_match(displayed_team.matches[0],
-					self.team3_id, self.team3_name, self.match_id3, self.time3)
-			self._assert_displayed_team_match(displayed_team.matches[1],
-					self.team2_id, self.team2_name, self.match_id4, self.time4)
+			match = displayed_team.matches[0]
+			self._assert_displayed_match(match, self.match_id3, self.time3)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_team.matches[1]
+			self._assert_displayed_match(match, self.match_id4, self.time4)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
-			self.assertEqual(1, len(displayed_team.matches))
-			self._assert_displayed_team(displayed_team,
-					self.team1_id, self.team1_name, self.game, self.league, num_matches=5,
+			self._assert_displayed_team_details(displayed_team,
+					self.team1_id, self.team1_name, self.game, self.league,
+					self.team1_fingerprint, num_matches=1,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_team_match(displayed_team.matches[0],
-					self.team3_id, self.team3_name, self.match_id5, self.time5)
+			match = displayed_team.matches[0]
+			self._assert_displayed_match(match, self.match_id5, self.time5)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_team = db.get_displayed_team(client_id, self.team1_id, page_limit=2)
@@ -797,19 +834,6 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		displayed_team = _get_prev_page()
 		_assert_first_page()
 
-	def _assert_displayed_match_list_entry(self, displayed_match_list_entry,
-			match_id, team1_id, team1_name, team2_id, team2_name,
-			time, game, league):
-		# Begin required arguments.
-		self.assertEqual(match_id, displayed_match_list_entry.match_id)
-		self.assertEqual(team1_id, displayed_match_list_entry.team1_id)
-		self.assertEqual(team1_name, displayed_match_list_entry.team1_name)
-		self.assertEqual(team2_id, displayed_match_list_entry.team2_id)
-		self.assertEqual(team2_name, displayed_match_list_entry.team2_name)
-		self.assertEqual(time, displayed_match_list_entry.time)
-		self.assertEqual(game, displayed_match_list_entry.game)
-		self.assertEqual(league, displayed_match_list_entry.league)
-
 	def _assert_displayed_match_list(self, displayed_match_list, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		# Begin optional arguments.
@@ -820,37 +844,52 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_match_id, displayed_match_list.next_match_id)
 
 	def _test_get_matches_pagination(self,
-			displayed_matches, get_next_page, get_prev_page):
+			displayed_matches, get_next_page, get_prev_page, match_num_stars=0):
 		def _assert_first_page():
 			self._assert_displayed_match_list(displayed_matches, num_matches=2,
 					next_time=self.time2, next_match_id=self.match_id2)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
-					self.match_id1, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time, self.game, self.league)
-			self._assert_displayed_match_list_entry(displayed_matches.matches[1],
-					self.match_id2, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time2, self.game, self.league)
+			match = displayed_matches.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id1, self.time, game=self.game, league=self.league,
+					num_stars=match_num_stars)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
+			match = displayed_matches.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id2, self.time2, game=self.game, league=self.league,
+					num_stars=match_num_stars)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		def _assert_second_page():
 			self._assert_displayed_match_list(displayed_matches, num_matches=2,
 					prev_time=self.time3, prev_match_id=self.match_id3,
 					next_time=self.time4, next_match_id=self.match_id4)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
-					self.match_id3, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time3, self.game, self.league)
-			self._assert_displayed_match_list_entry(displayed_matches.matches[1],
-					self.match_id4, self.team1_id, self.team1_name, self.team2_id, self.team2_name,
-					self.time4, self.game, self.league)
+			match = displayed_matches.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id3, self.time3, game=self.game, league=self.league,
+					num_stars=match_num_stars)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_matches.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id4, self.time4, game=self.game, league=self.league,
+					num_stars=match_num_stars)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
 			self._assert_displayed_match_list(displayed_matches, num_matches=1,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
-			self._assert_displayed_match_list_entry(displayed_matches.matches[0],
-					self.match_id5, self.team1_id, self.team1_name, self.team3_id, self.team3_name,
-					self.time5, self.game, self.league)
+			match = displayed_matches.matches[0]
+			self._assert_displayed_match(match,
+					self.match_id5, self.time5, game=self.game, league=self.league,
+					num_stars=match_num_stars)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -911,15 +950,10 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		displayed_matches = db.get_starred_matches(client_id, page_limit=2)
 		self._test_get_matches_pagination(
-				displayed_matches, _get_next_page, _get_prev_page)
+				displayed_matches, _get_next_page, _get_prev_page, match_num_stars=1)
 
 
 class FinderDbTestCase(AbstractFinderDbTestCase):
-	def _get_steam_urls(self, steam_id, name):
-		url_by_id = common_db._get_steam_url_by_id(steam_id)
-		url_by_name = common_db._get_steam_url_by_name_from_community_id(name)
-		return (url_by_id, url_by_name)
-
 	"""Test that fails to create a match because one team identifier is unknown.
 	"""
 	def test_add_match_unknown_team(self):
