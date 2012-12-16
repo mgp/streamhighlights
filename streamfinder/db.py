@@ -1056,11 +1056,14 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 	return (items, prev_col1, prev_col2, next_col1, next_col2)
 
 
-"""Returns a DisplayedCalendarMatch from the given match and teams.
+def _get_displayed_match_team(team):
+	return DisplayedTeam(team.id, team.name, team.num_stars)
+
+"""Returns a DisplayedMatch from the given match and teams.
 """
-def _get_displayed_calendar_match(match, team1, team2):
-	displayed_team1 = DisplayedTeam(team1.id, team1.name, team1.num_stars)
-	displayed_team2 = DisplayedTeam(team2.id, team2.name, team2.num_stars)
+def _get_displayed_match(match, team1, team2):
+	displayed_team1 = _get_displayed_match_team(team1)
+	displayed_team2 = _get_displayed_match_team(team2)
 	return DisplayedMatch(match.id,
 			displayed_team1,
 			displayed_team2,
@@ -1086,7 +1089,7 @@ def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 		return None
 
 	next_match_id, next_match, next_match_team1, next_match_team2 = result
-	return _get_displayed_calendar_match(
+	return _get_displayed_match(
 			next_match, next_match_team1, next_match_team2)
 
 """A paginator for entries on the client's viewing calendar.
@@ -1139,7 +1142,7 @@ def get_displayed_viewer_calendar(client_id,
 
 	# Return the calendar.
 	return DisplayedCalendar(first_match,
-			tuple(_get_displayed_calendar_match(match, team1, team2)
+			tuple(_get_displayed_match(match, team1, team2)
 					for match, team1, team2 in matches),
 			prev_time,
 			prev_match_id,
@@ -1163,7 +1166,7 @@ def _get_next_streamer_match(client_id, team_alias1, team_alias2):
 		return None
 
 	next_match_id, next_match, next_match_team1, next_match_team2 = result
-	return _get_displayed_calendar_match(
+	return _get_displayed_match(
 			next_match, next_match_team1, next_match_team2)
 
 """Returns a DisplayedCalendar containing calendar entries for matches that the
@@ -1189,7 +1192,7 @@ def get_displayed_streamer_calendar(client_id,
 
 	# Return the calendar.
 	return DisplayedCalendar(first_match,
-			tuple(_get_displayed_calendar_match(match, team1, team2)
+			tuple(_get_displayed_match(match, team1, team2)
 					for match, team1, team2 in matches),
 			prev_time,
 			prev_match_id,
@@ -1360,25 +1363,13 @@ class AllStreamersPaginator(_StreamersPaginator):
 		return tuple(streamers_query)
 
 
-def _get_displayed_match_list_entry(match, team1, team2):
-	displayed_team1 = DisplayedTeam(team1.id, team1.name, team1.num_stars)
-	displayed_team2 = DisplayedTeam(team2.id, team2.name, team2.num_stars)
-	return DisplayedMatch(match.id,
-			displayed_team1,
-			displayed_team2,
-			match.time,
-			match.num_stars,
-			match.num_streams,
-			match.game,
-			match.league)
-
 def _get_match_list(
 		prev_time, prev_match_id, next_time, next_match_id, page_limit,
 		paginator):
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	return DisplayedMatchList(
-			tuple(_get_displayed_match_list_entry(match, team1, team2)
+			tuple(_get_displayed_match(match, team1, team2)
 				for match, team1, team2 in matches),
 			prev_time,
 			prev_match_id,
@@ -1405,7 +1396,7 @@ def get_all_matches(client_id,
 			_ALL_MATCHES_PAGINATOR)
 
 
-def _get_team_list_entry(team):
+def _get_displayed_team(team):
 	return DisplayedTeam(team.id, team.name, team.num_stars, team.game, team.league)
 
 def _get_team_list(
@@ -1414,7 +1405,7 @@ def _get_team_list(
 	teams, prev_name, prev_team_id, next_name, next_team_id = _paginate(
 			paginator, prev_name, prev_team_id, next_name, next_team_id, page_limit)
 	return DisplayedTeamList(
-			tuple(_get_team_list_entry(team) for team in teams),
+			tuple(_get_displayed_team(team) for team in teams),
 			prev_name,
 			prev_team_id,
 			next_name,
@@ -1440,7 +1431,8 @@ def get_all_teams(client_id,
 			_ALL_TEAMS_PAGINATOR)
 
 
-def _get_streamer_list_entry(streamer):
+"""Returns a DisplayedStreamer for the given streamer."""
+def _get_displayed_streamer(streamer):
 	return DisplayedStreamer(streamer.id,
 			streamer.name,
 			streamer.num_stars,
@@ -1454,7 +1446,7 @@ def _get_streamer_list(
 	streamers, prev_name, prev_streamer_id, next_name, next_streamer_id = _paginate(
 			paginator, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit)
 	return DisplayedStreamerList(
-			tuple(_get_streamer_list_entry(streamer) for streamer in streamers),
+			tuple(_get_displayed_streamer(streamer) for streamer in streamers),
 			prev_name,
 			prev_streamer_id,
 			next_name,
@@ -1480,17 +1472,6 @@ def get_all_streamers(client_id,
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
 			_ALL_STREAMERS_PAGINATOR)
 
-
-def _get_displayed_match_team(team):
-	return DisplayedTeam(team.id, team.name, team.num_stars)
-
-def _get_displayed_match_streamer(streamer):
-	return DisplayedStreamer(streamer.id,
-			streamer.name,
-			streamer.num_stars,
-			streamer.image_url_small,
-			streamer.url_by_id,
-			streamer.url_by_name)
 
 """A paginator for streaming users of a match.
 """
@@ -1568,7 +1549,7 @@ def get_displayed_match(client_id, match_id,
 			match.league,
 			match.fingerprint,
 			is_starred,
-			tuple(_get_displayed_match_streamer(streamer) for added, streamer in streamers),
+			tuple(_get_displayed_streamer(streamer) for added, streamer in streamers),
 			prev_time,
 			prev_streamer_id,
 			next_time,
@@ -1654,18 +1635,6 @@ def get_displayed_team(client_id, team_id,
 			next_match_id)
 
 
-def _get_displayed_streamer_match(match, team1, team2):
-	displayed_team1 = DisplayedTeam(team1.id, team1.name, team1.num_stars)
-	displayed_team2 = DisplayedTeam(team2.id, team2.name, team2.num_stars)
-	return DisplayedMatch(match.id,
-			displayed_team1,
-			displayed_team2,
-			match.time,
-			match.num_stars,
-			match.num_streams,
-			match.game,
-			match.league)
-
 """A paginator for matches streamed by a user.
 """
 class StreamedMatchesPaginator:
@@ -1727,7 +1696,7 @@ def get_displayed_streamer(client_id, streamer_id,
 			streamer.url_by_id,
 			streamer.url_by_name,
 			is_starred,
-			tuple(_get_displayed_streamer_match(match, team1, team2)
+			tuple(_get_displayed_match(match, team1, team2)
 					for match, team1, team2 in matches),
 			prev_time,
 			prev_match_id,
