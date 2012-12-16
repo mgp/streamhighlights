@@ -19,15 +19,13 @@ class DbTestCase(unittest.TestCase):
 		db.drop_all()
 		unittest.TestCase.tearDown(self)
 
-	def _configure_twitch_user(self, user):
-		user.can_stream = True
-
 	def _create_steam_user(self, name):
 		"""Utility method for creating a Steam user."""
 		steam_id = self._next_steam_id
 		self._next_steam_id += 1
+		profile_url = 'http://steamcommunity.com/id/%s' % name
 		user_id = common_db.steam_user_logged_in(
-				db.User, db.Users, steam_id, name, None, None, None)
+				db.User, db.Users, steam_id, name, profile_url, None, None)
 		return steam_id, user_id
 
 	def _create_twitch_user(self, name):

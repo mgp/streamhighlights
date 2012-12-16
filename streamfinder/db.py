@@ -777,10 +777,11 @@ streamers.
 """
 class DisplayedMatchDetails(DisplayedMatch):
 	def __init__(self, match_id, team1, team2, time, num_stars, num_streams,
-			game, league, is_starred, streamers,
+			game, league, fingerprint, is_starred, streamers,
 			prev_time, prev_streamer_id, next_time, next_streamer_id):
 		DisplayedMatch.__init__(self, match_id, team1, team2, time, num_stars, num_streams,
 				game, league)
+		self.fingerprint = fingerprint
 		self.is_starred = is_starred
 		self.streamers = streamers
 		self.prev_time = prev_time
@@ -789,7 +790,7 @@ class DisplayedMatchDetails(DisplayedMatch):
 		self.next_streamer_id = next_streamer_id
 
 	def __repr__(self):
-		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, league=%r, is_starred=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
+		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, league=%r, fingerprint=%r, is_starred=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
@@ -798,6 +799,7 @@ class DisplayedMatchDetails(DisplayedMatch):
 				self.num_streams,
 				self.game,
 				self.league,
+				self.fingerprint,
 				self.is_starred,
 				self.streamers,
 				self.prev_time,
@@ -829,10 +831,11 @@ class DisplayedTeam:
 Includes whether the client has starred the team, and all of the team's matches.
 """
 class DisplayedTeamDetails(DisplayedTeam):
-	def __init__(self, team_id, name, num_stars, game, league,
+	def __init__(self, team_id, name, num_stars, game, league, fingerprint,
 			is_starred, matches,
 			prev_time, prev_match_id, next_time, next_match_id):
 		DisplayedTeam.__init__(self, team_id, name, num_stars, game, league)
+		self.fingerprint = fingerprint
 		self.is_starred = is_starred
 		self.matches = matches
 		self.prev_time = prev_time
@@ -841,12 +844,13 @@ class DisplayedTeamDetails(DisplayedTeam):
 		self.next_match_id = next_match_id
 
 	def __repr__(self):
-		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, game=%r, league=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, game=%r, league=%r, fingerprint=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.team_id,
 				self.name,
 				self.num_stars,
 				self.game,
 				self.league,
+				self.fingerprint,
 				self.is_starred,
 				self.matches,
 				self.prev_time,
@@ -1562,6 +1566,7 @@ def get_displayed_match(client_id, match_id,
 			match.num_streams,
 			match.game,
 			match.league,
+			match.fingerprint,
 			is_starred,
 			tuple(_get_displayed_match_streamer(streamer) for added, streamer in streamers),
 			prev_time,
@@ -1639,6 +1644,7 @@ def get_displayed_team(client_id, team_id,
 			team.num_stars,
 			team.game,
 			team.league,
+			team.fingerprint,
 			is_starred,
 			tuple(_get_displayed_team_match(match, opponent_team)
 					for match, opponent_team in matches),

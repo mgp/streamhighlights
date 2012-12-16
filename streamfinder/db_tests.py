@@ -28,12 +28,9 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.client_name = 'client_name'
 		self.streamer_name = 'streamer_name'
 		self.team1_name = 'team1_name'
-		self.team1_url = 'team1_url'
 		self.team1_fingerprint = 'team1_fingerprint'
 		self.team2_name = 'team2_name'
-		self.team2_url = 'team2_url'
 		self.team2_fingerprint = 'team2_fingerprint'
-		self.match_url = 'match_url'
 		self.match_fingerprint = 'match_fingerprint'
 		self.time = datetime(2012, 11, 3, 18, 0, 0)
 		self.now = datetime(2012, 11, 5, 12, 0, 0)
@@ -51,7 +48,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(league, displayed_team.league)
 
 	def _assert_displayed_team_details(self, displayed_team,
-			team_id, name, game, league, external_url,
+			team_id, name, game, league, fingerprint,
 			num_stars=0, is_starred=False, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		"""Utility method to assert the attributes of a DisplayedTeamDetails.
@@ -61,7 +58,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 
 		self._assert_displayed_team(displayed_team,
 				team_id, name, num_stars, game, league)
-		self.assertEqual(external_url, displayed_team.external_url)
+		self.assertEqual(fingerprint, displayed_team.fingerprint)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_team.is_starred)
 		self.assertEqual(num_matches, len(displayed_team.matches))
@@ -86,7 +83,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(league, displayed_match.league)
 
 	def _assert_displayed_match_details(self, displayed_match,
-			match_id, time, game, league, external_url,
+			match_id, time, game, league, fingerprint,
 			num_stars=0, num_streams=0, is_starred=False,
 			prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None):
 		"""Utility method to assert the properties of a DisplayedMatchDetails.
@@ -96,7 +93,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 
 		self._assert_displayed_match(displayed_match,
 				match_id, time, num_stars, num_streams, game, league)
-		self.assertEqual(external_url, displayed_match.external_url)
+		self.assertEqual(fingerprint, displayed_match.fingerprint)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_match.is_starred)
 		self.assertEqual(num_streams, len(displayed_match.streamers))
@@ -135,7 +132,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(url_by_name, displayed_streamer.url_by_name)
 
 	def _assert_displayed_streamer_details(self, displayed_streamer,
-			streamer_id, name, url_by_id, external_url,
+			streamer_id, name, url_by_id,
 			num_stars=0, image_url=None, url_by_name=None, is_starred=False, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		"""Utility method to assert the properties of a DisplayedMatchDetails.
@@ -145,7 +142,6 @@ class AbstractFinderDbTestCase(DbTestCase):
 
 		self._assert_displayed_streamer(displayed_streamer,
 				streamer_id, name, url_by_id, num_stars, image_url, url_by_name)
-		self.assertEqual(external_url, displayed_streamer.external_url)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_streamer.is_starred)
 		self.assertEqual(num_matches, len(displayed_streamer.matches))
@@ -291,11 +287,11 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Each streamer is streaming the match.
 		streamer_added_time1 = self.now + timedelta(minutes=1)
@@ -384,9 +380,9 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		self.team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		self.team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		self.team3_name = 'team3_name'
 		self.team3_url = 'team3_url'
 		self.team3_fingerprint = 'team3_fingerprint'
@@ -518,9 +514,9 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		self.team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		self.team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		self.team3_name = 'team3_name'
 		self.team3_url = 'team3_url'
 		self.team3_fingerprint = 'team3_fingerprint'
@@ -534,24 +530,20 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.time5 = self.time4 + timedelta(days=1)
 
 		# Create the matches.
-		self.match_url2 = 'match_url2'
-		self.match_url3 = 'match_url3'
-		self.match_url4 = 'match_url4'
-		self.match_url5 = 'match_url5'
 		self.match_fingerprint2 = 'match_fingerprint2'
 		self.match_fingerprint3 = 'match_fingerprint3'
 		self.match_fingerprint4 = 'match_fingerprint4'
 		self.match_fingerprint5 = 'match_fingerprint5'
 		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.league, self.match_url, self.match_fingerprint, now=None)
+				self.game, self.league, self.match_fingerprint, now=None)
 		self.match_id2 = db.add_match(self.team1_id, self.team3_id, self.time2,
-				self.game, self.league, self.match_url2, self.match_fingerprint2, now=None)
+				self.game, self.league, self.match_fingerprint2, now=None)
 		self.match_id3 = db.add_match(self.team1_id, self.team3_id, self.time3,
-				self.game, self.league, self.match_url3, self.match_fingerprint3, now=None)
+				self.game, self.league, self.match_fingerprint3, now=None)
 		self.match_id4 = db.add_match(self.team1_id, self.team2_id, self.time4,
-				self.game, self.league, self.match_url4, self.match_fingerprint4, now=None)
+				self.game, self.league, self.match_fingerprint4, now=None)
 		self.match_id5 = db.add_match(self.team1_id, self.team3_id, self.time5,
-				self.game, self.league, self.match_url5, self.match_fingerprint5, now=None)
+				self.game, self.league, self.match_fingerprint5, now=None)
 
 	def _test_get_displayed_calendar_pagination(self,
 			displayed_calendar, get_next_page, get_prev_page):
@@ -646,10 +638,9 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_streamer_calendar_pagination(self):
 		# Add a match that will not be streamed.
-		match_url6 = 'match_url6'
 		match_fingerprint6 = 'match_fingerprint6'
 		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.league, match_url6, match_fingerprint6, now=None)
+				self.game, self.league, match_fingerprint6, now=None)
 
 		# Create the client, who streams the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -898,10 +889,9 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_starred_matches_pagination(self):
 		# Add a match that will not be streamed.
-		match_url6 = 'match_url6'
 		match_fingerprint6 = 'match_fingerprint6'
 		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.league, match_url6, match_fingerprint6, now=None)
+				self.game, self.league, match_fingerprint6, now=None)
 
 		# Create the client, who stars the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -930,13 +920,13 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	def test_add_match_unknown_team(self):
 		missing_team2_id = 'missing_team2_id'
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_match(team1_id, missing_team2_id, self.time, self.game, self.league,
-					self.match_url, self.match_fingerprint, now=self.now)
+					self.match_fingerprint, now=self.now)
 
 	"""Test that fails to star a match because the client identifier is unknown.
 	"""
@@ -944,11 +934,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		missing_client_id = 'missing_client_id'
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_match(missing_client_id, match_id, now=self.now)
@@ -969,7 +959,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		missing_client_id = 'missing_client_id'
 		# Create the team.
 		team_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 	
 		with self.assertRaises(common_db.DbException):
 			db.add_star_team(missing_client_id, team_id, now=self.now)
@@ -1011,11 +1001,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Add a star for the match.
 		db.add_star_match(client_id, match_id, now=self.now)
@@ -1080,11 +1070,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1137,11 +1127,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Add a star for team2.
 		db.add_star_team(client_id, team2_id, now=self.now)
@@ -1198,11 +1188,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1295,11 +1285,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1408,11 +1398,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -1439,11 +1429,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -1469,11 +1459,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Add a star for the match.
 		db.add_star_match(client_id, match_id, now=self.now)
 
@@ -1527,23 +1517,21 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		updated_team_name = 'updated_name'
 		updated_game = 'updated_game'
 		updated_league = 'updated_league'
-		updated_team_url = 'updated_team_url'
 
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the team.
 		team_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 
 		# Update the team name.
 		updated_team_id = db.add_team(
-				updated_team_name, updated_game, updated_league, updated_team_url,
-				self.team1_fingerprint)
+				updated_team_name, updated_game, updated_league, self.team1_fingerprint)
 		# Assert that only the name was updated.
 		self.assertEqual(team_id, updated_team_id)
 		displayed_team = db.get_displayed_team(client_id, team_id)
 		self._assert_displayed_team_details(displayed_team,
-				team_id, updated_team_name, self.game, self.league, self.team1_url)
+				team_id, updated_team_name, self.game, self.league, self.team1_fingerprint)
 
 	"""Test that fails to add a duplicate of an existing match.
 	"""
@@ -1551,28 +1539,27 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		updated_time = self.time + timedelta(hours=1)
 		updated_game = 'updated_game'
 		updated_league = 'updated_league'
-		updated_match_url = 'updated_match_url'
 
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 		# Create the teams.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		# Create the match.
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 
 		# Attempt to add the match again.
 		updated_match_id = db.add_match(team1_id, team2_id,
-				updated_time, updated_game, updated_league, updated_match_url,
-				self.match_fingerprint, now=None)
+				updated_time, updated_game, updated_league, self.match_fingerprint,
+				now=None)
 		# Assert that this had no effect.
 		self.assertEqual(match_id, updated_match_id)
 		displayed_match = db.get_displayed_match(client_id, match_id)
 		self._assert_displayed_match_details(displayed_match,
-				match_id, self.time, self.game, self.league, self.match_url)
+				match_id, self.time, self.game, self.league, self.match_fingerprint)
 
 	"""Test that clients see their own stars for matches.
 	"""
@@ -1585,18 +1572,17 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
-		match_url2 = 'match_url2'
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
-				match_url2, match_fingerprint2, now=None)
+				match_fingerprint2, now=None)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1612,14 +1598,14 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the first match has a star by the first user.
 		displayed_match = db.get_displayed_match(client_id1, match_id1)
 		self._assert_displayed_match_details(displayed_match,
-				match_id1, self.time, self.game, self.league, self.match_url,
+				match_id1, self.time, self.game, self.league, self.match_fingerprint,
 				num_stars=1, num_streams=1, is_starred=True)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the second match has no star by the first user.
 		displayed_match = db.get_displayed_match(client_id1, match_id2)
 		self._assert_displayed_match_details(displayed_match,
-				match_id2, time2, self.game, self.league, match_url2,
+				match_id2, time2, self.game, self.league, match_fingerprint2,
 				num_stars=1, num_streams=1)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
@@ -1627,14 +1613,14 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the first match has no star by the second user.
 		displayed_match = db.get_displayed_match(client_id2, match_id1)
 		self._assert_displayed_match_details(displayed_match,
-				match_id1, self.time, self.game, self.league, self.match_url,
+				match_id1, self.time, self.game, self.league, self.match_fingerprint,
 				num_stars=1, num_streams=1)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the second match has a star by the second user.
 		displayed_match = db.get_displayed_match(client_id2, match_id2)
 		self._assert_displayed_match_details(displayed_match,
-				match_id2, time2, self.game, self.league, match_url2,
+				match_id2, time2, self.game, self.league, match_fingerprint2,
 				num_stars=1, num_streams=1, is_starred=True)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
@@ -1670,9 +1656,9 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		team3_name = 'team3_name'
 		team3_url = 'team3_url'
 		team3_fingerprint = 'team3_fingerprint'
@@ -1681,13 +1667,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team3_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
-		match_url2 = 'match_url2'
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team2_id, team3_id, time2, self.game, self.league,
-				match_url2, match_fingerprint2, now=None)
+				match_fingerprint2, now=None)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1703,23 +1688,23 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the first team has a star by the first user.
 		displayed_team = db.get_displayed_team(client_id1, team1_id)
 		self._assert_displayed_team_details(displayed_team,
-				team1_id, self.team1_name, self.game, self.league, self.team1_url,
+				team1_id, self.team1_name, self.game, self.league, self.team1_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
 		# Assert that the second team has no star by the first user.
 		displayed_team = db.get_displayed_team(client_id1, team2_id)
 		self._assert_displayed_team_details(displayed_team,
-				team2_id, self.team2_name, self.game, self.league, self.team2_url,
+				team2_id, self.team2_name, self.game, self.league, self.team2_fingerprint,
 				num_stars=1, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
 		displayed_team = db.get_displayed_team(client_id2, team1_id)
 		self._assert_displayed_team_details(displayed_team,
-				team1_id, self.team1_name, self.game, self.league, self.team1_url,
+				team1_id, self.team1_name, self.game, self.league, self.team1_fingerprint,
 				num_stars=1, num_matches=1)
 		# Assert that the second team has a star by the second user.
 		displayed_team = db.get_displayed_team(client_id2, team2_id)
 		self._assert_displayed_team_details(displayed_team,
-				team2_id, self.team2_name, self.game, self.league, self.team2_url,
+				team2_id, self.team2_name, self.game, self.league, self.team2_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
@@ -1744,6 +1729,11 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_stars=1)
 		self._assert_displayed_team(next_match.team2, team3_id, team3_name)
 
+	def _get_steam_urls(self, steam_id, name):
+		url_by_id = common_db._get_steam_url_by_id(steam_id)
+		url_by_name = common_db._get_steam_url_by_name_from_community_id(name)
+		return (url_by_id, url_by_name)
+
 	"""Test that clients see their own stars for streamers.
 	"""
 	def test_client_stars_streamers(self):
@@ -1755,25 +1745,27 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
-		match_url2 = 'match_url2'
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
-				match_url2, match_fingerprint2, now=None)
+				match_fingerprint2, now=None)
 
 		# Create the first streaming user and stream the first match.
 		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
+		url_by_id1, url_by_name1 = self._get_steam_urls(
+				streamer_steam_id1, self.streamer_name)
 		db.add_stream_match(streamer_id1, match_id1)
 		# Create the second streaming user and stream the second match.
 		streamer_name2 = 'streamer_name2'
 		streamer_steam_id2, streamer_id2 = self._create_steam_user(streamer_name2)
+		url_by_id2, url_by_name2 = self._get_steam_urls(streamer_steam_id2, streamer_name2)
 		db.add_stream_match(streamer_id2, match_id2)
 
 		# The first user adds a star for the first streaming user.
@@ -1784,24 +1776,24 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Assert that the first streamer has a star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
 		self._assert_displayed_streamer_details(displayed_streamer,
-				streamer_id1, self.streamer_name, 'url_by_id', 'external_url',
-				num_stars=1, is_starred=True, num_matches=1)
+				streamer_id1, self.streamer_name, url_by_id1,
+				num_stars=1, url_by_name=url_by_name1, is_starred=True, num_matches=1)
 		# Assert that the second streamer has no star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
 		self._assert_displayed_streamer_details(displayed_streamer,
-				streamer_id2, streamer_name2, 'url_by_id', 'external_url',
-				num_stars=1, num_matches=1)
+				streamer_id2, streamer_name2, url_by_id2,
+				num_stars=1, url_by_name=url_by_name2, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
 		self._assert_displayed_streamer_details(displayed_streamer,
-				streamer_id1, self.streamer_name, 'url_by_id', 'external_url',
-				num_stars=1, num_matches=1)
+				streamer_id1, self.streamer_name, url_by_id1,
+				num_stars=1, url_by_name=url_by_name1, num_matches=1)
 		# Assert that the second team has a star by the second user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
 		self._assert_displayed_streamer_details(displayed_streamer,
-				streamer_id2, streamer_name2, 'url_by_id', 'external_url',
-				num_stars=1, is_starred=True, num_matches=1)
+				streamer_id2, streamer_name2, url_by_id2,
+				num_stars=1, url_by_name=url_by_name2, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
@@ -1818,7 +1810,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
-		self._assert_displayed_calendar_match(next_match, match_id2,
+		self._assert_displayed_match(next_match, match_id2,
 				time2, num_streams=1, game=self.game, league=self.league)
 		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
@@ -1834,24 +1826,26 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the teams.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
-				self.team1_url, self.team1_fingerprint)
+				self.team1_fingerprint)
 		team2_id = db.add_team(self.team2_name, self.game, self.league,
-				self.team2_url, self.team2_fingerprint)
+				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.league,
-				self.match_url, self.match_fingerprint, now=None)
+				self.match_fingerprint, now=None)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
-		match_url2 = 'match_url2'
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.league,
-				match_url2, match_fingerprint2, now=None)
+				match_fingerprint2, now=None)
 
 		# Create the first streaming user.
 		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
+		url_by_id1, url_by_name1 = self._get_steam_urls(
+				streamer_steam_id1, self.streamer_name)
 		# Create the second streaming user.
 		streamer_name2 = 'streamer_name2'
 		streamer_steam_id2, streamer_id2 = self._create_steam_user(streamer_name2)
+		url_by_id2, url_by_name2 = self._get_steam_urls(streamer_steam_id2, streamer_name2)
 		# The first streamer streams the first match.
 		db.add_stream_match(streamer_id1, match_id1)
 		# The second streamer streams the second match.
@@ -1864,37 +1858,43 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Assert that the first streamer has a star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id1, self.streamer_name,
-				is_starred=True, num_stars=1, num_matches=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id1, self.streamer_name, url_by_id1,
+				num_stars=1, url_by_name=url_by_name1, is_starred=True, num_matches=1)
 		# Assert that the second streamer has no star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id2, streamer_name2, num_stars=1, num_matches=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id2, streamer_name2, url_by_id2,
+				num_stars=1, url_by_name=url_by_name2, num_matches=1)
 
 		# Assert that the second streamer has no star by the first user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id1, self.streamer_name, num_stars=1, num_matches=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id1, self.streamer_name, url_by_id1,
+				num_stars=1, url_by_name=url_by_name1, num_matches=1)
 		# Assert that the second streamer has a star by the second user.
 		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
-		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id2, streamer_name2,
-				is_starred=True, num_stars=1, num_matches=1)
+		self._assert_displayed_streamer_details(displayed_streamer,
+				streamer_id2, streamer_name2, url_by_id2,
+				num_stars=1, url_by_name=url_by_name2, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id1, team1_id, self.team1_name, team2_id, self.team2_name,
-				self.time, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id1,
+				self.time, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
-		self._assert_displayed_calendar_match(displayed_calendar.next_match,
-				match_id2, team1_id, self.team1_name, team2_id, self.team2_name,
-				time2, self.game, self.league, num_streams=1)
+		next_match = displayed_calendar.next_match
+		self._assert_displayed_match(next_match, match_id2,
+				time2, num_streams=1, game=self.game, league=self.league)
+		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
+		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
