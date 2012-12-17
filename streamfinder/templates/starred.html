@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+	{% import 'macros.html' as macros %}
+
+	<ul class="page-links">
+		{% set starred_links = [
+			('starred_matches', 'Matches'),
+			('starred_teams', 'Teams'),
+			('starred_casters', 'Casters'),
+		] -%}
+		{{ macros.write_links(starred_links) }}
+	</ul>
+{% endblock content %}
+
