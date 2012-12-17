@@ -1,3 +1,5 @@
+{% import 'macros.html' as macros %}
+
 <!doctype html>
 <html lang="en">
 	<head>
@@ -7,9 +9,7 @@
 	<body>
 		<div id="header">
 			<div class="container">
-				<div id="logo">
-					Stream Calendars
-				</div>
+				<h2>Stream Calendars</h2>
 				<ul id="user-links">
 					{% if user %}
 						{{ user.name }} (<a href="" id="logout">Log out</a>)
@@ -22,19 +22,25 @@
 		</div>
 		<div id="site">
 			<ul id="site-links">
-				<li><a href="{{ url_for('view') }}">Viewer Calendar</a></li>
-				<li><a href="{{ url_for('stream') }}">Streamer Calendar</a></li>
-				<li><a href-"{{ url_for('starred') }}">Starred</a></li>
-				<li><a href="{{ url_for('browse') }}">All</a></li>
+				{% set site_links = [
+					('viewer_calendar', 'Viewer Calendar'),
+					('streamer_calendar', 'Streamer Calendar'),
+					('starred', 'Starred'),
+					('browse', 'All'),
+				] -%}
+				{{ macros.write_links(site_links) }}
 			</ul>
 			{% block content %}{% endblock content %}
 		</div>
 		<div id="footer">
 			<div class="container">
 				<ul>
-					<li><a href="{{ url_for('privacy') }}">Privacy Policy</a></li>
-					<li><a href="{{ url_for('terms') }}">Terms of Service</a></li>
-					<li><a href="{{ url_for('about') }}">About</a></li>
+					{% set footer_links = [
+						('privacy', 'Privacy Privacy'),
+						('terms', 'Terms of Service'),
+						('about', 'About'),
+					] -%}
+					{{ macros.write_links(footer_links) }}
 				</ul>
 			</div>
 		</div>

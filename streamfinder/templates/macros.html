@@ -1,0 +1,8 @@
+{% macro write_links(links) -%}
+	{% for page_name, text in links %}
+		<li{% if page_name == selected_page %} class="selected"{% endif %}>
+			<a href="{{ url_for(page_name) }}">{{ text }}</a>
+		</li>
+	{% endfor %}
+{%- endmacro %}
+
