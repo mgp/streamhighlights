@@ -759,6 +759,22 @@ class DisplayedMatch:
 		self.game = game
 		self.league = league
 
+	def to_json(self):
+		d = {
+			'match_id': self.match_id,
+			'team2': self.team2.to_json(),
+			'time': self.time.isoformat(),
+			'num_stars': self.num_stars,
+			'num_streams': self.num_streams
+		}
+		if self.team1:
+			d['team1'] = self.team1.to_json()
+		if self.game:
+			d['game'] = self.game
+		if self.league:
+			d['league'] = self.league
+		return d
+
 	def __repr__(self):
 		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, league=%r)' % (
 				self.match_id,
@@ -818,6 +834,18 @@ class DisplayedTeam:
 		self.game = game
 		self.league = league
 
+	def to_json(self):
+		d = {
+			'team_id': self.team_id,
+			'name': self.name,
+			'num_stars': self.num_stars
+		}
+		if self.game:
+			d['game'] = self.game
+		if self.league:
+			d['league'] = self.league
+		return d
+
 	def __repr__(self):
 		return 'DisplayedTeam(team_id=%r, name=%r, num_stars=%r, game=%r, league=%r)' % (
 				self.team_id,
@@ -868,6 +896,19 @@ class DisplayedStreamer:
 		self.image_url = image_url
 		self.url_by_id = url_by_id
 		self.url_by_name = url_by_name
+
+	def to_json(self):
+		d = {
+			'streamer_id': self.streamer_id,
+			'name': self.name,
+			'num_stars': self.num_stars,
+			'image_url': self.image_url,
+		}
+		if self.url_by_id:
+			d['url_by_id'] = self.url_by_id
+		if self.url_by_name:
+			d['url_by_name'] = self.url_by_name
+		return d
 
 	def __repr__(self):
 		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name=%r)' % (
