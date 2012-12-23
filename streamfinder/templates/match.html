@@ -1,0 +1,37 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock %}
+
+{% block content %}
+	<h2>In {{ time_until_match }}:</h2>
+	<div>
+		<h3>
+			{{ write_large_game_icon(match.game) }}
+			<a href="" class="team-name">{{ match.team1.name }}</a>
+			vs 
+			<a href="" class="team-name">{{ match.team2.name }}</a>
+			{{ write_large_external_link("TODO") }}
+		</h3>
+
+		<div class="counts">
+			{{ write_star_with_count(match.is_starred, match.num_stars }}
+		</div>
+		<div>
+			<span>{{ date }}</span>
+			at
+			<span>{{ time }}</span>
+		</div>
+	</div>
+
+	{% if match.streamers %}
+		<h3>Cast by {{ length(match.streamers) }} users:</h3>
+		<ul>
+		{% for streamer in match.streamers %}
+			{{ write_streamer_list_element(streamer) }}
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3>Nobody casting so far :(</h3>
+	{% endif %}
+{% endblock %}
+

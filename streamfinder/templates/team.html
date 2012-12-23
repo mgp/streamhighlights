@@ -1,0 +1,43 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ team.name }}{% endblock %}
+
+{% block content %}
+	<div>
+		<h3>
+			{{ write_large_game_icon(team.game) }}
+			{{ team.name }}
+			{{ write_large_external_link("TODO") }}
+		</h3>
+
+		<div class="counts">
+			{{ write_star_with_count(streamer.is_starred, streamer.num_stars }}
+		</div>
+		<div>
+			{{ write_league(team.league) }}
+		</div>
+	</div>
+
+	{% if team.matches %}
+		<h3>Upcoming matches:</h3>
+		<ul>
+		{% for match in team.matches %}
+			<li>
+				<a href="">
+					<div>
+						vs
+						<span class="class-time">{{ match.team2.name }}</span>
+					</div>
+					{{ match.time }}
+					<div>
+						{{ write_star_with_count(match.is_starred, match.num_stars) }}
+					</div>
+				</a>
+			</li>
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3>No upcoming matches</h3>
+	{% endif %}
+{% endblock %}
+

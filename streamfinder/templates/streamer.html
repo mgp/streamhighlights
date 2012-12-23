@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ streamer.name }}{% endblock %}
+
+{% block content %}
+	<div>
+		<img src="{{ streamer.image_url }}" />
+
+		<h3>{{ streamer.name }} {{ write_large_external_link() }}</h3>
+		{{ write_star_with_count(streamer.is_starred, streamer.num_stars) }}
+	</div>
+
+	{% if streamer.matches %}
+		<h3>Upcoming streamed matches:</h3>
+		<ul>
+		{% for match in streamer.matches %}
+			{{ write_match_list_element(match) }}
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3>No upcoming matches</h3>
+	{% endif %}
+{% endblock %}
+
