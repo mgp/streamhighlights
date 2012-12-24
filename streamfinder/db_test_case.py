@@ -10,10 +10,10 @@ class DbTestCase(unittest.TestCase):
 	def setUp(self):
 		unittest.TestCase.setUp(self)
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
-		self.session = common_db.session
 		self._next_steam_id = 0
 		self._next_twitch_id = 0
 		db.create_all()
+		self.session = common_db.session
 	
 	def tearDown(self):
 		db.drop_all()

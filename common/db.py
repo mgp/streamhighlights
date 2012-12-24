@@ -1,4 +1,5 @@
 from datetime import datetime
+import functools
 import re
 import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
@@ -6,6 +7,15 @@ import sqlalchemy.ext.declarative as sa_ext_declarative
 import sqlalchemy.orm as sa_orm
 import sys
 
+
+def close_session(f):
+	"""A decorator that closes the session before returning a result."""
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		result = f(*pargs, **kwargs)
+		session.close()
+		return result
+	return decorated_function
 
 """Exception class raised by the database.
 """
@@ -23,26 +33,26 @@ class DbException(Exception):
 		raise DbException(exception_value), None, traceback
 
 
-def get_engine(testing=True):
+def get_engine(testing=False):
 	if testing:
-		return sa.create_engine('sqlite:///:memory:', echo=False)
+		# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
+		@sa.event.listens_for(sa_engine.Engine, "connect")
+		def set_sqlite_pragma(dbapi_connection, connection_record):
+			cursor = dbapi_connection.cursor()
+			cursor.execute("PRAGMA foreign_keys=ON")
+			cursor.close()
+
+		return sa.create_engine(
+				'sqlite:///:memory:', convert_unicode=True, echo=False)
 	else:
-		# TODO
-		return None
+		return sa.create_engine(
+				'postgresql+psycopg2://streamcalendar:streamcalendar@localhost/streamcalendar',
+				echo=False)
 
 _engine = get_engine()
-_Session = sa_orm.sessionmaker(bind=_engine)
-# TODO: Use a contextual session
-# http://docs.sqlalchemy.org/en/rel_0_7/orm/session.html#unitofwork-contextual
-session = _Session()
-
-# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
-@sa.event.listens_for(sa_engine.Engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-	cursor = dbapi_connection.cursor()
-	cursor.execute("PRAGMA foreign_keys=ON")
-	cursor.close()
-
+# Use scoped_session with Flask: http://flask.pocoo.org/docs/patterns/sqlalchemy/
+session = sa_orm.scoped_session(sa_orm.sessionmaker(
+		autocommit=False, autoflush=False, bind=_engine))
 
 _Base = sa_ext_declarative.declarative_base()
 
@@ -59,13 +69,6 @@ class UserMixin(object):
 	url_by_id = sa.Column(sa.String, nullable=False)
 	url_by_name = sa.Column(sa.String)
 
-	@sa_ext_declarative.declared_attr
-	def steam_user(cls):
-		return sa_orm.relationship('SteamUser', uselist=False, backref='user')
-	@sa_ext_declarative.declared_attr
-	def twitch_user(cls):
-		return sa_orm.relationship('TwitchUser', uselist=False, backref='user')
-
 
 """If the user logged in through Steam, the details of that user on Steam.
 """
@@ -79,11 +82,10 @@ class SteamUser(_Base):
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'SteamUser(steam_id=%r, user_id=%r, profile_url=%r, user=%r)' % (
+		return 'SteamUser(steam_id=%r, user_id=%r, profile_url=%r)' % (
 				self.steam_id,
 				self.user_id,
-				self.profile_url,
-				self.user)
+				self.profile_url)
 
 
 """If the user logged in through Twitch, the details of that user on Twitch.
@@ -195,6 +197,7 @@ def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 			update_statement = update_statement.where(user_class.id != user_id)
 		session.execute(update_statement.values({user_class.url_by_name: None}))
 
+@close_session
 def twitch_user_logged_in(user_class, users_table,
 		twitch_id, name, display_name, logo, access_token,
 		user_class_extra_kwargs={}, now=None):
@@ -210,30 +213,41 @@ def twitch_user_logged_in(user_class, users_table,
 	now = _get_now(now)
 	url_by_name = _get_twitch_url_by_name(name)
 	try:
-		twitch_user = session.query(TwitchUser)\
-				.options(sa_orm.joinedload(TwitchUser.user))\
+		twitch_user, user = session.query(TwitchUser, user_class)\
+				.join(user_class, TwitchUser.user_id == user_class.id)\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, twitch_user.user.id)
+		user.name = display_name
+		user.image_url_large = logo
+		user.last_seen = now
+		user.url_by_name = url_by_name
+		session.add(user)
+		user_id = user.id
+
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
-		user = user_class(created=now, url_by_id=_get_twitch_url_by_id(twitch_id),
+		user = user_class(
+				name=display_name,
+				image_url_large=logo,
+				last_seen=now,
+				url_by_name=url_by_name,
+				created=now,
+				url_by_id=_get_twitch_url_by_id(twitch_id),
 				**user_class_extra_kwargs)
-		twitch_user.user = user
-		session.add(twitch_user)
+		session.add(user)
+		session.flush()
+		user_id = user.id
+		twitch_user.user_id = user_id
 
-	# Update the User.
-	twitch_user.user.name = display_name
-	twitch_user.user.image_url_large = logo
-	twitch_user.user.last_seen = now
-	twitch_user.user.url_by_name = url_by_name
 	# Update the TwitchUser.
 	twitch_user.name = name
 	twitch_user.access_token = access_token
-
+	session.add(twitch_user)
 	session.commit()
-	return twitch_user.user.id
+	return user_id
 
+@close_session
 def steam_user_logged_in(user_class, users_table,
 		steam_id, personaname, profile_url, avatar, avatar_full,
 		user_class_extra_kwargs={}, now=None):
@@ -249,29 +263,39 @@ def steam_user_logged_in(user_class, users_table,
 	now = _get_now(now)
 	url_by_name = _get_steam_url_by_name_from_profile_url(profile_url)
 	try:
-		steam_user = session.query(SteamUser)\
-				.options(sa_orm.joinedload(SteamUser.user))\
+		steam_user, user = session.query(SteamUser, user_class)\
+				.join(user_class, SteamUser.user_id == user_class.id)\
 				.filter(SteamUser.steam_id == steam_id).one()
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, steam_user.user.id)
+		user.name = personaname
+		user.image_url_small = avatar
+		user.image_url_large = avatar_full
+		user.last_seen = now
+		user.url_by_name = url_by_name
+		session.add(user)
+		user_id = user.id
+		
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
-		user = user_class(created=now, url_by_id=_get_steam_url_by_id(steam_id),
+		user = user_class(name=personaname,
+				image_url_small=avatar,
+				image_url_large=avatar_full,
+				last_seen=now,
+				url_by_name=url_by_name,
+				created=now,
+				url_by_id=_get_steam_url_by_id(steam_id),
 				**user_class_extra_kwargs)
-		steam_user.user = user
-		session.add(steam_user)
+		session.add(user)
+		session.flush()
+		user_id = user.id
+		steam_user.user_id = user_id
 	
-	# Update the User.
-	steam_user.user.name = personaname
-	steam_user.user.image_url_small = avatar
-	steam_user.user.image_url_large = avatar_full
-	steam_user.user.last_seen = now
-	steam_user.user.url_by_name = url_by_name
 	# Update the SteamUser.
 	steam_user.profile_url = profile_url
-
+	session.add(steam_user)
 	session.commit()
-	return steam_user.user.id
+	return user_id
 
 
 def _get_now(now):

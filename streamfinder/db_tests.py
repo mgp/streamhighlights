@@ -19,6 +19,7 @@ def timed(f):
 		return result
 	return decorated_function
 
+
 class AbstractFinderDbTestCase(DbTestCase):
 	def setUp(self):
 		DbTestCase.setUp(self)
@@ -966,7 +967,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to create a match because one team identifier is unknown.
 	"""
 	def test_add_match_unknown_team(self):
-		missing_team2_id = 'missing_team2_id'
+		missing_team2_id = 99
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_fingerprint)
 		# Create the client.
@@ -979,7 +980,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a match because the client identifier is unknown.
 	"""
 	def test_add_match_star_unknown_client(self):
-		missing_client_id = 'missing_client_id'
+		missing_client_id = 99
 		# Create the match.
 		team1_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_fingerprint)
@@ -994,7 +995,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a match because the match identifier is unknown.
 	"""
 	def test_add_match_star_unknown_match(self):
-		missing_match_id = 'missing_match_id'
+		missing_match_id = 99
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
@@ -1004,7 +1005,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a team because the client identifier is unknown.
 	"""
 	def test_add_team_star_unknown_client(self):
-		missing_client_id = 'missing_client_id'
+		missing_client_id = 99
 		# Create the team.
 		team_id = db.add_team(self.team1_name, self.game, self.league,
 				self.team1_fingerprint)
@@ -1015,7 +1016,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a match because the team identifier is unknown.
 	"""
 	def test_add_team_star_unknown_team(self):
-		missing_team_id = 'missing_team_id'
+		missing_team_id = 99
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 
@@ -1025,7 +1026,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a streamer because the client identifier is unknown.
 	"""
 	def test_add_streamer_star_unknown_client(self):
-		missing_client_id = 'missing_client_id'
+		missing_client_id = 99
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -1035,7 +1036,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""Test that fails to star a streamer because the streamer identifier is unknown.
 	"""
 	def test_add_streamer_star_unknown_team(self):
-		missing_streamer_id = 'missing_streamer_id'
+		missing_streamer_id = 99
 		# Create the client.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
 

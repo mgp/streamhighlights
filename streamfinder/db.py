@@ -8,7 +8,7 @@ import sqlalchemy.schema as sa_schema
 import sys
 
 import common_db
-from common_db import _get_now, session
+from common_db import _get_now, session, close_session
 
 """A user of the site.
 """
@@ -117,7 +117,7 @@ class MatchEdit(common_db._Base):
 	id = sa.Column(sa.Integer, primary_key=True)
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), nullable=False)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), nullable=False)
-	action = sa.Column(sa.Enum('edit_time', 'cancel'), nullable=False)
+	action = sa.Column(sa.Enum('edit_time', 'cancel', name='MatchEditAction'), nullable=False)
 	data = sa.Column(sa.String)
 	comment = sa.Column(sa.String)
 
@@ -304,15 +304,14 @@ def drop_all():
 	common_db.drop_all()
 
 
-"""Adds a match between two teams at a given time.
-"""
+@close_session
 def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
+	"""Adds a match between two teams at a given time."""
 	try:
 		match_id = session.query(Match)\
 				.filter(Match.fingerprint == fingerprint)\
 				.one()\
 				.id
-		session.close()
 		return match_id
 	except sa_orm.exc.NoResultFound:
 		# This match does not exist; continue to add the match.
@@ -324,12 +323,13 @@ def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
 				fingerprint=fingerprint)
 		session.add(match)
 		session.flush()
+		match_id = match.id
 
 		# Add each opponent for the match.
 		match_opponent1 = MatchOpponent(
-				team_id=team1_id, match_id=match.id, time=time, opponent_id=team2_id)
+				team_id=team1_id, match_id=match_id, time=time, opponent_id=team2_id)
 		match_opponent2 = MatchOpponent(
-				team_id=team2_id, match_id=match.id, time=time, opponent_id=team1_id)
+				team_id=team2_id, match_id=match_id, time=time, opponent_id=team1_id)
 		session.add(match_opponent1)
 		session.add(match_opponent2)
 		session.commit()
@@ -340,9 +340,9 @@ def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
 		session.rollback()
 		raise common_db.DbException._chain()
 
-"""Adds a team in the given game and league.
-"""
+@close_session
 def add_team(name, game, league, fingerprint, now=None):
+	"""Adds a team in the given game and league."""
 	try:
 		team = session.query(Team).filter(Team.fingerprint == fingerprint).one()
 		team.name = name
@@ -353,10 +353,9 @@ def add_team(name, game, league, fingerprint, now=None):
 	session.commit()
 	return team.id
 
-
-"""Adds a star by the client for the match with the given identifier.
-"""
+@close_session
 def add_star_match(client_id, match_id, now=None):
+	"""Adds a star by the client for the match with the given identifier."""
 	now = _get_now(now)
 
 	try:
@@ -390,9 +389,9 @@ def add_star_match(client_id, match_id, now=None):
 
 	session.commit()
 
-"""Removes a star by the client for the match with the given identifier.
-"""
+@close_session
 def remove_star_match(client_id, match_id, now=None):
+	"""Removes a star by the client for the match with the given identifier."""
 	now = _get_now(now)
 
 	# Remove the client's star for the match.
@@ -418,10 +417,9 @@ def remove_star_match(client_id, match_id, now=None):
 
 	session.commit()
 
-
-"""Adds a star by the client for the team with the given identifier.
-"""
+@close_session
 def add_star_team(client_id, team_id, now=None):
+	"""Adds a star by the client for the team with the given identifier."""
 	now = _get_now(now)
 
 	try:
@@ -459,10 +457,9 @@ def add_star_team(client_id, team_id, now=None):
 	
 	session.commit()
 
-
-"""Removes a star by the client for the team with the given identifier.
-"""
+@close_session
 def remove_star_team(client_id, team_id, now=None):
+	"""Removes a star by the client for the team with the given identifier."""
 	now = _get_now(now)
 
 	# Remove the client's star for the team.
@@ -486,10 +483,9 @@ def remove_star_team(client_id, team_id, now=None):
 
 	session.commit()
 
-
-"""Adds a star by the client for the streaming user with the given identifier.
-"""
+@close_session
 def add_star_streamer(client_id, streamer_id, now=None):
+	"""Adds a star by the client for the streaming user with the given identifier."""
 	now = _get_now(now)
 
 	try:
@@ -527,9 +523,9 @@ def add_star_streamer(client_id, streamer_id, now=None):
 
 	session.commit()
 
-"""Removes a star by the client for the streaming user with the given identifier.
-"""
+@close_session
 def remove_star_streamer(client_id, streamer_id, now=None):
+	"""Removes a star by the client for the streaming user with the given identifier."""
 	now = _get_now(now)
 
 	# Remove the client's star for the streaming user.
@@ -559,15 +555,14 @@ def _set_match_opponent_streaming(match_id, is_streamed):
 				.where(MatchOpponent.match_id == match_id)
 				.values({MatchOpponent.is_streamed: is_streamed}))
 
-"""Adds a stream by the client for the match with the given identifier.
-"""
+@close_session
 def add_stream_match(client_id, match_id, comment=None, now=None):
+	"""Adds a stream by the client for the match with the given identifier."""
 	now = _get_now(now)
 
 	try:
 		match = session.query(Match).filter(Match.id == match_id).one()
 	except sa_orm.exc.NoResultFound:
-		# The flush failed because the client is already streaming this match.
 		session.rollback()
 		raise common_db.DbException._chain()
 
@@ -593,9 +588,9 @@ def add_stream_match(client_id, match_id, comment=None, now=None):
 
 	session.commit()
 
-"""Removes a stream by the client for the match with the given identifier.
-"""
+@close_session
 def remove_stream_match(client_id, match_id, now=None):
+	"""Removes a stream by the client for the match with the given identifier."""
 	now = _get_now(now)
 
 	# Remove the client as a user streaming the match.
@@ -628,9 +623,8 @@ def remove_stream_match(client_id, match_id, now=None):
 	session.commit()
 
 
-"""Returns a CalendarEntry created with the given user identifier and match.
-"""
 def _get_calendar_entry(user_id, match):
+	"""Returns a CalendarEntry created with the given user identifier and match."""
 	return CalendarEntry(user_id=user_id,
 			match_id=match.id,
 			time=match.time,
@@ -641,9 +635,8 @@ def _multi_increment_num_user_stars(user_ids, match, now):
 	for user_id in user_ids:
 		_increment_num_user_stars(user_id, match, now)
 
-"""Updates or creates a CalendarEntry for the given user identifier and match.
-"""
 def _increment_num_user_stars(user_id, match, now):
+	"""Updates or creates a CalendarEntry for the given user identifier and match."""
 	assert match.is_streamed
 
 	missing = session.query(CalendarEntry)\
@@ -668,9 +661,8 @@ def _multi_decrement_num_user_stars(user_ids, match_id, now):
 	for user_id in user_ids:
 		_decrement_num_user_stars(user_id, match_id, now)
 
-"""Updates or deletes a CalendarEntry for the given user and match identifier.
-"""
 def _decrement_num_user_stars(user_id, match_id, now):
+	"""Updates or deletes a CalendarEntry for the given user and match identifier."""
 	num_user_stars = session.query(CalendarEntry.num_user_stars)\
 			.filter(
 				CalendarEntry.user_id == user_id,
@@ -691,16 +683,17 @@ def _decrement_num_user_stars(user_id, match_id, now):
 				CalendarEntry.match_id == match_id)))
 
 
-"""Updates or creates CalendarEntries for users, given that the client was
-added as the first streaming user.
-"""
 def _add_first_stream_calendar_entries(client_id, match, now):
+	"""Updates or creates CalendarEntries for users, given that the client was
+	added as the first streaming user.
+	"""
 	# Add a CalendarEntry for each user who starred the match.
 	user_ids_cursor = session.query(StarredMatch.user_id)\
 			.filter(StarredMatch.match_id == match.id)
 	for row in user_ids_cursor:
 		entry = _get_calendar_entry(row.user_id, match)
 		session.add(entry)
+	session.flush()
 
 	# Add a CalendarEntry for each user who starred either team.
 	user_ids_cursor = session.query(MatchOpponent.match_id, StarredTeam.user_id)\
@@ -708,17 +701,19 @@ def _add_first_stream_calendar_entries(client_id, match, now):
 			.filter(MatchOpponent.match_id == match.id)
 	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+	session.flush()
 
 	# Add a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
 	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
+	session.flush()
 
-"""Updates or creates CalendarEntries for users, given that the client was
-added as a streamer, but not the first one.
-"""
 def _add_not_first_stream_calendar_entries(client_id, match, now):
+	"""Updates or creates CalendarEntries for users, given that the client was
+	added as a streamer, but not the first one.
+	"""
 	# If needed, add a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
@@ -726,20 +721,20 @@ def _add_not_first_stream_calendar_entries(client_id, match, now):
 	_multi_increment_num_user_stars(user_ids_cursor, match, now)
 
 
-"""Updates or deletes CalendarEntries for users, given that the client was
-removed as a streamer, but not the last one.
-"""
 def _remove_not_last_stream_calendar_entries(client_id, match_id, now):
+	"""Updates or deletes CalendarEntries for users, given that the client was
+	removed as a streamer, but not the last one.
+	"""
 	# If needed, remove a CalendarEntry for each user who starred the streaming user.
 	user_ids_cursor = session.query(StarredStreamer.user_id)\
 			.filter(StarredStreamer.streamer_id == client_id)
 	user_ids_cursor = (row.user_id for row in user_ids_cursor)
 	_multi_decrement_num_user_stars(user_ids_cursor, match_id, now)
 
-"""Updates or deletes CalendarEntries for users, given that the client was
-removed as the last streaming user.
-"""
 def _remove_last_stream_calendar_entries(client_id, match_id, now):	
+	"""Updates or deletes CalendarEntries for users, given that the client was
+	removed as the last streaming user.
+	"""
 	# Remove every CalendarEntry for this match.
 	result = session.execute(
 			CalendarEntries.delete().where(CalendarEntry.match_id == match_id))
@@ -1093,16 +1088,14 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		next_col1 = None
 		next_col2 = None
 
-	session.close()
 	return (items, prev_col1, prev_col2, next_col1, next_col2)
 
 
 def _get_displayed_match_team(team):
 	return DisplayedTeam(team.id, team.name, team.num_stars)
 
-"""Returns a DisplayedMatch from the given match and teams.
-"""
 def _get_displayed_match(match, team1, team2):
+	"""Returns a DisplayedMatch from the given match and teams."""
 	displayed_team1 = _get_displayed_match_team(team1)
 	displayed_team2 = _get_displayed_match_team(team2)
 	return DisplayedMatch(match.id,
@@ -1160,19 +1153,19 @@ class CalendarEntriesPaginator:
 		match, team1, team2 = item
 		return (match.id == first_id)
 
-"""Returns a DisplayedCalendar containing calendar entries for streamed matches
-where the client has starred the match, either team, or a streamer.
-"""
+@close_session
 def get_displayed_viewer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns a DisplayedCalendar containing calendar entries for streamed matches
+	where the client has starred the match, either team, or a streamer.
+	"""
 	# Get the next match for viewing by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
 	first_match = _get_next_viewer_match(client_id, team_alias1, team_alias2)
 	if first_match is None:
 		# No next match, so return an empty calendar.
-		session.close()
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
@@ -1210,19 +1203,19 @@ def _get_next_streamer_match(client_id, team_alias1, team_alias2):
 	return _get_displayed_match(
 			next_match, next_match_team1, next_match_team2)
 
-"""Returns a DisplayedCalendar containing calendar entries for matches that the
-client is streaming.
-"""
+@close_session
 def get_displayed_streamer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns a DisplayedCalendar containing calendar entries for matches that the
+	client is streaming.
+	"""
 	# Get the next match streamed by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
 	first_match = _get_next_streamer_match(client_id, team_alias1, team_alias2)
 	if first_match is None:
 		# No next match, so return an empty calendar.
-		session.close()
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
@@ -1417,22 +1410,22 @@ def _get_match_list(
 			next_time,
 			next_match_id)
 
-"""Returns matches starred by the client.
-"""
+@close_session
 def get_starred_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns matches starred by the client."""
 	paginator = StarredMatchesPaginator(client_id)
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			paginator)
 
 _ALL_MATCHES_PAGINATOR = AllMatchesPaginator()
 
-"""Returns all matches.
-"""
+@close_session
 def get_all_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns all matches."""
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			_ALL_MATCHES_PAGINATOR)
 
@@ -1452,28 +1445,28 @@ def _get_team_list(
 			next_name,
 			next_team_id)
 
-"""Returns teams starred by the client.
-"""
+@close_session
 def get_starred_teams(client_id,
 		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
 		page_limit=None):
+	"""Returns teams starred by the client."""
 	paginator = StarredTeamsPaginator(client_id)
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
 			paginator)
 
 _ALL_TEAMS_PAGINATOR = AllTeamsPaginator()
 
-"""Returns all teams.
-"""
+@close_session
 def get_all_teams(client_id,
 		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
 		page_limit=None):
+	"""Returns all teams."""
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
 			_ALL_TEAMS_PAGINATOR)
 
 
-"""Returns a DisplayedStreamer for the given streamer."""
 def _get_displayed_streamer(streamer):
+	"""Returns a DisplayedStreamer for the given streamer."""
 	return DisplayedStreamer(streamer.id,
 			streamer.name,
 			streamer.num_stars,
@@ -1493,22 +1486,22 @@ def _get_streamer_list(
 			next_name,
 			next_streamer_id)
 
-"""Returns streaming users starred by the client.
-"""
+@close_session
 def get_starred_streamers(client_id,
 		prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None,
 		page_limit=None):
+	"""Returns streaming users starred by the client."""
 	paginator = StarredStreamersPaginator(client_id)
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit, paginator)
 
 _ALL_STREAMERS_PAGINATOR = AllStreamersPaginator()
 
-"""Returns all streaming users.
-"""
+@close_session
 def get_all_streamers(client_id,
 		prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None,
 		page_limit=None):
+	"""Returns all streaming users."""
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
 			_ALL_STREAMERS_PAGINATOR)
@@ -1546,11 +1539,11 @@ class MatchStreamersPaginator:
 		added, streamer = item
 		return (streamer.id == first_id)
 
-"""Returns a DisplayedMatch containing streaming users.
-"""
+@close_session
 def get_displayed_match(client_id, match_id,
 		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
 		page_limit=None):
+	"""Returns a DisplayedMatch containing streaming users."""
 	# Get the match and teams.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
@@ -1641,11 +1634,11 @@ class MatchOpponentsPaginator:
 		match, opponent_team = item
 		return (match.id == first_id)
 
-"""Returns a DisplayedTeam containing scheduled matches.
-"""
+@close_session
 def get_displayed_team(client_id, team_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns a DisplayedTeam containing scheduled matches."""
 	# Get the team.
 	team, starred_team = session.query(Team, StarredTeam)\
 			.outerjoin(StarredTeam, sa.and_(
@@ -1710,11 +1703,11 @@ class StreamedMatchesPaginator:
 		match, team1, team2 = item
 		return (match.id == first_id)
 
-"""Returns a DisplayedStreamer containing scheduled streamed matches.
-"""
+@close_session
 def get_displayed_streamer(client_id, streamer_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
+	"""Returns a DisplayedStreamer containing scheduled streamed matches."""
 	# Get the streamer.
 	streamer, starred_streamer = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
