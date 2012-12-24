@@ -1,0 +1,58 @@
+{% import 'macros.html' as macros %}
+
+<!doctype html>
+<html lang="en">
+	<head>
+		{% assets "css_all" %}
+			<link rel="stylesheet" href="{{ ASSET_URL }}" />
+		{% endassets %}
+		<title>{% block title %}{% endblock title %} - Stream Calendars</title>
+	</head>
+	<body>
+
+		<div id="site">
+			{% block content %}{% endblock content %}
+		</div>
+
+		<!--
+		<div id="header">
+			<div class="container">
+				<h2>Stream Calendars</h2>
+				<ul id="user-links">
+					{% if user %}
+						{{ user.name }} (<a href="" id="logout">Log out</a>)
+					{% else %}
+						<a href="" id="steam-login"><img src="" /></a>
+						<a href="" id="twitch-login"><img src="" /></a>
+					{% endif %}
+				</ul>
+			</div>
+		</div>
+		<div id="site">
+			<ul id="site-links">
+				{% set site_links = [
+					('viewer_calendar', 'Viewer Calendar'),
+					('streamer_calendar', 'Streamer Calendar'),
+					('starred', 'Starred'),
+					('browse', 'All'),
+				] -%}
+				{{ macros.write_links(site_links) }}
+			</ul>
+			{% block content %}{% endblock content %}
+		</div>
+		<div id="footer">
+			<div class="container">
+				<ul>
+					{% set footer_links = [
+						('privacy', 'Privacy Privacy'),
+						('terms', 'Terms of Service'),
+						('about', 'About'),
+					] -%}
+					{{ macros.write_links(footer_links) }}
+				</ul>
+			</div>
+		</div>
+		-->
+	</body>
+</html>
+

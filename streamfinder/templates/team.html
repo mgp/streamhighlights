@@ -1,20 +1,21 @@
 {% extends "layout.html" %}
+{% import "macros.html" as macros %}
 
-{% block title %}{{ team.name }}{% endblock %}
+{% block title %}{{ team.name }}{% endblock title %}
 
 {% block content %}
 	<div>
 		<h3>
-			{{ write_large_game_icon(team.game) }}
+			{{ macros.write_large_game_icon(team.game) }}
 			{{ team.name }}
-			{{ write_large_external_link("TODO") }}
+			{{ macros.write_large_external_link("TODO") }}
 		</h3>
 
 		<div class="counts">
-			{{ write_star_with_count(streamer.is_starred, streamer.num_stars }}
+			{{ macros.write_star_with_count(team.is_starred, team.num_stars) }}
 		</div>
 		<div>
-			{{ write_league(team.league) }}
+			{{ macros.write_league(team.league) }}
 		</div>
 	</div>
 
@@ -30,7 +31,7 @@
 					</div>
 					{{ match.time }}
 					<div>
-						{{ write_star_with_count(match.is_starred, match.num_stars) }}
+						{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
 					</div>
 				</a>
 			</li>
@@ -39,5 +40,5 @@
 	{% else %}
 		<h3>No upcoming matches</h3>
 	{% endif %}
-{% endblock %}
+{% endblock content %}
 

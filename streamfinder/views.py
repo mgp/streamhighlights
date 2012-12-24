@@ -7,7 +7,6 @@ from flask_openid import OpenID
 
 oid = OpenID(app)
 
-"""
 def _add_fake_data():
 	name = "Xensity"
 	game = "tf2"
@@ -16,7 +15,6 @@ def _add_fake_data():
 	team_id = db.add_team(name, game, league, fingerprint)
 
 _add_fake_data()
-"""
 
 def _read_client_id_from_session(session=None):
 	"""Reads the client's user identifier from the session."""
@@ -164,7 +162,7 @@ def match_details(match_id):
 
 	match = db.get_displayed_match(flask.g.client_id, match_id,
 			prev_time, prev_streamer_id, next_time, next_streamer_id)
-	flask.render_template('match_details.html')
+	return flask.render_template('match.html')
 
 
 @app.route('/teams/<team_id>')
@@ -178,7 +176,7 @@ def team_details(team_id):
 
 	team = db.get_displayed_team(flask.g.client_id, team_id,
 			prev_time, prev_match_id, next_time, next_match_id)
-	flask.render_template('team_details.html', team=team)
+	return flask.render_template('team.html', team=team)
 
 @app.route('/user/twitch/<name>')
 @login_optional
