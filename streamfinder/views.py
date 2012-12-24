@@ -2,9 +2,54 @@ from streamfinder import app
 
 import db
 import flask
+import functools
 from flask_openid import OpenID
 
 oid = OpenID(app)
+
+"""
+def _add_fake_data():
+	name = "Xensity"
+	game = "tf2"
+	league = "esea"
+	fingerprint = "esea:51134"
+	team_id = db.add_team(name, game, league, fingerprint)
+
+_add_fake_data()
+"""
+
+def _read_client_id_from_session(session=None):
+	"""Reads the client's user identifier from the session."""
+	if session is None:
+		session = flask.session
+	user = session.get('user', None)
+	if user is None:
+		return None
+	return user['id']
+
+def login_required(f):
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		client_id = _read_client_id_from_session()
+		if client_id is None:
+			# Return status code 401 if user is not logged in.
+			flask.abort(requests.codes.unauthorized)
+
+		flask.g.client_id = client_id
+		return f(*pargs, **kwargs)
+	return decorated_function
+
+def login_optional(f):
+	@functools.wraps(f)
+	def decorated_function(*pargs, **kwargs):
+		client_id = _read_client_id_from_session()
+		if client_id is None:
+			flask.g.client_id = None
+		else:
+			flask.g.client_id = client_id
+
+		return f(*pargs, **kwargs)
+	return decorated_function
 
 
 @app.route('/')
@@ -131,9 +176,9 @@ def team_details(team_id):
 	next_time = args.get('next_time')
 	next_match_id = args.get('next_match_id')
 
-	team = db.get_displayed_match(flask.g.client_id, team_id,
+	team = db.get_displayed_team(flask.g.client_id, team_id,
 			prev_time, prev_match_id, next_time, next_match_id)
-	flask.render_template('team_details.html')
+	flask.render_template('team_details.html', team=team)
 
 @app.route('/user/twitch/<name>')
 @login_optional
