@@ -113,7 +113,6 @@ def _render_matches_list(db_getter, template_name):
 	match_list = db_getter(flask.g.client_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	assert match_list is not None
-	# TODO
 	return flask.render_template('matches.html')
 
 def _render_teams_list(db_getter, template_name):
@@ -126,8 +125,12 @@ def _render_teams_list(db_getter, template_name):
 	team_list = db_getter(flask.g.client_id,
 			prev_name, prev_team_id, next_name, next_team_id)
 	assert team_list is not None
-	# TODO
-	return flask.render_template(template_name)
+	return flask.render_template(template_name,
+			teams=team_list.teams,
+			prev_name=team_list.prev_name,
+			prev_team_id=team_list.prev_team_id,
+			next_name=team_list.next_name,
+			next_team_id=team_list.next_team_id)
 
 def _render_streamers_list(db_getter, template_name):
 	args = flask.request.args
@@ -139,7 +142,6 @@ def _render_streamers_list(db_getter, template_name):
 	streamer_list = db_getter(flask.g.client_id,
 			prev_name, prev_streamer_id, next_name, next_streamer_id)
 	assert streamer_list is not None
-	# TODO
 	return flask.render_template(template_name,
 			streamers=streamer_list.streamers,
 			prev_name=streamer_list.prev_name,

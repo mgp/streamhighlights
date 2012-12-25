@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block title %}All Teams{% endblock title %}
+
+{% block content %}
+	{% if teams %}
+		<h3 class="header">All teams:</h3>
+		<ul class="team-list">
+		{% for team in teams %}
+			{{ macros.write_team_list_element(team) }}
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3 class="header">No teams found :(</h3>
+	{% endif %}
+{% endblock content %}
+

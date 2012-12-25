@@ -9,13 +9,13 @@
 
 {% macro write_small_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img class="game-logo" src="tf2-small.png" />
+		<img class="game-logo" src="/static/tf2-small.png" />
 	{% endif %}
 {%- endmacro %}
 
 {% macro write_large_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img class="game-logo" src="/static/tf2-64px.png" />
+		<img class="game-logo" src="/static/tf2-large.png" />
 	{% endif %}
 {%- endmacro %}
 
@@ -111,12 +111,12 @@
 	</li>
 {%- endmacro %}
 
-{% macro write_team_element(team) -%}
+{% macro write_team_list_element(team) -%}
 	<li>
-		<a href="">
-			{{ write_game_icon(team.game) }}
+		<a href="{{ url_for('team_details', team_id=team.team_id) }}">
+			{{ write_small_game_icon(team.game) }}
 			{{ team.name }}
-			<div>
+			<div class="counts">
 				{{ write_star_with_count(team.is_starred, team.num_stars) }}
 			</div>
 		</a>
