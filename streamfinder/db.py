@@ -1737,3 +1737,17 @@ def get_displayed_streamer(client_id, streamer_id,
 			next_time,
 			next_match_id)
 
+
+def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token,
+		now=None):
+	user_class_extra_kwargs = {'can_stream': True}
+	return common_db.twitch_user_logged_in(
+			User, Users, twitch_id, name, display_name, logo, access_token,
+			user_class_extra_kwargs=user_class_extra_kwargs, now=now)
+
+def steam_user_logged_in(steam_id, personaname, profile_url, avatar, avatar_full,
+		now=None):
+	return common_db.steam_user_logged_in(
+			User, Users, steam_id, personaname, profile_url, avatar, avatar_full,
+			now=now)
+

@@ -24,8 +24,7 @@ class DbTestCase(unittest.TestCase):
 		steam_id = self._next_steam_id
 		self._next_steam_id += 1
 		profile_url = 'http://steamcommunity.com/id/%s' % name
-		user_id = common_db.steam_user_logged_in(
-				db.User, db.Users, steam_id, name, profile_url, None, None)
+		user_id = db.steam_user_logged_in(steam_id, name, profile_url, None, None)
 		return steam_id, user_id
 
 	def _create_twitch_user(self, name):
@@ -33,10 +32,7 @@ class DbTestCase(unittest.TestCase):
 		twitch_id = self._next_twitch_id
 		self._next_twitch_id += 1
 		display_name = name
-		user_class_extra_kwargs = {'can_stream': True}
-		user_id = common_db.twitch_user_logged_in(
-				db.User, db.Users, twitch_id, name, display_name, None, None,
-				user_class_extra_kwargs=user_class_extra_kwargs)
+		user_id = db.twitch_user_logged_in(twitch_id, name, display_name, None, None)
 		return twitch_id, user_id
 
 	def _get_steam_user_url(self, steam_id):
