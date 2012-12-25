@@ -216,7 +216,7 @@ def twitch_user_logged_in(user_class, users_table,
 		twitch_user, user = session.query(TwitchUser, user_class)\
 				.join(user_class, TwitchUser.user_id == user_class.id)\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
-		_remove_equal_url_by_name(user_class, users_table, url_by_name, twitch_user.user.id)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, user.id)
 		user.name = display_name
 		user.image_url_large = logo
 		user.last_seen = now
@@ -266,7 +266,7 @@ def steam_user_logged_in(user_class, users_table,
 		steam_user, user = session.query(SteamUser, user_class)\
 				.join(user_class, SteamUser.user_id == user_class.id)\
 				.filter(SteamUser.steam_id == steam_id).one()
-		_remove_equal_url_by_name(user_class, users_table, url_by_name, steam_user.user.id)
+		_remove_equal_url_by_name(user_class, users_table, url_by_name, user.id)
 		user.name = personaname
 		user.image_url_small = avatar
 		user.image_url_large = avatar_full
