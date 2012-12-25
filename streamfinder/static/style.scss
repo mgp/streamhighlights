@@ -23,7 +23,20 @@ $large-font-size: 60pt;
 	}
 }
 
-#match {
+.clearfix:after {
+   content: "";
+   visibility: hidden;
+   display: block;
+   height: 0;
+   clear: both;
+}
+*:first-child+html .group { zoom: 1; } /* IE7 */
+
+div.counts {
+	text-transform: none;
+}
+
+#team {
 	border: 1px solid $dark-gray;
 	margin: 10px 0;
 	padding: 10px 20px;
@@ -51,6 +64,26 @@ $large-font-size: 60pt;
 		}
 	}
 	div.counts {
+		float: right;
+	}
+}
+
+#streamer {
+	border: 1px solid $dark-gray;
+	margin: 10px 0;
+	padding: 10px;
+	background-color: $light-gray;
+
+	color: $medium-gray;
+	font-size: $medium-font-size;
+	text-transform: uppercase;
+
+	h3 {
+		color: $dark-gray;
+		font-size: $large-font-size;
+		text-transform: uppercase;
+	}
+	img.picture {
 		float: right;
 	}
 }

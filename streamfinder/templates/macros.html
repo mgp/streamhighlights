@@ -126,7 +126,7 @@
 {% macro write_streamer_list_element(streamer) -%}
 	<li>
 		<a href="{{ streamer|best_streamer_url }}">
-			<img src="{{ streamer|best_streamer_picture }}" />
+			<img src="{{ streamer|best_streamer_small_picture }}" />
 			{{ streamer.name }}
 			<div class="counts">
 				{{ write_star_with_count(streamer.is_starred, streamer.num_stars) }}

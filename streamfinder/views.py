@@ -9,23 +9,35 @@ import re
 
 oid = OpenID(app)
 
+
 def _get_best_streamer_url(streamer):
 	return common_db.get_user_url(streamer.url_by_id, streamer.url_by_name)
 
 _GET_STREAMER_IMAGE_REGEX = re.compile('(?P<basename>.+)-300x300\.(?P<extension>\w+)$')
 
-def _get_best_streamer_picture(streamer):
+def _resize_large_picture(streamer, size):
+	match = _GET_STREAMER_IMAGE_REGEX.search(streamer.image_url_large)
+	if not match:
+		return None
+	return '%s-%sx%s.%s' % (
+			match.group('basename'), size, size, match.group('extension'))
+
+def _get_best_streamer_small_picture(streamer):
+	"""Returns the URL for the best small picture of a streaming user."""
 	if streamer.image_url_small:
 		return streamer.image_url_small
 	elif streamer.image_url_large:
-		match = _GET_STREAMER_IMAGE_REGEX.search(streamer.image_url_large)
-		if not match:
-			return None
-		return '%s-28x28.%s' % (match.group('basename'), match.group('extension'))
+		return _resize_large_picture(streamer, 28)
+
+def _get_best_streamer_large_picture(streamer):
+	"""Returns the URL for the best large picture of a streaming user."""
+	if streamer.image_url_large:
+		return _resize_large_picture(streamer, 150)
 
 jinja_env = app.jinja_env
 jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
-jinja_env.filters['best_streamer_picture'] = _get_best_streamer_picture
+jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
+jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
 
 
 def _read_client_id_from_session(session=None):
@@ -204,8 +216,8 @@ def twitch_user_by_name(name):
 	next_time = args.get('next_time')
 	next_match_id = args.get('next_match_id')
 
-	user = db.get_displayed_streamer_by_twitch_name(
+	streamer = db.get_displayed_streamer_by_twitch_name(
 			flask.g.client_id, name,
 			prev_time, prev_match_id, next_time, next_match_id)
-	return flask.render_template('user.html', user=user)
+	return flask.render_template('streamer.html', streamer=streamer)
 
