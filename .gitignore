@@ -35,3 +35,6 @@ htmlcov
 .project
 .pydevproject
 
+*/static/gen
+*/static/.webassets-cache/
+
