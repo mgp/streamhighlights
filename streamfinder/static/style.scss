@@ -18,7 +18,7 @@ $large-font-size: 60pt;
 
 	.header {
 		color: $dark-gray;
-		font-size: $small-font-size;
+		font-size: $medium-font-size;
 		text-transform: uppercase;
 	}
 }
@@ -54,3 +54,31 @@ $large-font-size: 60pt;
 		float: right;
 	}
 }
+
+ul.streamer-list {
+	margin-top: 10px;
+	color: $medium-gray;
+	font-size: $medium-font-size;
+	text-transform: uppercase;
+
+	li {
+		&:hover {
+			background-color: $light-gray;
+		}
+		&:first-child {
+			border-top: 1px solid $light-gray;
+		}
+		border-bottom: 1px solid $light-gray;
+
+		a {
+			display: block;
+			text-decoration: none;
+			color: $medium-gray;
+		}
+
+		div.counts {
+			float: right;
+		}
+	}
+}
+

@@ -1,5 +1,6 @@
 from streamfinder import app
 
+import common_db
 import db
 import flask
 import functools
@@ -7,14 +8,12 @@ from flask_openid import OpenID
 
 oid = OpenID(app)
 
-def _add_fake_data():
-	name = "Xensity"
-	game = "tf2"
-	league = "esea"
-	fingerprint = "esea:51134"
-	team_id = db.add_team(name, game, league, fingerprint)
+def _get_best_streamer_url(streamer):
+	return common_db.get_user_url(streamer.url_by_id, streamer.url_by_name)
 
-_add_fake_data()
+jinja_env = app.jinja_env
+jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
+
 
 def _read_client_id_from_session(session=None):
 	"""Reads the client's user identifier from the session."""
@@ -107,16 +106,21 @@ def _render_teams_list(db_getter, template_name):
 
 def _render_streamers_list(db_getter, template_name):
 	args = flask.request.args
-	prev_time = args.get('prev_time')
+	prev_name = args.get('prev_name')
 	prev_streamer_id = args.get('prev_streamer_id')
-	next_time = args.get('next_time')
+	next_name = args.get('next_name')
 	next_streamer_id = args.get('next_streamer_id')
 
-	streamer_list = db_getter(flask.g.client,
-			prev_name, prev_streamer_id, next_time, next_streamer_id)
+	streamer_list = db_getter(flask.g.client_id,
+			prev_name, prev_streamer_id, next_name, next_streamer_id)
 	assert streamer_list is not None
 	# TODO
-	return flask.render_template(template_name)
+	return flask.render_template(template_name,
+			streamers=streamer_list.streamers,
+			prev_name=streamer_list.prev_name,
+			prev_streamer_id=streamer_list.prev_streamer_id,
+			next_name=streamer_list.next_name,
+			next_streamer_id=streamer_list.next_streamer_id)
 
 
 @app.route('/starred/matches')

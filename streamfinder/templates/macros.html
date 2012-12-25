@@ -104,7 +104,7 @@
 				<span class="team-name">{{ match.team2.name }}</span>
 			</div>
 			{{ match.time }}
-			<div>
+			<div class="counts">
 				{{ write_star_with_count(match.is_starred, match.num_stars) }}
 			</div>
 		</a>
@@ -125,10 +125,10 @@
 
 {% macro write_streamer_list_element(streamer) -%}
 	<li>
-		<a href="">
+		<a href="{{ streamer|best_streamer_url }}">
 			<img src="{{ streamer.image_url }}" />
 			{{ streamer.name }}
-			<div>
+			<div class="counts">
 				{{ write_star_with_count(streamer.is_starred, streamer.num_stars) }}
 			</div>
 		</a>
