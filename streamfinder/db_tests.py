@@ -130,7 +130,8 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(next_match_id, displayed_calendar.next_match_id)
 
 	def _assert_displayed_streamer(self, displayed_streamer,
-			streamer_id, name, url_by_id, num_stars=0, image_url=None, url_by_name=None):
+			streamer_id, name, url_by_id,
+			num_stars=0, image_url_small=None, image_url_large=None, url_by_name=None):
 		"""Utility method to assert the properties of a DisplayedStreamer."""
 
 		self.assertEqual(streamer_id, displayed_streamer.streamer_id)
@@ -138,12 +139,14 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(url_by_id, displayed_streamer.url_by_id)
 		# Begin optional arguments.
 		self.assertEqual(num_stars, displayed_streamer.num_stars)
-		self.assertEqual(image_url, displayed_streamer.image_url)
+		self.assertEqual(image_url_small, displayed_streamer.image_url_small)
+		self.assertEqual(image_url_large, displayed_streamer.image_url_large)
 		self.assertEqual(url_by_name, displayed_streamer.url_by_name)
 
 	def _assert_displayed_streamer_details(self, displayed_streamer,
 			streamer_id, name, url_by_id,
-			num_stars=0, image_url=None, url_by_name=None, is_starred=False, num_matches=0,
+			num_stars=0, image_url_small=None, image_url_large=None,
+			url_by_name=None, is_starred=False, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		"""Utility method to assert the properties of a DisplayedMatchDetails.
 
@@ -151,7 +154,8 @@ class AbstractFinderDbTestCase(DbTestCase):
 		"""
 
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, name, url_by_id, num_stars, image_url, url_by_name)
+				streamer_id, name, url_by_id, num_stars,
+				image_url_small, image_url_large, url_by_name)
 		# Begin optional arguments.
 		self.assertEqual(is_starred, displayed_streamer.is_starred)
 		self.assertEqual(num_matches, len(displayed_streamer.matches))

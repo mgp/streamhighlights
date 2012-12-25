@@ -5,14 +5,27 @@ import db
 import flask
 import functools
 from flask_openid import OpenID
+import re
 
 oid = OpenID(app)
 
 def _get_best_streamer_url(streamer):
 	return common_db.get_user_url(streamer.url_by_id, streamer.url_by_name)
 
+_GET_STREAMER_IMAGE_REGEX = re.compile('(?P<basename>.+)-300x300\.(?P<extension>\w+)$')
+
+def _get_best_streamer_picture(streamer):
+	if streamer.image_url_small:
+		return streamer.image_url_small
+	elif streamer.image_url_large:
+		match = _GET_STREAMER_IMAGE_REGEX.search(streamer.image_url_large)
+		if not match:
+			return None
+		return '%s-28x28.%s' % (match.group('basename'), match.group('extension'))
+
 jinja_env = app.jinja_env
 jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
+jinja_env.filters['best_streamer_picture'] = _get_best_streamer_picture
 
 
 def _read_client_id_from_session(session=None):

@@ -856,20 +856,22 @@ class DisplayedTeamDetails(DisplayedTeam):
 
 """A view of a streaming user."""
 class DisplayedStreamer:
-	def __init__(self, streamer_id, name, num_stars, image_url, url_by_id=None, url_by_name=None):
+	def __init__(self, streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id=None, url_by_name=None):
 		self.streamer_id = streamer_id
 		self.name = name
 		self.num_stars = num_stars
-		self.image_url = image_url
+		self.image_url_small = image_url_small
+		self.image_url_large = image_url_large
 		self.url_by_id = url_by_id
 		self.url_by_name = url_by_name
 
 	def __repr__(self):
-		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name=%r)' % (
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.num_stars,
-				self.image_url,
+				self.image_url_small,
+				self.image_url_large,
 				self.url_by_id,
 				self.url_by_name)
 
@@ -879,11 +881,11 @@ Includes whether the client has starred the streaming user, and all of the
 matches the user is streaming.
 """
 class DisplayedStreamerDetails(DisplayedStreamer):
-	def __init__(self, streamer_id, name, num_stars, image_url, url_by_id, url_by_name,
+	def __init__(self, streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id, url_by_name,
 			is_starred, matches,
 			prev_time, prev_match_id, next_time, next_match_id):
 		DisplayedStreamer.__init__(self,
-				streamer_id, name, num_stars, image_url, url_by_id, url_by_name)
+				streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id, url_by_name)
 		self.is_starred = is_starred
 		self.matches = matches
 		self.prev_time = prev_time
@@ -892,11 +894,12 @@ class DisplayedStreamerDetails(DisplayedStreamer):
 		self.next_match_id = next_match_id
 	
 	def __repr__(self):
-		return 'DisplayedStreamerDetails(streamer_id=%r, name=%r, num_stars=%r, image_url=%r, url_by_id=%r, url_by_name=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+		return 'DisplayedStreamerDetails(streamer_id=%r, name=%r, num_stars=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.num_stars,
-				self.image_url,
+				self.image_url_small,
+				self.image_url_large,
 				self.url_by_id,
 				self.url_by_name,
 				self.is_starred,
@@ -1430,6 +1433,7 @@ def _get_displayed_streamer(streamer):
 			streamer.name,
 			streamer.num_stars,
 			streamer.image_url_small,
+			streamer.image_url_large,
 			streamer.url_by_id,
 			streamer.url_by_name)
 
@@ -1686,6 +1690,7 @@ def get_displayed_streamer(client_id, streamer_id,
 			streamer.name,
 			streamer.num_stars,
 			streamer.image_url_small,
+			streamer.image_url_large,
 			streamer.url_by_id,
 			streamer.url_by_name,
 			is_starred,
