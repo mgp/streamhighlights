@@ -1,4 +1,56 @@
+@font-face {
+  font-family: 'LeagueGothic';
+  src: url('/static/LeagueGothic-Regular.otf');
+} 
+
+$light-gray: #F3F3F3;
+$medium-gray: #7E7E7E;
+$dark-gray: #575757;
+
+$small-font-size: 24pt;
+$medium-font-size: 30pt;
+$large-font-size: 60pt;
+
 #site {
-	width: 960px;
+	width: 800px;
 	margin: 0 auto;
+  font-family: 'LeagueGothic', arial, sans-serif;
+
+	.header {
+		color: $dark-gray;
+		font-size: $small-font-size;
+		text-transform: uppercase;
+	}
+}
+
+#match {
+	border: 1px solid $dark-gray;
+	margin: 10px 0;
+	padding: 10px 20px;
+	background-color: $light-gray;
+
+	color: $medium-gray;
+	font-size: $medium-font-size;
+	text-transform: uppercase;
+
+	h3 {
+		color: $dark-gray;
+		font-size: $large-font-size;
+		text-transform: uppercase;
+		img.game-logo {
+			margin-bottom: -3px;
+		}
+		img.external-link {
+			margin-top: -3px;
+		}
+	}
+	div.league {
+
+		img.league-logo {
+			margin-bottom: -3px;
+		}
+	}
+	div.counts {
+		float: right;
+	}
 }

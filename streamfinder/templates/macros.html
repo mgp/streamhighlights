@@ -9,26 +9,26 @@
 
 {% macro write_small_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img src="tf2-small.png" />
+		<img class="game-logo" src="tf2-small.png" />
 	{% endif %}
 {%- endmacro %}
 
 {% macro write_large_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img src="tf2-large.png" />
+		<img class="game-logo" src="/static/tf2-64px.png" />
 	{% endif %}
 {%- endmacro %}
 
 
 {% macro write_small_external_link(external_link) -%}
 	<a href="{{ external_link }}">
-		<img src="external-link-small.png" />
+		<img class="external-link" src="/static/external-link-small.png" />
 	</a>
 {%- endmacro %}
 
 {% macro write_large_external_link(link) -%}
 	<a href="{{ external_link }}">
-		<img src="external-link-large.png" />
+		<img class="external-link" src="/static/external-link-64px.png" />
 	</a>
 {%- endmacro %}
 
@@ -39,9 +39,9 @@
 
 {% macro write_star_with_count(is_starred, num_stars) -%}
 	{% if is_starred %}
-		<img src="star-dark-full.png" />
+		<img src="/static/star-dark-full.png" />
 	{% else %}
-		<img src="star-light-empty.png" />
+		<img src="/static/star-light-empty.png" />
 	{% endif %}
 	<span>{{ write_count(num_stars) }}</span>
 {%- endmacro %}
@@ -57,14 +57,14 @@
 
 
 {% macro _write_league(image_url, name, external_url) -%}
-	<img src="{{ image_url }}" />
-	<span>name</span>
+	<img class="league-logo" src="{{ image_url }}" />
+	<span>{{ name }}</span>
 	{{ write_small_external_link(external_url) }}
 {%- endmacro %}
 
 {% macro write_league(league) -%}
 	{% if league == "esea" %}
-		{{ _write_league("esea.png", "Season 13 Invite", "TODO") }}
+		{{ _write_league("/static/esea-small.png", "Season 13 Invite", "TODO") }}
 	{% endif %}
 {%- endmacro %}
 
