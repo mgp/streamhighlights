@@ -6,7 +6,7 @@
 {% block content %}
 	{% if streamers %}
 		<h3 class="header">All streamers:</h3>
-		<ul class="streamer-list">
+		<ul class="data-list streamer-list">
 		{% for streamer in streamers %}
 			{{ macros.write_streamer_list_element(streamer) }}
 		{% endfor %}
