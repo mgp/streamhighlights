@@ -198,5 +198,14 @@ def team_details(team_id):
 @app.route('/user/twitch/<name>')
 @login_optional
 def twitch_user_by_name(name):
-	pass
+	args = flask.request.args
+	prev_time = args.get('prev_time')
+	prev_match_id = args.get('prev_match_id')
+	next_time = args.get('next_time')
+	next_match_id = args.get('next_match_id')
+
+	user = db.get_displayed_streamer_by_twitch_name(
+			flask.g.client_id, name,
+			prev_time, prev_match_id, next_time, next_match_id)
+	return flask.render_template('user.html', user=user)
 

@@ -1666,27 +1666,26 @@ class StreamedMatchesPaginator:
 		match, team1, team2 = item
 		return (match.id == first_id)
 
+
 @close_session
-def get_displayed_streamer(client_id, streamer_id,
-		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
-	"""Returns a DisplayedStreamer containing scheduled streamed matches."""
+def _get_displayed_streamer_by_filter(client_id, filter_adder,
+		prev_time, prev_match_id, next_time, next_match_id, page_limit):
 	# Get the streamer.
-	streamer, starred_streamer = session.query(User, StarredStreamer)\
+	query = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
-				StarredStreamer.streamer_id == streamer_id,
-				StarredStreamer.user_id == client_id))\
-			.filter(User.id == streamer_id)\
-			.one()
+				StarredStreamer.streamer_id == User.id,
+				StarredStreamer.user_id == client_id))
+	query = filter_adder(query)
+	streamer, starred_streamer = query.one()
 	is_starred = (starred_streamer is not None)
 
 	# Get the partial list of matches streamed by this user.
-	paginator = StreamedMatchesPaginator(streamer_id)
+	paginator = StreamedMatchesPaginator(streamer.id)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	
 	# Return the displayed streaming user.
-	return DisplayedStreamerDetails(streamer_id,
+	return DisplayedStreamerDetails(streamer.id,
 			streamer.name,
 			streamer.num_stars,
 			streamer.image_url_small,
@@ -1700,6 +1699,44 @@ def get_displayed_streamer(client_id, streamer_id,
 			prev_match_id,
 			next_time,
 			next_match_id)
+
+def get_displayed_streamer(client_id, streamer_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	"""Returns a DisplayedStreamer containing scheduled streamed matches.
+	
+	The returned streaming user is found by its identifier.
+	"""
+	def _filter_adder(query):
+		return query.filter(User.id == streamer_id)
+	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
+			prev_time, prev_match_id, next_time, next_match_id, page_limit)
+
+def get_displayed_streamer_by_twitch_id(client_id, twitch_id,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	"""Returns a DisplayedStreamer containing scheduled streamed matches.
+	
+	The returned streaming user is found by its Twitch identifier.
+	"""
+	url_by_id = common_db._get_twitch_url_by_id(twitch_id)
+	def _filter_adder(query):
+		return query.filter(User.url_by_id == url_by_id)
+	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
+			prev_time, prev_match_id, next_time, next_match_id, page_limit)
+
+def get_displayed_streamer_by_twitch_name(client_id, twitch_name,
+		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
+		page_limit=None):
+	"""Returns a DisplayedStreamer containing scheduled streamed matches.
+	
+	The returned streaming user is found by its Twitch username.
+	"""
+	url_by_name = common_db._get_twitch_url_by_name(twitch_name)
+	def _filter_adder(query):
+		return query.filter(User.url_by_name == url_by_name)
+	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
+			prev_time, prev_match_id, next_time, next_match_id, page_limit)
 
 
 def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token,
