@@ -109,8 +109,8 @@ class TwitchUser(_Base):
 
 
 _USER_URL_SEPARATOR = ':'
-_USER_URL_STEAM_PREFIX = 's'
-_USER_URL_TWITCH_PREFIX = 't'
+_USER_URL_STEAM_PREFIX = 'steam'
+_USER_URL_TWITCH_PREFIX = 'twitch'
 
 def _get_steam_url_by_id(steam_id):
 	"""Returns the url_by_id value for a User from Steam."""
@@ -141,7 +141,8 @@ def _get_twitch_url_by_name(name):
 	"""Returns the url_by_name value for a User from Twitch."""
 	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, name))
 
-def _get_user_url(url_by_id, url_by_name):
+
+def get_user_url(url_by_id, url_by_name):
 	"""Returns the best URL for a given User."""
 	if url_by_name is not None:
 		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
@@ -164,7 +165,7 @@ def _get_user_url(url_by_id, url_by_name):
 	else:
 		raise ValueError('Invalid url_by_id=%s' % url_by_id)
 
-def _get_external_url(url_by_id, url_by_name):
+def get_external_url(url_by_id, url_by_name):
 	"""Returns the best external URL for a given User."""
 	if url_by_name is not None:
 		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
