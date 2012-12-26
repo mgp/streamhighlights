@@ -1,3 +1,12 @@
+.clearfix:after {
+   content: "";
+   visibility: hidden;
+   display: block;
+   height: 0;
+   clear: both;
+}
+*:first-child+html .group { zoom: 1; } /* IE7 */
+
 @font-face {
   font-family: 'LeagueGothic';
   src: url('/static/LeagueGothic-Regular.otf');
@@ -15,33 +24,26 @@ $large-font-size: 60pt;
 	width: 800px;
 	margin: 0 auto;
   font-family: 'LeagueGothic', arial, sans-serif;
-
-	.header {
-		color: $dark-gray;
-		font-size: $medium-font-size;
-		text-transform: uppercase;
-	}
 }
 
-.clearfix:after {
-   content: "";
-   visibility: hidden;
-   display: block;
-   height: 0;
-   clear: both;
+.header {
+	color: $dark-gray;
+	font-size: $medium-font-size;
+	text-transform: uppercase;
 }
-*:first-child+html .group { zoom: 1; } /* IE7 */
-
 div.counts {
 	text-transform: none;
 }
 
 .main-data {
-	border: 1px solid $dark-gray;
-	margin: 20px 0;
-	padding: 10px;
-	background-color: $light-gray;
+	$border: 2px solid $medium-gray;
+	$padding: 10px;
 
+	border-top: $border;
+	border-bottom: $border;
+	padding: $padding;
+	margin: (2 * $padding) 0;
+	background-color: $light-gray;
 	color: $medium-gray;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
@@ -76,24 +78,26 @@ div.counts {
 	}
 }
 
-$data-list-padding: 5px;
 ul.data-list {
+	$data-list-padding: 5px;
+
 	margin-top: $data-list-padding;
 	color: $medium-gray;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
 
 	li {
+		$border: 2px solid $light-gray;
+
+		border-bottom: $border;
+		padding: $data-list-padding 0;
+
 		&:hover {
 			background-color: $light-gray;
 		}
 		&:first-child {
-			border-top: 1px solid $light-gray;
+			border-top: $border;
 		}
-
-		padding: $data-list-padding 0;
-		border-bottom: 1px solid $light-gray;
-
 		a {
 			display: block;
 			text-decoration: none;
@@ -114,6 +118,7 @@ ul.streamer-list {
 ul.match-list li {
 	img.game-logo {
 		float: left;
+
 		& + div {
 			margin-left: 40px;
 		}
