@@ -4,7 +4,7 @@
 {% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock %}
 
 {% block content %}
-	<h2 class="header">In TODO:</h2>
+	<h2 class="header">{{ match.time|readable_timedelta }}:</h2>
 	<div>
 		<h3>
 			{{ macros.write_large_game_icon(match.game) }}

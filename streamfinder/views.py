@@ -1,6 +1,7 @@
 from streamfinder import app
 
 import common_db
+from datetime import datetime, timedelta
 import db
 import flask
 import functools
@@ -38,8 +39,8 @@ def _get_best_streamer_large_picture(streamer):
 _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
 _DATETIME_FORMAT_UTC = '%a %b %d %I:%M%p %Z'
 
-def _get_readable_datetime(datetime):
-	utc_datetime = pytz.utc.localize(datetime)
+def _get_readable_datetime(dt):
+	utc_datetime = pytz.utc.localize(dt)
 	timezone = flask.g.timezone
 	if timezone:
 		localized_datetime = utc_datetime.astimezone(timezone)
@@ -47,11 +48,69 @@ def _get_readable_datetime(datetime):
 	else:
 		return utc_datetime.strftime(_DATETIME_FORMAT_UTC)
 
+_SECONDS_PER_HOUR = 60 * 60
+_SECONDS_PER_MINUTE = 60
+
+def _get_time_between(dt1, dt2):
+	td = dt1 - dt2
+	seconds = td.seconds
+	# Get the number of hours.
+	hours = seconds / _SECONDS_PER_HOUR
+	seconds %= _SECONDS_PER_HOUR
+	# Get the number of minutes.
+	minutes = seconds / _SECONDS_PER_MINUTE
+	seconds %= _SECONDS_PER_MINUTE
+
+	return td.days, hours, minutes
+
+def _get_time_between_string(days, hours, minutes):
+	parts = []
+
+	# Append the days if needed.
+	if days > 1:
+		parts.append('%s days' % days)
+	elif days:
+		parts.append('1 day')
+	# Append the hours if needed.
+	if hours > 1:
+		parts.append('%s hours' % hours)
+	else:
+		parts.appaned('1 hour')
+	# Append the minutes if needed.
+	if minutes > 1:
+		parts.append('%s minutes' % minutes)
+	else:
+		parts.append('1 minute')
+
+	return ', '.join(parts)
+
+def _get_time_until(dt, now):
+	days, hours, minutes = _get_time_between(dt, now)
+
+	if not days and not hours and not minutes:
+		return 'Starting now'
+	else:
+		return 'Starting in %s' % _get_time_between_string(days, hours, minutes)
+
+def _get_time_since(dt, now):
+	days, hours, minutes = _get_time_between(now, dt)
+	return 'Started %s ago' % _get_time_between_string(days, hours, minutes)
+
+def _get_readable_timedelta(dt, now=None):
+	if now is None:
+		now = datetime.utcnow().replace(microsecond=0)
+	if dt > now:
+		return _get_time_until(dt, now)
+	else:
+		return _get_time_since(dt, now)
+
+
 jinja_env = app.jinja_env
 jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
 jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
+jinja_env.filters['readable_timedelta'] = _get_readable_timedelta
 
 
 def _read_client_id_from_session(session=None):
