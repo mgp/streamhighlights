@@ -104,6 +104,15 @@ def _get_readable_timedelta(dt, now=None):
 	else:
 		return _get_time_since(dt, now)
 
+def league(division):
+	pass
+
+def division_name(division):
+	pass
+
+def division_url(league):
+	pass
+
 
 jinja_env = app.jinja_env
 jinja_env.filters['best_streamer_url'] = _get_best_streamer_url

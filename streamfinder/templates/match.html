@@ -5,7 +5,7 @@
 
 {% block content %}
 	<h2 class="header">{{ match.time|readable_timedelta }}:</h2>
-	<div>
+	<div id="match" class="main-data clearfix">
 		<h3>
 			{{ macros.write_large_game_icon(match.game) }}
 			<a href="" class="team-name">{{ match.team1.name }}</a>
