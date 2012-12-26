@@ -8,7 +8,7 @@
 		<img class="picture" src="{{ streamer|best_streamer_large_picture }}" />
 		<h3>
 			{{ streamer.name }}
-			{{ macros.write_large_external_link("TODO") }}
+			{{ macros.write_large_external_link(streamer|user_external_url) }}
 		</h3>
 		<div class="counts">
 			{{ macros.write_star_with_count(streamer.is_starred, streamer.num_stars) }}

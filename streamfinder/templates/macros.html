@@ -26,7 +26,7 @@
 	</a>
 {%- endmacro %}
 
-{% macro write_large_external_link(link) -%}
+{% macro write_large_external_link(external_link) -%}
 	<a href="{{ external_link }}" target="_blank">
 		<img class="external-link" src="/static/external-link-large.png" />
 	</a>
@@ -124,7 +124,7 @@
 
 {% macro write_streamer_list_element(streamer) -%}
 	<li>
-		<a href="{{ streamer|best_streamer_url }}">
+		<a href="{{ streamer|best_user_url }}">
 			<img src="{{ streamer|best_streamer_small_picture }}" />
 			{{ streamer.name }}
 			<div class="counts">

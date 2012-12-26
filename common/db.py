@@ -142,29 +142,6 @@ def _get_twitch_url_by_name(name):
 	return _USER_URL_SEPARATOR.join((_USER_URL_TWITCH_PREFIX, name))
 
 
-def get_user_url(url_by_id, url_by_name):
-	"""Returns the best URL for a given User."""
-	if url_by_name is not None:
-		prefix, remainder = url_by_name.split(_USER_URL_SEPARATOR, 1)
-		if prefix == _USER_URL_STEAM_PREFIX:
-			# The remainder is the Steam community identifier.
-			return '/user/steam/%s' % remainder
-		elif prefix == _USER_URL_TWITCH_PREFIX:
-			# The remainder is the Twitch user name.
-			return '/user/twitch/%s' % remainder
-		else:
-			raise ValueError('Invalid url_by_name=%s' % url_by_name)
-
-	prefix, remainder = url_by_id.split(_USER_URL_SEPARATOR, 1)
-	if prefix == _USER_URL_STEAM_PREFIX:
-		# The remainder is the Steam identifier.
-		return '/user/steam_id/%s' % remainder
-	elif prefix == _USER_URL_TWITCH_PREFIX:
-		# The remainder is the Twitch identifier.
-		return '/user/twitch_id/%s' % remainder
-	else:
-		raise ValueError('Invalid url_by_id=%s' % url_by_id)
-
 def get_external_url(url_by_id, url_by_name):
 	"""Returns the best external URL for a given User."""
 	if url_by_name is not None:

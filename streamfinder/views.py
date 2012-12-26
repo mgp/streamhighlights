@@ -12,8 +12,33 @@ import pytz
 oid = OpenID(app)
 
 
-def _get_best_streamer_url(streamer):
-	return common_db.get_user_url(streamer.url_by_id, streamer.url_by_name)
+def _get_user_external_url(user):
+	return common_db.get_external_url(user.url_by_id, user.url_by_name)
+
+def _get_best_user_url(user):
+	"""Returns the best URL for a given User."""
+	if user.url_by_name is not None:
+		prefix, remainder = user.url_by_name.split(common_db._USER_URL_SEPARATOR, 1)
+		if prefix == common_db._USER_URL_STEAM_PREFIX:
+			# The remainder is the Steam community identifier.
+			# TODO
+			return None
+		elif prefix == common_db._USER_URL_TWITCH_PREFIX:
+			# The remainder is the Twitch user name.
+			return flask.url_for('twitch_user_by_name', name=remainder)
+		else:
+			return None
+
+	prefix, remainder = user.url_by_id.split(common_db._USER_URL_SEPARATOR, 1)
+	if prefix == common_db._USER_URL_STEAM_PREFIX:
+		# The remainder is the Steam identifier.
+		# TODO
+		return None
+	elif prefix == common_db._USER_URL_TWITCH_PREFIX:
+		# The remainder is the Twitch identifier.
+		return flask.url_for('twitch_user_by_id', twitch_id=int(remainder))
+	else:
+		return None
 
 _GET_STREAMER_IMAGE_REGEX = re.compile('(?P<basename>.+)-300x300\.(?P<extension>\w+)$')
 
@@ -35,6 +60,7 @@ def _get_best_streamer_large_picture(streamer):
 	"""Returns the URL for the best large picture of a streaming user."""
 	if streamer.image_url_large:
 		return _resize_large_picture(streamer, 150)
+
 
 _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
 _DATETIME_FORMAT_UTC = '%a %b %d %I:%M%p %Z'
@@ -76,7 +102,7 @@ def _get_time_between_string(days, hours, minutes):
 	if hours > 1:
 		parts.append('%s hours' % hours)
 	else:
-		parts.appaned('1 hour')
+		parts.append('1 hour')
 	# Append the minutes if needed.
 	if minutes > 1:
 		parts.append('%s minutes' % minutes)
@@ -106,6 +132,7 @@ def _get_readable_timedelta(dt, now=None):
 	else:
 		return _get_time_since(dt, now)
 
+
 _DIVISION_SEPARATOR = '-'
 
 def _get_league_id(division):
@@ -134,11 +161,18 @@ def _get_division_external_url(division):
 
 
 jinja_env = app.jinja_env
-jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
+
+# Filters for rendering users.
+jinja_env.filters['user_external_url'] = _get_user_external_url
+jinja_env.filters['best_user_url'] = _get_best_user_url
 jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
+
+# Filters for rendering times.
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
 jinja_env.filters['readable_timedelta'] = _get_readable_timedelta
+
+# Filters for rendering leagues and divisions.
 jinja_env.filters['league_id'] = _get_league_id
 jinja_env.filters['division_name'] = _get_division_name
 jinja_env.filters['division_external_url'] = _get_division_external_url
@@ -326,7 +360,7 @@ def team_details(team_id):
 			prev_time, prev_match_id, next_time, next_match_id)
 	return flask.render_template('team.html', team=team)
 
-@app.route('/user/twitch/<name>')
+@app.route('/users/twitch/<name>')
 @login_optional
 def twitch_user_by_name(name):
 	args = flask.request.args
@@ -337,6 +371,20 @@ def twitch_user_by_name(name):
 
 	streamer = db.get_displayed_streamer_by_twitch_name(
 			flask.g.client_id, name,
+			prev_time, prev_match_id, next_time, next_match_id)
+	return flask.render_template('streamer.html', streamer=streamer)
+
+@app.route('/users/twitch_id/<int:twitch_id>')
+@login_optional
+def twitch_user_by_id(twitch_id):
+	args = flask.request.args
+	prev_time = args.get('prev_time')
+	prev_match_id = args.get('prev_match_id')
+	next_time = args.get('next_time')
+	next_match_id = args.get('next_match_id')
+
+	streamer = db.get_displayed_streamer_by_twitch_id(
+			flask.g.client_id, twitch_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	return flask.render_template('streamer.html', streamer=streamer)
 
