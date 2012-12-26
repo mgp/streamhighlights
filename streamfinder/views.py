@@ -40,6 +40,7 @@ _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
 _DATETIME_FORMAT_UTC = '%a %b %d %I:%M%p %Z'
 
 def _get_readable_datetime(dt):
+	"""Returns the datetime as a string, using the user's timezone if logged in."""
 	utc_datetime = pytz.utc.localize(dt)
 	timezone = flask.g.timezone
 	if timezone:
@@ -97,6 +98,7 @@ def _get_time_since(dt, now):
 	return 'Started %s ago' % _get_time_between_string(days, hours, minutes)
 
 def _get_readable_timedelta(dt, now=None):
+	"""Returns the time until or time since the given datetime as a string."""
 	if now is None:
 		now = datetime.utcnow().replace(microsecond=0)
 	if dt > now:
@@ -104,14 +106,31 @@ def _get_readable_timedelta(dt, now=None):
 	else:
 		return _get_time_since(dt, now)
 
-def league(division):
-	pass
+_DIVISION_SEPARATOR = '-'
 
-def division_name(division):
-	pass
+def _get_league_id(division):
+	"""Returns the unique league identifier from the given division value."""
+	print '*** division=%s' % division
+	return division.split(_DIVISION_SEPARATOR)[0]
 
-def division_url(league):
-	pass
+_DIVISION_NAMES = {
+	'esea-s13-invite': 'Season 13 Invite',
+	'esea-s13-intermediate': 'Season 13 Intermediate',
+	'esea-s13-open': 'Season 13 Open'
+}
+_DIVISION_URLS = {
+	'esea-s13-invite': 'http://play.esea.net/index.php?s=league&d=standings&division_id=2023',
+	'esea-s13-intermediate': 'http://play.esea.net/index.php?s=league&d=standings&division_id=2024',
+	'esea-s13-open': 'http://play.esea.net/index.php?s=league&d=standings&division_id=2025',
+}
+
+def _get_division_name(division):
+	"""Returns the readable name of the given division value."""
+	return _DIVISION_NAMES.get(division, None)
+
+def _get_division_external_url(division):
+	"""Returns the external URL for the given division value."""
+	return _DIVISION_URLS.get(division, None)
 
 
 jinja_env = app.jinja_env
@@ -120,6 +139,9 @@ jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_pict
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
 jinja_env.filters['readable_timedelta'] = _get_readable_timedelta
+jinja_env.filters['league_id'] = _get_league_id
+jinja_env.filters['division_name'] = _get_division_name
+jinja_env.filters['division_external_url'] = _get_division_external_url
 
 
 def _read_client_id_from_session(session=None):

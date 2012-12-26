@@ -56,15 +56,12 @@
 {%- endmacro %}
 
 
-{% macro _write_league(image_url, name, external_url) -%}
-	<img class="league-logo" src="{{ image_url }}" />
-	<span>{{ name }}</span>
-	{{ write_small_external_link(external_url) }}
-{%- endmacro %}
-
-{% macro write_league(league) -%}
-	{% if league == "esea" %}
-		{{ _write_league("/static/esea-small.png", "Season 13 Invite", "TODO") }}
+{% macro write_division(game, division) -%}
+	{% set league_id = division|league_id %}
+	{% if league_id %}
+		<img class="league-logo" src="/static/{{ league_id }}.png" />
+		{{ division|division_name }}
+		{{ write_small_external_link(division|division_external_url) }}
 	{% endif %}
 {%- endmacro %}
 
@@ -87,7 +84,7 @@
 				<span>{{ date }}</span> at <span>{{ time }}</span>
 			</div>
 			<div>
-				{{ write_league(match.league) }}
+				{{ write_division(match.game, match.division) }}
 			</div>
 		</div>
 	</div>
