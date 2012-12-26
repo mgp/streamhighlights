@@ -44,16 +44,16 @@ class Team(common_db._Base):
 	id = sa.Column(sa.Integer, primary_key=True)
 	name = sa.Column(sa.String, nullable=False)
 	game = sa.Column(sa.String, nullable=False)
-	league = sa.Column(sa.String, nullable=False)
+	division = sa.Column(sa.String, nullable=False)
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Team(id=%r, name=%r, game=%r, league=%r, num_stars=%r, fingerprint=%r)' % (
+		print 'Team(id=%r, name=%r, game=%r, division=%r, num_stars=%r, fingerprint=%r)' % (
 				self.id,
 				self.name,
 				self.game,
-				self.league,
+				self.division,
 				self.num_stars,
 				self.url,
 				self.fingerprint)
@@ -69,20 +69,20 @@ class Match(common_db._Base):
 	team2_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), nullable=False)
 	time = sa.Column(sa.DateTime, nullable=False)
 	game = sa.Column(sa.String, nullable=False)
-	league = sa.Column(sa.String, nullable=False)
+	division = sa.Column(sa.String, nullable=False)
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	num_streams = sa.Column(sa.Integer, default=0, nullable=False)
 	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, league=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
+		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, division=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
 				self.id,
 				self.team1_id,
 				self.team2_id,
 				self.time,
 				self.game,
-				self.league,
+				self.division,
 				self.num_stars,
 				self.num_streams,
 				self.is_streamed,
@@ -305,7 +305,7 @@ def drop_all():
 
 
 @close_session
-def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
+def add_match(team1_id, team2_id, time, game, division, fingerprint, now=None):
 	"""Adds a match between two teams at a given time."""
 	try:
 		match_id = session.query(Match)\
@@ -319,7 +319,7 @@ def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
 
 	try:
 		# Add the match.
-		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, league=league, time=time,
+		match = Match(team1_id=team1_id, team2_id=team2_id, game=game, division=division, time=time,
 				fingerprint=fingerprint)
 		session.add(match)
 		session.flush()
@@ -341,13 +341,13 @@ def add_match(team1_id, team2_id, time, game, league, fingerprint, now=None):
 		raise common_db.DbException._chain()
 
 @close_session
-def add_team(name, game, league, fingerprint, now=None):
-	"""Adds a team in the given game and league."""
+def add_team(name, game, division, fingerprint, now=None):
+	"""Adds a team in the given game and division."""
 	try:
 		team = session.query(Team).filter(Team.fingerprint == fingerprint).one()
 		team.name = name
 	except sa_orm.exc.NoResultFound:
-		team = Team(name=name, game=game, league=league, fingerprint=fingerprint)
+		team = Team(name=name, game=game, division=division, fingerprint=fingerprint)
 		session.add(team)
 
 	session.commit()
@@ -743,7 +743,7 @@ def _remove_last_stream_calendar_entries(client_id, match_id, now):
 """A view of a match."""
 class DisplayedMatch:
 	def __init__(self, match_id, team1, team2, time, num_stars, num_streams,
-			game=None, league=None):
+			game=None, division=None):
 		self.match_id = match_id
 		self.team1 = team1
 		self.team2 = team2
@@ -752,10 +752,10 @@ class DisplayedMatch:
 		self.num_streams = num_streams
 		# Begin optional arguments.
 		self.game = game
-		self.league = league
+		self.division = division
 
 	def __repr__(self):
-		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, league=%r)' % (
+		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, division=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
@@ -763,7 +763,7 @@ class DisplayedMatch:
 				self.num_stars,
 				self.num_streams,
 				self.game,
-				self.league)
+				self.division)
 
 """A detailed view of a match.
 
@@ -772,10 +772,10 @@ streamers.
 """
 class DisplayedMatchDetails(DisplayedMatch):
 	def __init__(self, match_id, team1, team2, time, num_stars, num_streams,
-			game, league, fingerprint, is_starred, streamers,
+			game, division, fingerprint, is_starred, streamers,
 			prev_time, prev_streamer_id, next_time, next_streamer_id):
 		DisplayedMatch.__init__(self, match_id, team1, team2, time, num_stars, num_streams,
-				game, league)
+				game, division)
 		self.fingerprint = fingerprint
 		self.is_starred = is_starred
 		self.streamers = streamers
@@ -785,7 +785,7 @@ class DisplayedMatchDetails(DisplayedMatch):
 		self.next_streamer_id = next_streamer_id
 
 	def __repr__(self):
-		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, league=%r, fingerprint=%r, is_starred=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
+		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, division=%r, fingerprint=%r, is_starred=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
@@ -793,7 +793,7 @@ class DisplayedMatchDetails(DisplayedMatch):
 				self.num_stars,
 				self.num_streams,
 				self.game,
-				self.league,
+				self.division,
 				self.fingerprint,
 				self.is_starred,
 				self.streamers,
@@ -805,31 +805,31 @@ class DisplayedMatchDetails(DisplayedMatch):
 
 """A view of a team."""
 class DisplayedTeam:
-	def __init__(self, team_id, name, num_stars, game=None, league=None):
+	def __init__(self, team_id, name, num_stars, game=None, division=None):
 		self.team_id = team_id
 		self.name = name
 		self.num_stars = num_stars
 		# Optional arguments.
 		self.game = game
-		self.league = league
+		self.division = division
 
 	def __repr__(self):
-		return 'DisplayedTeam(team_id=%r, name=%r, num_stars=%r, game=%r, league=%r)' % (
+		return 'DisplayedTeam(team_id=%r, name=%r, num_stars=%r, game=%r, division=%r)' % (
 				self.team_id,
 				self.name,
 				self.num_stars,
 				self.game,
-				self.league)
+				self.division)
 
 """A detailed view of a team.
 
 Includes whether the client has starred the team, and all of the team's matches.
 """
 class DisplayedTeamDetails(DisplayedTeam):
-	def __init__(self, team_id, name, num_stars, game, league, fingerprint,
+	def __init__(self, team_id, name, num_stars, game, division, fingerprint,
 			is_starred, matches,
 			prev_time, prev_match_id, next_time, next_match_id):
-		DisplayedTeam.__init__(self, team_id, name, num_stars, game, league)
+		DisplayedTeam.__init__(self, team_id, name, num_stars, game, division)
 		self.fingerprint = fingerprint
 		self.is_starred = is_starred
 		self.matches = matches
@@ -839,12 +839,12 @@ class DisplayedTeamDetails(DisplayedTeam):
 		self.next_match_id = next_match_id
 
 	def __repr__(self):
-		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, game=%r, league=%r, fingerprint=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, game=%r, division=%r, fingerprint=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.team_id,
 				self.name,
 				self.num_stars,
 				self.game,
-				self.league,
+				self.division,
 				self.fingerprint,
 				self.is_starred,
 				self.matches,
@@ -1067,7 +1067,7 @@ def _get_displayed_match(match, team1, team2):
 			match.num_stars,
 			match.num_streams,
 			match.game,
-			match.league)
+			match.division)
 
 def _get_calendar_entry_query(client_id, team_alias1, team_alias2):
 	return session\
@@ -1393,7 +1393,7 @@ def get_all_matches(client_id,
 
 
 def _get_displayed_team(team):
-	return DisplayedTeam(team.id, team.name, team.num_stars, team.game, team.league)
+	return DisplayedTeam(team.id, team.name, team.num_stars, team.game, team.division)
 
 def _get_team_list(
 		prev_name, prev_team_id, next_name, next_team_id, page_limit,
@@ -1543,7 +1543,7 @@ def get_displayed_match(client_id, match_id,
 			match.num_stars,
 			match.num_streams,
 			match.game,
-			match.league,
+			match.division,
 			match.fingerprint,
 			is_starred,
 			tuple(_get_displayed_streamer(streamer) for added, streamer in streamers),
@@ -1621,7 +1621,7 @@ def get_displayed_team(client_id, team_id,
 			team.name,
 			team.num_stars,
 			team.game,
-			team.league,
+			team.division,
 			team.fingerprint,
 			is_starred,
 			tuple(_get_displayed_team_match(match, opponent_team)

@@ -6,21 +6,21 @@ def _recreate_tables():
 	db.create_all()
 
 game = 'tf2'
-league = 'Season 13 Invite'
+division = 'esea-s13-invite'
 
 def _add_teams():
 
 	team1_name = 'Xensity'
 	team1_fingerprint = 'esea:51134'
-	team_id1 = db.add_team(team1_name, game, league, team1_fingerprint)
+	team_id1 = db.add_team(team1_name, game, division, team1_fingerprint)
 
 	team2_name = 'Classic Mixup'
 	team2_fingerprint = 'esea:51672'
-	team_id2 = db.add_team(team2_name, game, league, team2_fingerprint)
+	team_id2 = db.add_team(team2_name, game, division, team2_fingerprint)
 
 	team3_name = 'LASER BEAMS'
 	team3_fingerprint = 'esea:69988'
-	team_id3 = db.add_team(team3_name, game, league, team3_fingerprint)
+	team_id3 = db.add_team(team3_name, game, division, team3_fingerprint)
 
 	return team_id1, team_id2, team_id3
 
@@ -28,17 +28,17 @@ def _add_matches(team1_id, team2_id, team3_id):
 	match1_time = datetime(2012, 12, 24, 20, 0, 0, 0)
 	match1_fingerprint = 'esea:222'
 	match_id1 = db.add_match(
-			team1_id, team2_id, match1_time, game, league, match1_fingerprint)
+			team1_id, team2_id, match1_time, game, division, match1_fingerprint)
 	
 	match2_time = datetime(2012, 12, 27, 20, 30, 0, 0)
 	match2_fingerprint = 'esea:333'
 	match_id2 = db.add_match(
-			team1_id, team3_id, match2_time, game, league, match2_fingerprint)
+			team1_id, team3_id, match2_time, game, division, match2_fingerprint)
 
 	match3_time = datetime(2013, 1, 6, 21, 0, 0, 0)
 	match3_fingerprint = 'esea:444'
 	match_id3 = db.add_match(
-			team2_id, team3_id, match3_time, game, league, match3_fingerprint)
+			team2_id, team3_id, match3_time, game, division, match3_fingerprint)
 
 	return match_id1, match_id2, match_id3
 
