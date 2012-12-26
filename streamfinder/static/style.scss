@@ -123,3 +123,21 @@ ul.team-list {
 ul.streamer-list {
 }
 
+ul.match-list li {
+	img.game-logo {
+		float: left;
+		& + div {
+			margin-left: 40px;
+		}
+	}
+	div.teams {
+		text-transform: none;
+		span.team {
+			text-transform: uppercase;
+		}
+	}
+	div.datetime {
+		font-size: $small-font-size;
+	}
+}
+

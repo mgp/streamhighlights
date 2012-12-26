@@ -96,16 +96,18 @@
 
 {% macro write_match_list_element(match) -%}
 	<li>
-		<a href="">
-			{{ write_game_icon(match.game) }}
-			<div>
-				<span class="team-name">{{ match.team1.name }}</span>
-				vs
-				<span class="team-name">{{ match.team2.name }}</span>
-			</div>
-			{{ match.time }}
+		<a href="{{ url_for('match_details', match_id=match.match_id) }}">
 			<div class="counts">
 				{{ write_star_with_count(match.is_starred, match.num_stars) }}
+			</div>
+			{{ write_small_game_icon(match.game) }}
+			<div>
+				<div class="teams">
+					<span class="team">{{ match.team1.name }}</span>
+					vs
+					<span class="team">{{ match.team2.name }}</span>
+				</div>
+				<div class="datetime">{{ match.time|readable_datetime }}</div>
 			</div>
 		</a>
 	</li>

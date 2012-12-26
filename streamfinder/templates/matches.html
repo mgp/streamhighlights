@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block title %}All Matches{% endblock title %}
+
+{% block content %}
+	{% if matches %}
+		<h3 class="header">All matches:</h3>
+		<ul class="data-list match-list">
+		{% for match in matches %}
+			{{ macros.write_match_list_element(match) }}
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3 class="header">No matches found :(</h3>
+	{% endif %}
+{% endblock content %}
+

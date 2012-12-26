@@ -17,7 +17,7 @@
 
 	{% if streamer.matches %}
 		<h3 class="header">Upcoming streamed matches:</h3>
-		<ul>
+		<ul class="data-list match-list">
 		{% for match in streamer.matches %}
 			{{ macros.write_match_list_element(match) }}
 		{% endfor %}

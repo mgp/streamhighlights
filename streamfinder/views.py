@@ -6,6 +6,7 @@ import flask
 import functools
 from flask_openid import OpenID
 import re
+import pytz
 
 oid = OpenID(app)
 
@@ -34,10 +35,23 @@ def _get_best_streamer_large_picture(streamer):
 	if streamer.image_url_large:
 		return _resize_large_picture(streamer, 150)
 
+_DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
+_DATETIME_FORMAT_UTC = '%a %b %d %I:%M%p %Z'
+
+def _get_readable_datetime(datetime):
+	utc_datetime = pytz.utc.localize(datetime)
+	timezone = flask.g.timezone
+	if timezone:
+		localized_datetime = utc_datetime.astimezone(timezone)
+		return localized_datetime.strftime(_DATETIME_FORMAT_LOCALIZED)
+	else:
+		return utc_datetime.strftime(_DATETIME_FORMAT_UTC)
+
 jinja_env = app.jinja_env
 jinja_env.filters['best_streamer_url'] = _get_best_streamer_url
 jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
+jinja_env.filters['readable_datetime'] = _get_readable_datetime
 
 
 def _read_client_id_from_session(session=None):
@@ -57,7 +71,10 @@ def login_required(f):
 			# Return status code 401 if user is not logged in.
 			flask.abort(requests.codes.unauthorized)
 
+		flask.g.logged_in = True
 		flask.g.client_id = client_id
+		# TODO: Get from cookie
+		flask.g.timezone = pytz.timezone('America/Los_Angeles')
 		return f(*pargs, **kwargs)
 	return decorated_function
 
@@ -66,9 +83,14 @@ def login_optional(f):
 	def decorated_function(*pargs, **kwargs):
 		client_id = _read_client_id_from_session()
 		if client_id is None:
+			flask.g.logged_in = False
 			flask.g.client_id = None
+			flask.g.timezone = None
 		else:
+			flask.g.logged_in = True
 			flask.g.client_id = client_id
+			# TODO: Get from cookie
+			flask.g.timezone = pytz.timezone('America/Los_Angeles')
 
 		return f(*pargs, **kwargs)
 	return decorated_function
@@ -113,7 +135,12 @@ def _render_matches_list(db_getter, template_name):
 	match_list = db_getter(flask.g.client_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	assert match_list is not None
-	return flask.render_template('matches.html')
+	return flask.render_template(template_name,
+			matches=match_list.matches,
+			prev_time=match_list.prev_time,
+			prev_match_id=match_list.prev_match_id,
+			next_time=match_list.next_time,
+			next_match_id=match_list.next_match_id)
 
 def _render_teams_list(db_getter, template_name):
 	args = flask.request.args
@@ -193,7 +220,7 @@ def match_details(match_id):
 
 	match = db.get_displayed_match(flask.g.client_id, match_id,
 			prev_time, prev_streamer_id, next_time, next_streamer_id)
-	return flask.render_template('match.html')
+	return flask.render_template('match.html', match=match)
 
 
 @app.route('/teams/<team_id>')

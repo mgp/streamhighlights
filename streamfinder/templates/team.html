@@ -4,7 +4,7 @@
 {% block title %}{{ team.name }}{% endblock title %}
 
 {% block content %}
-	<div id="team">
+	<div id="team" class="clearfix">
 		<h3>
 			{{ macros.write_large_game_icon(team.game) }}
 			{{ team.name }}
@@ -21,16 +21,16 @@
 
 	{% if team.matches %}
 		<h3 class="header">Upcoming matches:</h3>
-		<ul>
+		<ul class="data-list match-list">
 		{% for match in team.matches %}
 			<li>
-				<a href="">
+				<a href="{{ url_for('match_details', match_id=match.match_id) }}">
 					<div>
 						vs
-						<span>{{ match.team2.name }}</span>
+						<span class="team-name">{{ match.team2.name }}</span>
 					</div>
-					{{ match.time }}
-					<div>
+					{{ match.time|readable_datetime }}
+					<div class="counts">
 						{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
 					</div>
 				</a>
