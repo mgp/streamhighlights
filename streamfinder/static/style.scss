@@ -34,6 +34,9 @@ $large-font-size: 60pt;
 div.counts {
 	text-transform: none;
 }
+img.league-logo {
+	margin-bottom: -2px;
+}
 
 $padding: 10px;
 .main-data {
@@ -55,6 +58,12 @@ $padding: 10px;
 	}
 }
 
+#match {
+	div.counts {
+		float: right;
+	}
+}
+
 #team {
 	h3 {
 		img.game-logo {
@@ -63,9 +72,6 @@ $padding: 10px;
 		img.external-link {
 			margin-top: -3px;
 		}
-	}
-	img.league-logo {
-		margin-bottom: -2px;
 	}
 	div.counts {
 		float: right;

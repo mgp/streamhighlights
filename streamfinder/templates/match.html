@@ -21,6 +21,9 @@
 			{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
 		</div>
 		<div class="datetime">{{ match.time|readable_datetime }}</div>
+		<div class="division">
+			{{ macros.write_division(match.game, match.division) }}
+		</div>
 	</div>
 
 	{% if match.streamers %}
