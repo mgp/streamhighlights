@@ -36,41 +36,9 @@ div.counts {
 	text-transform: none;
 }
 
-#team {
+.main-data {
 	border: 1px solid $dark-gray;
-	margin: 10px 0;
-	padding: 10px 20px;
-	background-color: $light-gray;
-
-	color: $medium-gray;
-	font-size: $medium-font-size;
-	text-transform: uppercase;
-
-	h3 {
-		color: $dark-gray;
-		font-size: $large-font-size;
-		text-transform: uppercase;
-		img.game-logo {
-			margin-bottom: -3px;
-		}
-		img.external-link {
-			margin-top: -3px;
-		}
-	}
-	div.league {
-
-		img.league-logo {
-			margin-bottom: -3px;
-		}
-	}
-	div.counts {
-		float: right;
-	}
-}
-
-#streamer {
-	border: 1px solid $dark-gray;
-	margin: 10px 0;
+	margin: 20px 0;
 	padding: 10px;
 	background-color: $light-gray;
 
@@ -83,6 +51,26 @@ div.counts {
 		font-size: $large-font-size;
 		text-transform: uppercase;
 	}
+}
+
+#team {
+	h3 {
+		img.game-logo {
+			margin-bottom: -3px;
+		}
+		img.external-link {
+			margin-top: -3px;
+		}
+	}
+	img.league-logo {
+		margin-bottom: -3px;
+	}
+	div.counts {
+		float: right;
+	}
+}
+
+#streamer {
 	img.picture {
 		float: right;
 	}
