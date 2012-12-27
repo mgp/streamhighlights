@@ -39,11 +39,10 @@
 
 {% macro write_star_with_count(is_starred, num_stars) -%}
 	{% if is_starred %}
-		<img src="/static/star-dark-full.png" />
+		<img src="/static/star-full-dark.png" /><span>{{ write_count(num_stars) }}</span>
 	{% else %}
-		<img src="/static/star-light-empty.png" />
+		<img src="/static/star-empty-light.png" /><span>{{ write_count(num_stars) }}</span>
 	{% endif %}
-	<span>{{ write_count(num_stars) }}</span>
 {%- endmacro %}
 
 {% macro write_stream_with_count(is_streamed, num_streams) -%}
