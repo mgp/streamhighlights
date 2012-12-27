@@ -92,7 +92,7 @@
 
 {% macro write_match_list_element(match) -%}
 	<li>
-		<a href="{{ url_for('match_details', match_id=match.match_id) }}">
+		<a href="{{ url_for('match_details', match_id=match|match_url_part) }}">
 			<div class="counts">
 				{{ write_star_with_count(match.is_starred, match.num_stars) }}
 			</div>
@@ -111,7 +111,7 @@
 
 {% macro write_team_list_element(team) -%}
 	<li>
-		<a href="{{ url_for('team_details', team_id=team.team_id) }}">
+		<a href="{{ url_for('team_details', team_id=team|team_url_part) }}">
 			{{ write_small_game_icon(team.game) }}
 			{{ team.name }}
 			<div class="counts">

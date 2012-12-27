@@ -6,8 +6,8 @@ import db
 import flask
 import functools
 from flask_openid import OpenID
-import re
 import pytz
+import regex as re
 
 oid = OpenID(app)
 
@@ -60,6 +60,24 @@ def _get_best_streamer_large_picture(streamer):
 	"""Returns the URL for the best large picture of a streaming user."""
 	if streamer.image_url_large:
 		return _resize_large_picture(streamer, 150)
+
+_URL_SEPARATOR = '-'
+_PUNCTUATION_REGEX = re.compile(ur"\p{P}+")
+
+def _url_format(s):
+	return _PUNCTUATION_REGEX.sub('', s.lower())
+
+def _get_team_url_part(team):
+	parts = [str(team.team_id)]
+	parts.extend(_url_format(team.name).split())
+	return _URL_SEPARATOR.join(parts)
+
+def _get_match_url_part(match):
+	parts = [str(match.match_id)]
+	parts.extend(_url_format(match.team1.name).split())
+	parts.append('vs')
+	parts.extend(_url_format(match.team2.name).split())
+	return _URL_SEPARATOR.join(parts)
 
 
 _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
@@ -137,7 +155,6 @@ _DIVISION_SEPARATOR = '-'
 
 def _get_league_id(division):
 	"""Returns the unique league identifier from the given division value."""
-	print '*** division=%s' % division
 	return division.split(_DIVISION_SEPARATOR)[0]
 
 _DIVISION_NAMES = {
@@ -162,11 +179,13 @@ def _get_division_external_url(division):
 
 jinja_env = app.jinja_env
 
-# Filters for rendering users.
+# Filters for rendering users, teams, and matches.
 jinja_env.filters['user_external_url'] = _get_user_external_url
 jinja_env.filters['best_user_url'] = _get_best_user_url
 jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
+jinja_env.filters['team_url_part'] = _get_team_url_part
+jinja_env.filters['match_url_part'] = _get_match_url_part
 
 # Filters for rendering times.
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
@@ -333,9 +352,14 @@ def all_streamers():
 	return _render_streamers_list(db.get_all_streamers, 'streamers.html')
 
 
+def _get_id(url_part):
+	parts = url_part.split(_URL_SEPARATOR)
+	return parts[0]
+
 @app.route('/matches/<match_id>')
 @login_optional
 def match_details(match_id):
+	match_id = _get_id(match_id)
 	args = flask.request.args
 	prev_time = args.get('prev_time')
 	prev_streamer_id = args.get('prev_streamer_id')
@@ -350,6 +374,7 @@ def match_details(match_id):
 @app.route('/teams/<team_id>')
 @login_optional
 def team_details(team_id):
+	team_id = _get_id(team_id)
 	args = flask.request.args
 	prev_time = args.get('prev_time')
 	prev_match_id = args.get('prev_match_id')
