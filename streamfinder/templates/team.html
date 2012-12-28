@@ -27,7 +27,13 @@
 				<a href="{{ url_for('match_details', match_id=match.match_id) }}">
 					<div>
 						vs
-						<span class="team-name">{{ match.team2.name }}</span>
+						<span class="team-name">
+						{% if match.team1 %}
+							{{ match.team1.name }}
+						{% elif match.team2 %}
+							{{ match.team2.name }}
+						{% endif %}
+						</span>
 					</div>
 					{{ match.time|readable_datetime }}
 					<div class="counts">

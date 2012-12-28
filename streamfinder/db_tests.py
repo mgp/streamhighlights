@@ -1184,8 +1184,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_stars=1, is_starred=True, num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
@@ -1200,8 +1200,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_stars=1, is_starred=True, num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 		
@@ -1214,8 +1214,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
@@ -1229,8 +1229,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
 		
@@ -1261,8 +1261,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_stars=1, is_starred=True, num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time, num_streams=1)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		# Assert that the user's calendar has the match.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar,
@@ -1280,8 +1280,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time, num_streams=1)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
 		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
 		self._assert_displayed_calendar(displayed_calendar)
@@ -1464,8 +1464,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_matches=1)
 		match = displayed_team.matches[0]
 		self._assert_displayed_match(match, match_id, self.time, num_streams=1)
-		self.assertIsNone(match.team1)
-		self._assert_displayed_team(match.team2, team1_id, self.team1_name)
+		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
+		self.assertIsNone(match.team2)
 		# The streamer should no longer have a star.
 		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
 		self._assert_displayed_streamer_details(displayed_streamer,

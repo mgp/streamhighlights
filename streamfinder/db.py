@@ -1553,11 +1553,17 @@ def get_displayed_match(client_id, match_id,
 			next_streamer_id)
 
 
-def _get_displayed_team_match(match, opponent_team):
+def _get_displayed_team_match(match, team_id, opponent_team):
 	opponent_team = DisplayedTeam(opponent_team.id, opponent_team.name, opponent_team.num_stars)
+	if match.team1_id == team_id:
+		team1 = None
+		team2 = opponent_team
+	else:
+		team1 = opponent_team
+		team2 = None
 	return DisplayedMatch(match.id,
-			None,
-			opponent_team,
+			team1,
+			team2,
 			match.time,
 			match.num_stars,
 			match.num_streams)
@@ -1624,7 +1630,7 @@ def get_displayed_team(client_id, team_id,
 			team.division,
 			team.fingerprint,
 			is_starred,
-			tuple(_get_displayed_team_match(match, opponent_team)
+			tuple(_get_displayed_team_match(match, team_id, opponent_team)
 					for match, opponent_team in matches),
 			prev_time,
 			prev_match_id,
