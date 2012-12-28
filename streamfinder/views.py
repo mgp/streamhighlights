@@ -8,6 +8,7 @@ import functools
 from flask_openid import OpenID
 import pytz
 import regex as re
+import requests
 
 oid = OpenID(app)
 
@@ -241,7 +242,9 @@ def login_required(f):
 		client_id = _read_client_id_from_session()
 		if client_id is None:
 			# Return status code 401 if user is not logged in.
-			flask.abort(requests.codes.unauthorized)
+			# XXX
+			# flask.abort(requests.codes.unauthorized)
+			client_id = 1
 
 		flask.g.logged_in = True
 		flask.g.client_id = client_id
@@ -254,6 +257,8 @@ def login_optional(f):
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		client_id = _read_client_id_from_session()
+		# XXX
+		client_id = 1
 		if client_id is None:
 			flask.g.logged_in = False
 			flask.g.client_id = None
@@ -385,7 +390,9 @@ def _get_id(url_part):
 	parts = url_part.split(_URL_SEPARATOR)
 	return int(parts[0])
 
-@app.route('/matches/<match_id>')
+_MATCH_DETAILS_ROUTE = '/matches/<match_id>'
+
+@app.route(_MATCH_DETAILS_ROUTE)
 @login_optional
 def match_details(match_id):
 	match_id = _get_id(match_id)
@@ -399,8 +406,22 @@ def match_details(match_id):
 			prev_time, prev_streamer_id, next_time, next_streamer_id)
 	return flask.render_template('match.html', match=match)
 
+@app.route(_MATCH_DETAILS_ROUTE, methods=['POST'])
+@login_required
+def update_match_details(match_id):
+	match_id = _get_id(match_id)
+	starred = flask.request.form.get('starred', None)
+	if starred is not None:
+		if starred == 'true':
+			db.add_star_match(flask.g.client_id, match_id)
+		else:
+			db.remove_star_match(flask.g.client_id, match_id)
+		return flask.jsonify(starred=starred)
+	return flask.abort(requests.codes.server_error)
 
-@app.route('/teams/<team_id>')
+_TEAM_DETAILS_ROUTE = '/teams/<team_id>'
+
+@app.route(_TEAM_DETAILS_ROUTE)
 @login_optional
 def team_details(team_id):
 	team_id = _get_id(team_id)
@@ -413,6 +434,19 @@ def team_details(team_id):
 	team = db.get_displayed_team(flask.g.client_id, team_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	return flask.render_template('team.html', team=team)
+
+@app.route(_TEAM_DETAILS_ROUTE, methods=['POST'])
+@login_required
+def update_team_details(team_id):
+	team_id = _get_id(team_id)
+	starred = flask.request.form.get('starred', None)
+	if starred is not None:
+		if starred == 'true':
+			db.add_star_team(flask.g.client_id, team_id)
+		else:
+			db.remove_star_team(flask.g.client_id, team_id)
+		return flask.jsonify(starred=starred)
+	return flask.abort(requests.codes.server_error)
 
 @app.route('/users/twitch/<name>')
 @login_optional
