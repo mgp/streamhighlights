@@ -14,7 +14,7 @@
 			<a href="{{ url_for('team_details', team_id=match.team2|team_url_part) }}" class="team-name">
 				{{ match.team2.name }}</a>
 
-			{{ macros.write_large_external_link("TODO") }}
+			{{ macros.write_large_external_link(match|match_external_url) }}
 		</h3>
 
 		<div class="counts">

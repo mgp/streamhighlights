@@ -87,9 +87,23 @@ def _get_team_match_url_part(match, team):
 		return _get_match_url_part_team_names(
 				match.match_id, team.name, match.team2.name)
 
+_TEAM_URL_SEPARATOR = ':'
+
+def _get_team_external_url(team):
+	prefix, remainder = team.fingerprint.split(_TEAM_URL_SEPARATOR, 1)
+	if prefix == 'esea':
+		return 'http://play.esea.net/teams/%s' % remainder
+
 def _get_match_url_part(match):
 	return _get_match_url_part_team_names(
 			match.match_id, match.team1.name,  match.team2.name)
+
+_MATCH_URL_SEPARATOR = ':'
+
+def _get_match_external_url(match):
+	prefix, remainder = match.fingerprint.split(_TEAM_URL_SEPARATOR, 1)
+	if prefix == 'esea':
+		return 'http://play.esea.net/index.php?s=stats&d=match&id=%s' % remainder
 
 
 _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
@@ -198,7 +212,9 @@ jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_pict
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
 jinja_env.filters['team_url_part'] = _get_team_url_part
 jinja_env.filters['team_match_url_part'] = _get_team_match_url_part
+jinja_env.filters['team_external_url'] = _get_team_external_url
 jinja_env.filters['match_url_part'] = _get_match_url_part
+jinja_env.filters['match_external_url'] = _get_match_external_url
 
 # Filters for rendering times.
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
