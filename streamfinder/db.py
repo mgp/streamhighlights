@@ -49,7 +49,7 @@ class Team(common_db._Base):
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Team(id=%r, name=%r, game=%r, division=%r, num_stars=%r, fingerprint=%r)' % (
+		return 'Team(id=%r, name=%r, game=%r, division=%r, num_stars=%r, fingerprint=%r)' % (
 				self.id,
 				self.name,
 				self.game,
@@ -76,7 +76,7 @@ class Match(common_db._Base):
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		print 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, division=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
+		return 'Match(id=%r, team1_id=%r, team2_id=%r, time=%r, game=%r, division=%r, num_stars=%r, num_streams=%r, is_streamed=%r, fingerprint=%r)' % (
 				self.id,
 				self.team1_id,
 				self.team2_id,

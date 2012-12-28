@@ -72,12 +72,24 @@ def _get_team_url_part(team):
 	parts.extend(_url_format(team.name).split())
 	return _URL_SEPARATOR.join(parts)
 
-def _get_match_url_part(match):
-	parts = [str(match.match_id)]
-	parts.extend(_url_format(match.team1.name).split())
+def _get_match_url_part_team_names(match_id, team1_name, team2_name):
+	parts = [str(match_id)]
+	parts.extend(_url_format(team1_name).split())
 	parts.append('vs')
-	parts.extend(_url_format(match.team2.name).split())
+	parts.extend(_url_format(team2_name).split())
 	return _URL_SEPARATOR.join(parts)
+
+def _get_team_match_url_part(match, team):
+	if match.team1:
+		return _get_match_url_part_team_names(
+				match.match_id, match.team1.name, team.name)
+	elif match.team2:
+		return _get_match_url_part_team_names(
+				match.match_id, team.name, match.team2.name)
+
+def _get_match_url_part(match):
+	return _get_match_url_part_team_names(
+			match.match_id, match.team1.name,  match.team2.name)
 
 
 _DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
@@ -185,6 +197,7 @@ jinja_env.filters['best_user_url'] = _get_best_user_url
 jinja_env.filters['best_streamer_small_picture'] = _get_best_streamer_small_picture
 jinja_env.filters['best_streamer_large_picture'] = _get_best_streamer_large_picture
 jinja_env.filters['team_url_part'] = _get_team_url_part
+jinja_env.filters['team_match_url_part'] = _get_team_match_url_part
 jinja_env.filters['match_url_part'] = _get_match_url_part
 
 # Filters for rendering times.
@@ -354,7 +367,7 @@ def all_streamers():
 
 def _get_id(url_part):
 	parts = url_part.split(_URL_SEPARATOR)
-	return parts[0]
+	return int(parts[0])
 
 @app.route('/matches/<match_id>')
 @login_optional

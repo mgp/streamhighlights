@@ -24,7 +24,7 @@
 		<ul class="data-list match-list">
 		{% for match in team.matches %}
 			<li>
-				<a href="{{ url_for('match_details', match_id=match.match_id) }}">
+				<a href="{{ url_for('match_details', match_id=match|team_match_url_part(team)) }}">
 					<div>
 						vs
 						<span class="team-name">
