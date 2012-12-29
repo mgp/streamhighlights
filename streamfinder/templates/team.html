@@ -23,18 +23,18 @@
 		{% for match in team.matches %}
 			<li>
 				<a href="{{ url_for('match_details', match_id=match|team_match_url_part(team)) }}">
-					<div>
+					{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
+					<div class="teams">
 						vs
 						<span class="team-name">
-						{% if match.team1 %}
-							{{ match.team1.name }}
-						{% elif match.team2 %}
-							{{ match.team2.name }}
-						{% endif %}
+							{% if match.team1 %}
+								{{ match.team1.name }}
+							{% elif match.team2 %}
+								{{ match.team2.name }}
+							{% endif %}
 						</span>
 					</div>
-					{{ match.time|readable_datetime }}
-					{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
+					<div class="datetime">{{ match.time|readable_datetime }}</div>
 				</a>
 			</li>
 		{% endfor %}
