@@ -5,6 +5,13 @@ FULL_HOVER = '/static/star-full-light.png'
 
 requestInProgress = false
 
+adjustCount = (starImg, amount) ->
+	countSpan = starImg.siblings("span")
+	count = parseInt countSpan.text()
+	count += amount
+	countSpan.text count
+	return
+
 toggleStarSucceeded = (data, textStatus, jqXHR) ->
 	requestInProgress = false
 	return
@@ -12,8 +19,12 @@ toggleStarSucceeded = (data, textStatus, jqXHR) ->
 toggleStarFailed = (starImg) ->
 	requestInProgress = false
 	switch starImg.attr 'src'
-		when EMPTY then starImg.attr 'src', FULL
-		when FULL then starImg.attr 'src', EMPTY
+		when EMPTY
+			starImg.attr 'src', FULL
+			adjustCount starImg, +1
+		when FULL
+			starImg.attr 'src', EMPTY
+			adjustCount starImg, -1
 	return
 
 toggleStar = (starImg, starred) ->
@@ -52,9 +63,11 @@ clickStar = ->
 		when EMPTY_HOVER
 			toggleStar starImg, true
 			starImg.attr 'src', FULL
+			adjustCount starImg, +1
 		when FULL_HOVER
 			toggleStar starImg, false
 			starImg.attr 'src', EMPTY
+			adjustCount starImg, -1
 	requestInProgress = true
 	return
 
