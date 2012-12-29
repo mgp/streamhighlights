@@ -1,0 +1,8 @@
+{% extends "teams.html" %}
+
+{% set found_header_value = "Starred teams" %}
+
+{% block title %}{{ found_header_value|title }}{% endblock title %}
+{% block found_header %}{{ found_header_value }}{% endblock found_header %}
+{% block missing_header %}No starred teams found :({% endblock missing_header %}
+

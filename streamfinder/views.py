@@ -357,33 +357,33 @@ def _render_streamers_list(db_getter, template_name):
 @app.route('/starred/matches')
 @login_required
 def starred_matches():
-	return _render_teams_list(db.get_starred_matches, 'starred_matches.html')
+	return _render_matches_list(db.get_starred_matches, 'matches_starred.html')
 
 @app.route('/starred/teams')
 @login_required
 def starred_teams():
-	return _render_teams_list(db.get_starred_teams, 'starred_teams.html')
+	return _render_teams_list(db.get_starred_teams, 'teams_starred.html')
 
 @app.route('/starred/streamers')
 @login_required
 def starred_streamers():
-	return _render_streamers_list(db.get_starred_streamers, 'starred_streamers.html')
+	return _render_streamers_list(db.get_starred_streamers, 'streamers_starred.html')
 
 
 @app.route('/matches')
 @login_optional
 def all_matches():
-	return _render_matches_list(db.get_all_matches, 'matches.html')
+	return _render_matches_list(db.get_all_matches, 'matches_all.html')
 
 @app.route('/teams')
 @login_optional
 def all_teams():
-	return _render_teams_list(db.get_all_teams, 'teams.html')
+	return _render_teams_list(db.get_all_teams, 'teams_all.html')
 
 @app.route('/streamers')
 @login_optional
 def all_streamers():
-	return _render_streamers_list(db.get_all_streamers, 'streamers.html')
+	return _render_streamers_list(db.get_all_streamers, 'streamers_all.html')
 
 
 def _get_id(url_part):

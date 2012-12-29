@@ -1,18 +1,16 @@
 {% extends "layout.html" %}
 {% import "macros.html" as macros %}
 
-{% block title %}All Streamers{% endblock title %}
-
 {% block content %}
 	{% if streamers %}
-		<h3 class="header">All streamers:</h3>
+		<h3 class="header">{% block found_header %}{% endblock found_header %}:</h3>
 		<ul class="data-list streamer-list">
 		{% for streamer in streamers %}
 			{{ macros.write_streamer_list_element(streamer) }}
 		{% endfor %}
 		</ul>
 	{% else %}
-		<h3 class="header">No streamers found :(</h3>
+		<h3 class="header">{% block missing_header %}{% endblock missing_header %}</h3>
 	{% endif %}
 {% endblock content%}
 

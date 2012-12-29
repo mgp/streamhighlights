@@ -1,0 +1,8 @@
+{% extends "matches.html" %}
+
+{% set found_header_value = "All matches" %}
+
+{% block title %}{{ found_header_value|title }}{% endblock title %}
+{% block found_header %}{{ found_header_value }}{% endblock found_header %}
+{% block missing_header %}No matches found :({% endblock missing_header %}
+
