@@ -6,10 +6,14 @@ FULL_HOVER = '/static/star-full-light.png'
 requestInProgress = false
 
 adjustCount = (starImg, amount) ->
-	countSpan = starImg.siblings("span")
+	# Change the number of stars.
+	countSpan = starImg.siblings "span"
 	count = parseInt countSpan.text()
 	count += amount
 	countSpan.text count
+	# Toggle the text color.
+	countsDiv = starImg.closest "div.counts"
+	countsDiv.toggleClass "selected"
 	return
 
 toggleStarSucceeded = (data, textStatus, jqXHR) ->

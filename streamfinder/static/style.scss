@@ -33,6 +33,9 @@ $large-font-size: 60pt;
 }
 div.counts {
 	text-transform: none;
+	&.selected {
+		color: $dark-gray;
+	}
 }
 img.league-logo {
 	margin-bottom: -2px;
@@ -55,6 +58,9 @@ $padding: 10px;
 		color: $dark-gray;
 		font-size: $large-font-size;
 		text-transform: uppercase;
+	}
+	div.counts img {
+		cursor: pointer;
 	}
 }
 

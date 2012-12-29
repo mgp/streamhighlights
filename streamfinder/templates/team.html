@@ -11,9 +11,7 @@
 			{{ macros.write_large_external_link(team|team_external_url) }}
 		</h3>
 
-		<div class="counts">
-			{{ macros.write_star_with_count(team.is_starred, team.num_stars) }}
-		</div>
+		{{ macros.write_star_with_count(team.is_starred, team.num_stars) }}
 		<div class="division">
 			{{ macros.write_division(team.game, team.division) }}
 		</div>
@@ -36,9 +34,7 @@
 						</span>
 					</div>
 					{{ match.time|readable_datetime }}
-					<div class="counts">
-						{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
-					</div>
+					{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
 				</a>
 			</li>
 		{% endfor %}

@@ -10,9 +10,7 @@
 			{{ streamer.name }}
 			{{ macros.write_large_external_link(streamer|user_external_url) }}
 		</h3>
-		<div class="counts">
-			{{ macros.write_star_with_count(streamer.is_starred, streamer.num_stars) }}
-		</div>
+		{{ macros.write_star_with_count(streamer.is_starred, streamer.num_stars) }}
 	</div>
 
 	{% if streamer.matches %}
