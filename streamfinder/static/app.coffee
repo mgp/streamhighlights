@@ -21,7 +21,6 @@ toggleStarSucceeded = (data, textStatus, jqXHR) ->
 	return
 
 toggleStarFailed = (starImg) ->
-	requestInProgress = false
 	switch starImg.attr 'src'
 		when EMPTY
 			starImg.attr 'src', FULL
@@ -29,6 +28,7 @@ toggleStarFailed = (starImg) ->
 		when FULL
 			starImg.attr 'src', EMPTY
 			adjustCount starImg, -1
+	requestInProgress = false
 	return
 
 toggleStar = (starImg, starred) ->
@@ -62,6 +62,7 @@ leaveStar = ->
 
 clickStar = ->
 	return if requestInProgress
+	requestInProgress = true
 	starImg = $(this)
 	switch starImg.attr 'src'
 		when EMPTY_HOVER
@@ -72,7 +73,6 @@ clickStar = ->
 			toggleStar starImg, false
 			starImg.attr 'src', EMPTY
 			adjustCount starImg, -1
-	requestInProgress = true
 	return
 
 $.addStarRollover = (starImg) ->
