@@ -36,6 +36,26 @@ class User(common_db.UserMixin, common_db._Base):
 				self.twitch_user)
 
 
+_DEFAULT_SETTINGS_TIME_FORMAT = '24_hour'
+
+class Settings(common_db._Base):
+	__tablename__ = 'Settings'
+
+	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
+	time_format = sa.Column(
+			sa.Enum('12_hour', '24_hour', name='SettingsTimeFormat'),
+			nullable=False, default=_DEFAULT_SETTINGS_TIME_FORMAT)
+	country = sa.Column(sa.String)
+	time_zone = sa.Column(sa.String)
+
+	def __repr__(self):
+		return 'Settings(user_id=%r, time_format=%r, country=%r, time_zone=%r)' % (
+				self.user_id,
+				self.time_format,
+				self.country,
+				self.time_zone)
+
+
 """A team in a match.
 """
 class Team(common_db._Base):
@@ -256,6 +276,7 @@ def create_all():
 	common_db.create_all()
 
 	global Users
+	global SettingsTable
 	global Teams
 	global Matches
 	global MatchOpponents
@@ -268,6 +289,7 @@ def create_all():
 
 	# Create aliases for each table.
 	Users = User.__table__
+	SettingsTable = Settings.__table__
 	Teams = Team.__table__
 	Matches = Match.__table__
 	MatchOpponents = MatchOpponent.__table__
@@ -280,6 +302,7 @@ def create_all():
 
 def drop_all():
 	global Users
+	global SettingsTable
 	global Teams
 	global Matches
 	global MatchOpponents
@@ -291,6 +314,7 @@ def drop_all():
 
 	# Clear aliases for each table.
 	Users = None
+	SettingsTable = None
 	Teams = None
 	Matches = None
 	MatchOpponents = None
@@ -738,6 +762,47 @@ def _remove_last_stream_calendar_entries(client_id, match_id, now):
 	# Remove every CalendarEntry for this match.
 	result = session.execute(
 			CalendarEntries.delete().where(CalendarEntry.match_id == match_id))
+
+
+"""Settings for a user."""
+class DisplayedSettings:
+	def __init__(self, time_format, country, time_zone):
+		self.time_format = time_format
+		self.country = country
+		self.time_zone = time_zone
+
+	def __repr__(self):
+		return 'Settings(time_format=%r, country=%r, time_zone=%r)' % (
+				self.time_format,
+				self.country,
+				self.time_zone)
+
+@close_session
+def get_settings(client_id):
+	"""Returns the DisplayedSettings for the given client.
+
+	If no settings have yet been saved by the user, default values are returned.
+	"""
+	try:
+		settings = session.query(Settings)\
+				.filter(Settings.user_id == client_id)\
+				.one()
+		return DisplayedSettings(settings.time_format,
+				settings.country,
+				settings.time_zone)
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		return DisplayedSettings(_DEFAULT_SETTINGS_TIME_FORMAT, None, None)
+
+@close_session
+def save_settings(client_id, time_format, country, time_zone):
+	"""Saves settings for the given client."""
+	settings = Settings(user_id=client_id,
+			time_format=time_format,
+			country=country,
+			time_zone=time_zone)
+	session.merge(settings)
+	session.commit()
 
 
 """A view of a match."""

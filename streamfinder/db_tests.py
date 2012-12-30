@@ -2001,3 +2001,48 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(next_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
+	def test_settings(self):
+		# Create the first client.
+		client_steam_id1, client_id1 = self._create_steam_user(self.client_name)
+		# Create the second client.
+		client_name2 = 'client_name2'
+		client_steam_id2, client_id2 = self._create_steam_user(client_name2)
+
+		self.assertEqual('24_hour', db._DEFAULT_SETTINGS_TIME_FORMAT)
+
+		# Assert the default settings.
+		settings = db.get_settings(client_id1)
+		self.assertEqual(db._DEFAULT_SETTINGS_TIME_FORMAT, settings.time_format)
+		self.assertIsNone(settings.country)
+		self.assertIsNone(settings.time_zone)
+
+		time_format = '12_hour'
+		# Update the settings for the first client.
+		country1 = 'country_value1'
+		time_zone1 = 'time_zone_value1'
+		db.save_settings(client_id1, time_format, country1, time_zone1)
+		# Update the settings for the second client.
+		country2 = 'country_value2'
+		time_zone2 = 'time_zone_value2'
+		db.save_settings(client_id2, time_format, country2, time_zone2)
+
+		# Assert that the settings for the first client were updated.
+		settings = db.get_settings(client_id1)
+		self.assertEqual(time_format, settings.time_format)
+		self.assertEqual(country1, settings.country)
+		self.assertEqual(time_zone1, settings.time_zone)
+		# Assert that the settings for the second client were updated.
+		settings = db.get_settings(client_id2)
+		self.assertEqual(time_format, settings.time_format)
+		self.assertEqual(country2, settings.country)
+		self.assertEqual(time_zone2, settings.time_zone)
+
+		# Change the settings to their default values again.
+		time_format = '24_hour'
+		db.save_settings(client_id1, time_format, None, None)
+		# Assert that the settings were updated.
+		settings = db.get_settings(client_id1)
+		self.assertEqual(time_format, settings.time_format)
+		self.assertIsNone(settings.country)
+		self.assertIsNone(settings.time_zone)
+
