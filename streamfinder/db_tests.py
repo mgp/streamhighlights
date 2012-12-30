@@ -47,7 +47,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		return url_by_id, url_by_name
 
 	def _assert_displayed_team(self, displayed_team,
-			team_id, name, num_stars=0, game=None, division=None):
+			team_id, name, num_stars=0, is_starred=False, game=None, division=None):
 		"""Utility method to assert the attributes of a DisplayedTeam."""
 
 		self.assertIsNotNone(displayed_team)
@@ -55,6 +55,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(name, displayed_team.name)
 		# Begin optional arguments.
 		self.assertEqual(num_stars, displayed_team.num_stars)
+		self.assertEqual(is_starred, displayed_team.is_starred)
 		self.assertEqual(game, displayed_team.game)
 		self.assertEqual(division, displayed_team.division)
 
@@ -68,10 +69,9 @@ class AbstractFinderDbTestCase(DbTestCase):
 		"""
 
 		self._assert_displayed_team(displayed_team,
-				team_id, name, num_stars, game, division)
+				team_id, name, num_stars, is_starred, game, division)
 		self.assertEqual(fingerprint, displayed_team.fingerprint)
 		# Begin optional arguments.
-		self.assertEqual(is_starred, displayed_team.is_starred)
 		self.assertEqual(num_matches, len(displayed_team.matches))
 		self.assertEqual(prev_time, displayed_team.prev_time)
 		self.assertEqual(prev_match_id, displayed_team.prev_match_id)
@@ -79,7 +79,8 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(next_match_id, displayed_team.next_match_id)
 
 	def _assert_displayed_match(self, displayed_match,
-			match_id, time, num_stars=0, num_streams=0, game=None, division=None):
+			match_id, time, num_stars=0, num_streams=0, is_starred=False,
+			game=None, division=None):
 		"""Utility method to assert the attributes of a DisplayedMatch.
 		
 		This does not assert the team1 and team2 attributes, however.
@@ -90,6 +91,7 @@ class AbstractFinderDbTestCase(DbTestCase):
 		# Begin optional arguments.
 		self.assertEqual(num_stars, displayed_match.num_stars)
 		self.assertEqual(num_streams, displayed_match.num_streams)
+		self.assertEqual(is_starred, displayed_match.is_starred)
 		self.assertEqual(game, displayed_match.game)
 		self.assertEqual(division, displayed_match.division)
 
@@ -103,10 +105,9 @@ class AbstractFinderDbTestCase(DbTestCase):
 		"""
 
 		self._assert_displayed_match(displayed_match,
-				match_id, time, num_stars, num_streams, game, division)
+				match_id, time, num_stars, num_streams, is_starred, game, division)
 		self.assertEqual(fingerprint, displayed_match.fingerprint)
 		# Begin optional arguments.
-		self.assertEqual(is_starred, displayed_match.is_starred)
 		self.assertEqual(prev_time, displayed_match.prev_time)
 		self.assertEqual(prev_streamer_id, displayed_match.prev_streamer_id)
 		self.assertEqual(next_time, displayed_match.next_time)
@@ -130,8 +131,8 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(next_match_id, displayed_calendar.next_match_id)
 
 	def _assert_displayed_streamer(self, displayed_streamer,
-			streamer_id, name, url_by_id,
-			num_stars=0, image_url_small=None, image_url_large=None, url_by_name=None):
+			streamer_id, name, url_by_id, num_stars=0, is_starred=False,
+			image_url_small=None, image_url_large=None, url_by_name=None):
 		"""Utility method to assert the properties of a DisplayedStreamer."""
 
 		self.assertEqual(streamer_id, displayed_streamer.streamer_id)
@@ -139,14 +140,15 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.assertEqual(url_by_id, displayed_streamer.url_by_id)
 		# Begin optional arguments.
 		self.assertEqual(num_stars, displayed_streamer.num_stars)
+		self.assertEqual(is_starred, displayed_streamer.is_starred)
 		self.assertEqual(image_url_small, displayed_streamer.image_url_small)
 		self.assertEqual(image_url_large, displayed_streamer.image_url_large)
 		self.assertEqual(url_by_name, displayed_streamer.url_by_name)
 
 	def _assert_displayed_streamer_details(self, displayed_streamer,
 			streamer_id, name, url_by_id,
-			num_stars=0, image_url_small=None, image_url_large=None,
-			url_by_name=None, is_starred=False, num_matches=0,
+			num_stars=0, is_starred=False,
+			image_url_small=None, image_url_large=None, url_by_name=None, num_matches=0,
 			prev_time=None, prev_match_id=None, next_time=None, next_match_id=None):
 		"""Utility method to assert the properties of a DisplayedMatchDetails.
 
@@ -154,10 +156,9 @@ class AbstractFinderDbTestCase(DbTestCase):
 		"""
 
 		self._assert_displayed_streamer(displayed_streamer,
-				streamer_id, name, url_by_id, num_stars,
+				streamer_id, name, url_by_id, num_stars, is_starred,
 				image_url_small, image_url_large, url_by_name)
 		# Begin optional arguments.
-		self.assertEqual(is_starred, displayed_streamer.is_starred)
 		self.assertEqual(num_matches, len(displayed_streamer.matches))
 		self.assertEqual(prev_time, displayed_streamer.prev_time)
 		self.assertEqual(prev_match_id, displayed_streamer.prev_match_id)
@@ -207,17 +208,20 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_streamer_id, displayed_streamer_list.next_streamer_id)
 
 	def _test_get_streamers_pagination(self,
-			displayed_streamers, get_next_page, get_prev_page, streamer_num_stars=0):
+			displayed_streamers, get_next_page, get_prev_page,
+			streamer_num_stars=0, is_starred=False):
 		def _assert_first_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					next_name=self.streamer_name2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_streamers.streamers[0],
 					self.streamer_id1, self.streamer_name, self.url_by_id1,
-					num_stars=streamer_num_stars, url_by_name=self.url_by_name1)
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name1)
 			self._assert_displayed_streamer(displayed_streamers.streamers[1],
 					self.streamer_id2, self.streamer_name2, self.url_by_id2,
-					num_stars=streamer_num_stars, url_by_name=self.url_by_name2)
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name2)
 
 		def _assert_second_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
@@ -226,10 +230,12 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_streamers.streamers[0],
 					self.streamer_id3, self.streamer_name3, self.url_by_id3,
-					num_stars=streamer_num_stars, url_by_name=self.url_by_name3)
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name3)
 			self._assert_displayed_streamer(displayed_streamers.streamers[1],
 					self.streamer_id4, self.streamer_name4, self.url_by_id4,
-					num_stars=streamer_num_stars, url_by_name=self.url_by_name4)
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name4)
 
 		def _assert_third_page():
 			self._assert_displayed_streamer_list(displayed_streamers, num_streams=1,
@@ -237,7 +243,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_streamers.streamers[0],
 					self.streamer_id5, self.streamer_name5, self.url_by_id5,
-					num_stars=streamer_num_stars, url_by_name=self.url_by_name5)
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name5)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -301,7 +308,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 
 		displayed_streamers = db.get_all_streamers(client_id, page_limit=2)
 		self._test_get_streamers_pagination(
-				displayed_streamers, _get_next_page, _get_prev_page, streamer_num_stars=1)
+				displayed_streamers, _get_next_page, _get_prev_page,
+				streamer_num_stars=1, is_starred=True)
 
 	"""Tests pagination of streamers when displaying a match.
 	"""
@@ -430,17 +438,18 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_team_id, displayed_team_list.next_team_id)
 
 	def _test_get_teams_pagination(self,
-			displayed_teams, get_next_page, get_prev_page, team_num_stars=0):
+			displayed_teams, get_next_page, get_prev_page,
+			team_num_stars=0, is_starred=False):
 		def _assert_first_page():
 			self._assert_displayed_team_list(displayed_teams, num_teams=2,
 					next_name=self.team2_name, next_team_id=self.team2_id)
 			# Assert the partial list of paginated teams.
 			self._assert_displayed_team(displayed_teams.teams[0],
 					self.team1_id, self.team1_name, num_stars=team_num_stars,
-					game=self.game, division=self.division)
+					is_starred=is_starred, game=self.game, division=self.division)
 			self._assert_displayed_team(displayed_teams.teams[1],
 					self.team2_id, self.team2_name, num_stars=team_num_stars,
-					game=self.game, division=self.division)
+					is_starred=is_starred, game=self.game, division=self.division)
 
 		def _assert_second_page():
 			self._assert_displayed_team_list(displayed_teams, num_teams=2,
@@ -449,10 +458,10 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated teams.
 			self._assert_displayed_team(displayed_teams.teams[0],
 					self.team3_id, self.team3_name, num_stars=team_num_stars,
-					game=self.game, division=self.division)
+					is_starred=is_starred, game=self.game, division=self.division)
 			self._assert_displayed_team(displayed_teams.teams[1],
 					self.team4_id, self.team4_name, num_stars=team_num_stars,
-					game=self.game, division=self.division)
+					is_starred=is_starred, game=self.game, division=self.division)
 
 		def _assert_third_page():
 			self._assert_displayed_team_list(displayed_teams, num_teams=1,
@@ -460,7 +469,7 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated teams.
 			self._assert_displayed_team(displayed_teams.teams[0],
 					self.team5_id, self.team5_name, num_stars=team_num_stars,
-					game=self.game, division=self.division)
+					is_starred=is_starred, game=self.game, division=self.division)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -522,7 +531,8 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 
 		displayed_teams = db.get_starred_teams(client_id, page_limit=2)
 		self._test_get_teams_pagination(
-				displayed_teams, _get_next_page, _get_prev_page, team_num_stars=1)
+				displayed_teams, _get_next_page, _get_prev_page,
+				team_num_stars=1, is_starred=True)
 
 
 """Tests for pagination of matches.
@@ -858,7 +868,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(next_match_id, displayed_match_list.next_match_id)
 
 	def _test_get_matches_pagination(self,
-			displayed_matches, get_next_page, get_prev_page, match_num_stars=0):
+			displayed_matches, get_next_page, get_prev_page,
+			match_num_stars=0, is_starred=False):
 		def _assert_first_page():
 			self._assert_displayed_match_list(displayed_matches, num_matches=2,
 					next_time=self.time2, next_match_id=self.match_id2)
@@ -866,13 +877,13 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			match = displayed_matches.matches[0]
 			self._assert_displayed_match(match,
 					self.match_id1, self.time, game=self.game, division=self.division,
-					num_stars=match_num_stars)
+					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 			match = displayed_matches.matches[1]
 			self._assert_displayed_match(match,
 					self.match_id2, self.time2, game=self.game, division=self.division,
-					num_stars=match_num_stars)
+					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
@@ -884,13 +895,13 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			match = displayed_matches.matches[0]
 			self._assert_displayed_match(match,
 					self.match_id3, self.time3, game=self.game, division=self.division,
-					num_stars=match_num_stars)
+					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 			match = displayed_matches.matches[1]
 			self._assert_displayed_match(match,
 					self.match_id4, self.time4, game=self.game, division=self.division,
-					num_stars=match_num_stars)
+					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
@@ -901,7 +912,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			match = displayed_matches.matches[0]
 			self._assert_displayed_match(match,
 					self.match_id5, self.time5, game=self.game, division=self.division,
-					num_stars=match_num_stars)
+					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
@@ -964,7 +975,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		displayed_matches = db.get_starred_matches(client_id, page_limit=2)
 		self._test_get_matches_pagination(
-				displayed_matches, _get_next_page, _get_prev_page, match_num_stars=1)
+				displayed_matches, _get_next_page, _get_prev_page,
+				match_num_stars=1, is_starred=True)
 
 
 class FinderDbTestCase(AbstractFinderDbTestCase):

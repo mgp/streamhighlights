@@ -742,7 +742,7 @@ def _remove_last_stream_calendar_entries(client_id, match_id, now):
 
 """A view of a match."""
 class DisplayedMatch:
-	def __init__(self, match_id, team1, team2, time, num_stars, num_streams,
+	def __init__(self, match_id, team1, team2, time, num_stars, num_streams, is_starred,
 			game=None, division=None):
 		self.match_id = match_id
 		self.team1 = team1
@@ -750,18 +750,20 @@ class DisplayedMatch:
 		self.time = time
 		self.num_stars = num_stars
 		self.num_streams = num_streams
+		self.is_starred = is_starred
 		# Begin optional arguments.
 		self.game = game
 		self.division = division
 
 	def __repr__(self):
-		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, division=%r)' % (
+		return 'DisplayedMatch(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, is_starred=%r, game=%r, division=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
 				self.time,
 				self.num_stars,
 				self.num_streams,
+				self.is_starred,
 				self.game,
 				self.division)
 
@@ -771,13 +773,13 @@ Includes whether the client has starred the match, and all of the match's
 streamers.
 """
 class DisplayedMatchDetails(DisplayedMatch):
-	def __init__(self, match_id, team1, team2, time, num_stars, num_streams,
-			game, division, fingerprint, is_starred, streamers,
+	def __init__(self, match_id, team1, team2, time, num_stars, num_streams, is_starred,
+			game, division, fingerprint, streamers,
 			prev_time, prev_streamer_id, next_time, next_streamer_id):
-		DisplayedMatch.__init__(self, match_id, team1, team2, time, num_stars, num_streams,
+		DisplayedMatch.__init__(self,
+				match_id, team1, team2, time, num_stars, num_streams, is_starred,
 				game, division)
 		self.fingerprint = fingerprint
-		self.is_starred = is_starred
 		self.streamers = streamers
 		self.prev_time = prev_time
 		self.prev_streamer_id = prev_streamer_id
@@ -785,17 +787,17 @@ class DisplayedMatchDetails(DisplayedMatch):
 		self.next_streamer_id = next_streamer_id
 
 	def __repr__(self):
-		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, game=%r, division=%r, fingerprint=%r, is_starred=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
+		return 'DisplayedMatchDetails(match_id=%r, team1=%r, team2=%r, time=%r, num_stars=%r, num_streams=%r, is_starred=%r, game=%r, division=%r, fingerprint=%r, streamers=%r, prev_time=%r, prev_streamer_id=%r, next_time=%r, next_streamer_id=%r)' % (
 				self.match_id,
 				self.team1,
 				self.team2,
 				self.time,
 				self.num_stars,
 				self.num_streams,
+				self.is_starred,
 				self.game,
 				self.division,
 				self.fingerprint,
-				self.is_starred,
 				self.streamers,
 				self.prev_time,
 				self.prev_streamer_id,
@@ -805,19 +807,21 @@ class DisplayedMatchDetails(DisplayedMatch):
 
 """A view of a team."""
 class DisplayedTeam:
-	def __init__(self, team_id, name, num_stars, game=None, division=None):
+	def __init__(self, team_id, name, num_stars, is_starred, game=None, division=None):
 		self.team_id = team_id
 		self.name = name
 		self.num_stars = num_stars
+		self.is_starred = is_starred
 		# Optional arguments.
 		self.game = game
 		self.division = division
 
 	def __repr__(self):
-		return 'DisplayedTeam(team_id=%r, name=%r, num_stars=%r, game=%r, division=%r)' % (
+		return 'DisplayedTeam(team_id=%r, name=%r, num_stars=%r, is_starred=%r, game=%r, division=%r)' % (
 				self.team_id,
 				self.name,
 				self.num_stars,
+				self.is_starred,
 				self.game,
 				self.division)
 
@@ -826,12 +830,11 @@ class DisplayedTeam:
 Includes whether the client has starred the team, and all of the team's matches.
 """
 class DisplayedTeamDetails(DisplayedTeam):
-	def __init__(self, team_id, name, num_stars, game, division, fingerprint,
-			is_starred, matches,
+	def __init__(self, team_id, name, num_stars, is_starred, game, division,
+			fingerprint, matches,
 			prev_time, prev_match_id, next_time, next_match_id):
-		DisplayedTeam.__init__(self, team_id, name, num_stars, game, division)
+		DisplayedTeam.__init__(self, team_id, name, num_stars, is_starred, game, division)
 		self.fingerprint = fingerprint
-		self.is_starred = is_starred
 		self.matches = matches
 		self.prev_time = prev_time
 		self.prev_match_id = prev_match_id
@@ -839,14 +842,14 @@ class DisplayedTeamDetails(DisplayedTeam):
 		self.next_match_id = next_match_id
 
 	def __repr__(self):
-		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, game=%r, division=%r, fingerprint=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+		return 'DisplayedTeamDetails(team_id=%r, name=%r, num_stars=%r, is_starred=%r, game=%r, division=%r, fingerprint=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.team_id,
 				self.name,
 				self.num_stars,
+				self.is_starred,
 				self.game,
 				self.division,
 				self.fingerprint,
-				self.is_starred,
 				self.matches,
 				self.prev_time,
 				self.prev_match_id,
@@ -856,20 +859,24 @@ class DisplayedTeamDetails(DisplayedTeam):
 
 """A view of a streaming user."""
 class DisplayedStreamer:
-	def __init__(self, streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id=None, url_by_name=None):
+	def __init__(self,
+			streamer_id, name, num_stars, is_starred, image_url_small, image_url_large,
+			url_by_id=None, url_by_name=None):
 		self.streamer_id = streamer_id
 		self.name = name
 		self.num_stars = num_stars
+		self.is_starred = is_starred
 		self.image_url_small = image_url_small
 		self.image_url_large = image_url_large
 		self.url_by_id = url_by_id
 		self.url_by_name = url_by_name
 
 	def __repr__(self):
-		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r)' % (
+		return 'DisplayedStreamer(streamer_id=%r, name=%r, num_stars=%r, is_starred=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.num_stars,
+				self.is_starred,
 				self.image_url_small,
 				self.image_url_large,
 				self.url_by_id,
@@ -881,12 +888,13 @@ Includes whether the client has starred the streaming user, and all of the
 matches the user is streaming.
 """
 class DisplayedStreamerDetails(DisplayedStreamer):
-	def __init__(self, streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id, url_by_name,
-			is_starred, matches,
+	def __init__(self,
+			streamer_id, name, num_stars, is_starred, image_url_small, image_url_large,
+			url_by_id, url_by_name, matches,
 			prev_time, prev_match_id, next_time, next_match_id):
 		DisplayedStreamer.__init__(self,
-				streamer_id, name, num_stars, image_url_small, image_url_large, url_by_id, url_by_name)
-		self.is_starred = is_starred
+				streamer_id, name, num_stars, is_starred, image_url_small, image_url_large,
+				url_by_id, url_by_name)
 		self.matches = matches
 		self.prev_time = prev_time
 		self.prev_match_id = prev_match_id
@@ -894,15 +902,15 @@ class DisplayedStreamerDetails(DisplayedStreamer):
 		self.next_match_id = next_match_id
 	
 	def __repr__(self):
-		return 'DisplayedStreamerDetails(streamer_id=%r, name=%r, num_stars=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r, is_starred=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
+		return 'DisplayedStreamerDetails(streamer_id=%r, name=%r, num_stars=%r, is_starred=%r, image_url_small=%r, image_url_large=%r, url_by_id=%r, url_by_name=%r, matches=%r, prev_time=%r, prev_match_id=%r, next_time=%r, next_match_id=%r)' % (
 				self.streamer_id,
 				self.name,
 				self.num_stars,
+				self.is_starred,
 				self.image_url_small,
 				self.image_url_large,
 				self.url_by_id,
 				self.url_by_name,
-				self.is_starred,
 				self.matches,
 				self.prev_time,
 				self.prev_match_id,
@@ -988,7 +996,7 @@ class DisplayedStreamerList:
 
 
 # The default number of entities per page.
-_PAGE_LIMIT = 30
+_PAGE_LIMIT = 25
 
 def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		first_id=None):
@@ -1054,9 +1062,9 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 
 
 def _get_displayed_match_team(team):
-	return DisplayedTeam(team.id, team.name, team.num_stars)
+	return DisplayedTeam(team.id, team.name, team.num_stars, False)
 
-def _get_displayed_match(match, team1, team2):
+def _get_displayed_match(match, team1, team2, is_starred):
 	"""Returns a DisplayedMatch from the given match and teams."""
 	displayed_team1 = _get_displayed_match_team(team1)
 	displayed_team2 = _get_displayed_match_team(team2)
@@ -1066,6 +1074,7 @@ def _get_displayed_match(match, team1, team2):
 			match.time,
 			match.num_stars,
 			match.num_streams,
+			is_starred,
 			match.game,
 			match.division)
 
@@ -1086,7 +1095,7 @@ def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 
 	next_match_id, next_match, next_match_team1, next_match_team2 = result
 	return _get_displayed_match(
-			next_match, next_match_team1, next_match_team2)
+			next_match, next_match_team1, next_match_team2, False)
 
 """A paginator for entries on the client's viewing calendar.
 """
@@ -1108,11 +1117,11 @@ class CalendarEntriesPaginator:
 				for match_id, match, team1, team2 in matches_query)
 	
 	def get_pagination_values(self, item):
-		match, team1, team2 = item
+		match = item[0]
 		return (match.time, match.id)
 	
 	def has_first_id(self, first_id, item):
-		match, team1, team2 = item
+		match = item[0]
 		return (match.id == first_id)
 
 @close_session
@@ -1138,7 +1147,7 @@ def get_displayed_viewer_calendar(client_id,
 
 	# Return the calendar.
 	return DisplayedCalendar(first_match,
-			tuple(_get_displayed_match(match, team1, team2)
+			tuple(_get_displayed_match(match, team1, team2, False)
 					for match, team1, team2 in matches),
 			prev_time,
 			prev_match_id,
@@ -1146,9 +1155,17 @@ def get_displayed_viewer_calendar(client_id,
 			next_match_id)
 
 
-def _get_streamed_match_query(streamer_id, team_alias1, team_alias2):
-	return session\
-			.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)\
+def _get_streamed_match_query(streamer_id, client_id, team_alias1, team_alias2):
+	if client_id:
+		query = session\
+				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2, StarredMatch)\
+				.outerjoin(StarredMatch, sa.and_(
+					StarredMatch.match_id == StreamedMatch.match_id,
+					StarredMatch.user_id == client_id))
+	else:
+		query = session\
+				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)
+	return query\
 			.join(Match, StreamedMatch.match_id == Match.id)\
 			.join(team_alias1, Match.team1_id == team_alias1.id)\
 			.join(team_alias2, Match.team2_id == team_alias2.id)\
@@ -1156,14 +1173,14 @@ def _get_streamed_match_query(streamer_id, team_alias1, team_alias2):
 
 def _get_next_streamer_match(client_id, team_alias1, team_alias2):
 	result = common_db.optional_one(
-			_get_streamed_match_query(client_id, team_alias1, team_alias2)
+			_get_streamed_match_query(client_id, None, team_alias1, team_alias2)
 				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
 	if result is None:
 		return None
 
 	next_match_id, next_match, next_match_team1, next_match_team2 = result
 	return _get_displayed_match(
-			next_match, next_match_team1, next_match_team2)
+			next_match, next_match_team1, next_match_team2, False)
 
 @close_session
 def get_displayed_streamer_calendar(client_id,
@@ -1181,15 +1198,15 @@ def get_displayed_streamer_calendar(client_id,
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
-	paginator = StreamedMatchesPaginator(client_id, team_alias1, team_alias2)
+	paginator = StreamedMatchesPaginator(client_id, None, team_alias1, team_alias2)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			first_id=first_match.match_id)
 
 	# Return the calendar.
 	return DisplayedCalendar(first_match,
-			tuple(_get_displayed_match(match, team1, team2)
-					for match, team1, team2 in matches),
+			tuple(_get_displayed_match(match, team1, team2, is_streamed)
+					for match, team1, team2, is_streamed in matches),
 			prev_time,
 			prev_match_id,
 			next_time,
@@ -1197,22 +1214,22 @@ def get_displayed_streamer_calendar(client_id,
 
 
 class _MatchesPaginator:
-	def get_pagination_values(self, item):
-		match, team1, team2 = item
-		return (match.time, match.id)
-
-	def has_first_id(self, first_id, item):
-		match, team1, team2 = item
-		return (match.id == first_id)
-
-"""A paginator for matches starred by the client.
-"""
-class StarredMatchesPaginator(_MatchesPaginator):
 	def __init__(self, client_id):
 		self.team_alias1 = sa_orm.aliased(Team)
 		self.team_alias2 = sa_orm.aliased(Team)
 		self.client_id = client_id
 
+	def get_pagination_values(self, item):
+		match = item[0]
+		return (match.time, match.id)
+
+	def has_first_id(self, first_id, item):
+		match = item[0]
+		return (match.id == first_id)
+
+"""A paginator for matches starred by the client.
+"""
+class StarredMatchesPaginator(_MatchesPaginator):
 	def get_first_id(self):
 		first_starred_match = common_db.optional_one(
 				session.query(StarredMatch.match_id)
@@ -1232,46 +1249,58 @@ class StarredMatchesPaginator(_MatchesPaginator):
 		return (StarredMatch.time, StarredMatch.match_id)
 
 	def execute_query(self, matches_query):
-		return tuple(
-				(match, team1, team2) for match_id, match, team1, team2 in matches_query)
+		return tuple((match, team1, team2, True)
+				for match_id, match, team1, team2 in matches_query)
 
 """A paginator for all matches.
 """
 class AllMatchesPaginator(_MatchesPaginator):
-	def __init__(self):
-		self.team_alias1 = sa_orm.aliased(Team)
-		self.team_alias2 = sa_orm.aliased(Team)
-
 	def get_first_id(self):
 		first_match = common_db.optional_one(
 				session.query(Match.id).order_by(Match.time.asc(), Match.id.asc()))
 		return first_match.id if first_match else None
 	
 	def get_partial_list_query(self):
-		return session.query(Match, self.team_alias1, self.team_alias2)\
-				.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
-				.join(self.team_alias2, Match.team2_id == self.team_alias2.id)
+		if self.client_id:
+			query = session.query(Match, self.team_alias1, self.team_alias2, StarredMatch)\
+					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
+					.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
+					.outerjoin(StarredMatch, sa.and_(
+						StarredMatch.match_id == Match.id,
+						StarredMatch.user_id == self.client_id))
+		else:
+			query = session.query(Match, self.team_alias1, self.team_alias2)\
+					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
+					.join(self.team_alias2, Match.team2_id == self.team_alias2.id)
+		return query
 
 	def get_order_by_columns(self):
 		return (Match.time, Match.id)
 
 	def execute_query(self, matches_query):
-		return tuple(matches_query)
+		if self.client_id:
+			return tuple((match, team1, team2, bool(starred_match))
+					for match, team1, team2, starred_match in matches_query)
+		else:
+			return tuple((match, team1, team2, False)
+					for match, team1, team2 in matches_query)
 
 
 class _TeamsPaginator:
-	def get_pagination_values(self, team):
+	def __init__(self, client_id):
+		self.client_id = client_id
+	
+	def get_pagination_values(self, item):
+		team = item[0]
 		return (team.name, team.id)
 
-	def has_first_id(self, first_id, team):
+	def has_first_id(self, first_id, item):
+		team = item[0] 
 		return (team.id == first_id)
 
 """A paginator for teams starred by the client.
 """
 class StarredTeamsPaginator(_TeamsPaginator):
-	def __init__(self, client_id):
-		self.client_id = client_id
-	
 	def get_first_id(self):
 		first_starred_team = common_db.optional_one(
 				session.query(StarredTeam.team_id)
@@ -1288,7 +1317,7 @@ class StarredTeamsPaginator(_TeamsPaginator):
 		return (StarredTeam.name, StarredTeam.team_id)
 
 	def execute_query(self, teams_query):
-		return tuple(team for team_id, team in teams_query)
+		return tuple((team, True) for team_id, team in teams_query)
 
 """A paginator for all teams.
 """
@@ -1299,28 +1328,41 @@ class AllTeamsPaginator(_TeamsPaginator):
 		return first_team.id if first_team else None
 
 	def get_partial_list_query(self):
-		return session.query(Team)
+		if self.client_id:
+			query = session.query(Team, StarredTeam)\
+					.outerjoin(StarredTeam, sa.and_(
+						StarredTeam.team_id == Team.id,
+						StarredTeam.user_id == self.client_id))
+		else:
+			query = session.query(Team)
+		return query
 	
 	def get_order_by_columns(self):
 		return (Team.name, Team.id)
 
 	def execute_query(self, teams_query):
-		return tuple(teams_query)
+		if self.client_id:
+			return tuple((team, bool(starred_team))
+					for team, starred_team in teams_query)
+		else:
+			return tuple((team, False) for team in teams_query)
 
 
 class _StreamersPaginator:
-	def get_pagination_values(self, streamer):
+	def __init__(self, client_id):
+		self.client_id = client_id
+	
+	def get_pagination_values(self, item):
+		streamer = item[0]
 		return (streamer.name, streamer.id)
 	
-	def has_first_id(self, first_id, streamer):
+	def has_first_id(self, first_id, item):
+		streamer = item[0]
 		return (streamer.id == first_id)
 
 """A paginator for streaming users starred by the client.
 """
 class StarredStreamersPaginator(_StreamersPaginator):
-	def __init__(self, client_id):
-		self.client_id = client_id
-	
 	def get_first_id(self):
 		first_starred_streamer = common_db.optional_one(
 				session.query(StarredStreamer.streamer_id)
@@ -1337,7 +1379,7 @@ class StarredStreamersPaginator(_StreamersPaginator):
 		return (StarredStreamer.name, StarredStreamer.streamer_id)
 
 	def execute_query(self, streamers_query):
-		return tuple(streamer for streamer_id, streamer in streamers_query)
+		return tuple((streamer, True) for streamer_id, streamer in streamers_query)
 
 """A paginator for all streaming users.
 """
@@ -1350,13 +1392,24 @@ class AllStreamersPaginator(_StreamersPaginator):
 		return first_streamer.id if first_streamer else None
 	
 	def get_partial_list_query(self):
-		return session.query(User).filter(User.can_stream == True)
+		if self.client_id:
+			query = session.query(User, StarredStreamer)\
+					.outerjoin(StarredStreamer, sa.and_(
+						StarredStreamer.streamer_id == User.id,
+						StarredStreamer.user_id == self.client_id))
+		else:
+			query = session.query(User)
+		return query.filter(User.can_stream == True)
 
 	def get_order_by_columns(self):
 		return (User.name, User.id)
 	
 	def execute_query(self, streamers_query):
-		return tuple(streamers_query)
+		if self.client_id:
+			return tuple((streamer, bool(starred_streamer))
+					for streamer, starred_streamer in streamers_query)
+		else:
+			return tuple((streamer, False) for streamer in streamers_query)
 
 
 def _get_match_list(
@@ -1365,8 +1418,8 @@ def _get_match_list(
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	return DisplayedMatchList(
-			tuple(_get_displayed_match(match, team1, team2)
-				for match, team1, team2 in matches),
+			tuple(_get_displayed_match(match, team1, team2, is_starred)
+				for match, team1, team2, is_starred in matches),
 			prev_time,
 			prev_match_id,
 			next_time,
@@ -1381,19 +1434,19 @@ def get_starred_matches(client_id,
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			paginator)
 
-_ALL_MATCHES_PAGINATOR = AllMatchesPaginator()
-
 @close_session
 def get_all_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None):
 	"""Returns all matches."""
+	paginator = AllMatchesPaginator(client_id)
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
-			_ALL_MATCHES_PAGINATOR)
+			paginator)
 
 
-def _get_displayed_team(team):
-	return DisplayedTeam(team.id, team.name, team.num_stars, team.game, team.division)
+def _get_displayed_team(team, is_starred):
+	return DisplayedTeam(team.id, team.name, team.num_stars, is_starred,
+			team.game, team.division)
 
 def _get_team_list(
 		prev_name, prev_team_id, next_name, next_team_id, page_limit,
@@ -1401,7 +1454,7 @@ def _get_team_list(
 	teams, prev_name, prev_team_id, next_name, next_team_id = _paginate(
 			paginator, prev_name, prev_team_id, next_name, next_team_id, page_limit)
 	return DisplayedTeamList(
-			tuple(_get_displayed_team(team) for team in teams),
+			tuple(_get_displayed_team(team, is_starred) for team, is_starred in teams),
 			prev_name,
 			prev_team_id,
 			next_name,
@@ -1416,22 +1469,22 @@ def get_starred_teams(client_id,
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
 			paginator)
 
-_ALL_TEAMS_PAGINATOR = AllTeamsPaginator()
-
 @close_session
 def get_all_teams(client_id,
 		prev_name=None, prev_team_id=None, next_name=None, next_team_id=None,
 		page_limit=None):
 	"""Returns all teams."""
+	paginator = AllTeamsPaginator(client_id)
 	return _get_team_list(prev_name, prev_team_id, next_name, next_team_id, page_limit,
-			_ALL_TEAMS_PAGINATOR)
+			paginator)
 
 
-def _get_displayed_streamer(streamer):
+def _get_displayed_streamer(streamer, is_starred):
 	"""Returns a DisplayedStreamer for the given streamer."""
 	return DisplayedStreamer(streamer.id,
 			streamer.name,
 			streamer.num_stars,
+			is_starred,
 			streamer.image_url_small,
 			streamer.image_url_large,
 			streamer.url_by_id,
@@ -1443,7 +1496,8 @@ def _get_streamer_list(
 	streamers, prev_name, prev_streamer_id, next_name, next_streamer_id = _paginate(
 			paginator, prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit)
 	return DisplayedStreamerList(
-			tuple(_get_displayed_streamer(streamer) for streamer in streamers),
+			tuple(_get_displayed_streamer(streamer, is_starred)
+					for streamer, is_starred in streamers),
 			prev_name,
 			prev_streamer_id,
 			next_name,
@@ -1458,23 +1512,23 @@ def get_starred_streamers(client_id,
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit, paginator)
 
-_ALL_STREAMERS_PAGINATOR = AllStreamersPaginator()
-
 @close_session
 def get_all_streamers(client_id,
 		prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None,
 		page_limit=None):
 	"""Returns all streaming users."""
+	paginator = AllStreamersPaginator(client_id)
 	return _get_streamer_list(
 			prev_name, prev_streamer_id, next_name, next_streamer_id, page_limit,
-			_ALL_STREAMERS_PAGINATOR)
+			paginator)
 
 
 """A paginator for streaming users of a match.
 """
 class MatchStreamersPaginator:
-	def __init__(self, match_id):
+	def __init__(self, match_id, client_id):
 		self.match_id = match_id
+		self.client_id = client_id
 
 	def get_first_id(self):
 		first_streamed_match = common_db.optional_one(
@@ -1484,22 +1538,36 @@ class MatchStreamersPaginator:
 		return first_streamed_match.streamer_id if first_streamed_match else None
 
 	def get_partial_list_query(self):
-		return session.query(StreamedMatch.streamer_id, StreamedMatch.added, User)\
-				.join(User, StreamedMatch.streamer_id == User.id)\
+		if self.client_id:
+			query = session\
+					.query(StreamedMatch.streamer_id, StreamedMatch.added, User, StarredStreamer)\
+					.join(User, StreamedMatch.streamer_id == User.id)\
+					.outerjoin(StarredStreamer, sa.and_(
+						StarredStreamer.streamer_id == User.id,
+						StarredStreamer.user_id == self.client_id))
+		else:
+			query = session.query(StreamedMatch.streamer_id, StreamedMatch.added, User)\
+					.join(User, StreamedMatch.streamer_id == User.id)
+		return query\
 				.filter(StreamedMatch.match_id == self.match_id)
 
 	def get_order_by_columns(self):
 		return (StreamedMatch.added, StreamedMatch.streamer_id)
 
 	def execute_query(self, streamers_query):
-		return tuple((added, streamer) for streamer_id, added, streamer in streamers_query)
+		if self.client_id:
+			return tuple((added, streamer, bool(starred_streamer))
+					for streamer_id, added, streamer, starred_streamer in streamers_query)
+		else:
+			return tuple((added, streamer, False)
+					for streamer_id, added, streamer in streamers_query)
 
 	def get_pagination_values(self, item):
-		added, streamer = item
+		added, streamer = item[0], item[1]
 		return (added, streamer.id)
 
 	def has_first_id(self, first_id, item):
-		added, streamer = item
+		added, streamer = item[0], item[1]
 		return (streamer.id == first_id)
 
 @close_session
@@ -1525,7 +1593,7 @@ def get_displayed_match(client_id, match_id,
 	
 	# Get the partial list of streamers for this match.
 	if match.num_streams:
-		paginator = MatchStreamersPaginator(match_id)
+		paginator = MatchStreamersPaginator(match_id, client_id)
 		streamers, prev_time, prev_streamer_id, next_time, next_streamer_id = _paginate(
 				paginator, prev_time, prev_streamer_id, next_time, next_streamer_id, page_limit)
 	else:
@@ -1542,19 +1610,21 @@ def get_displayed_match(client_id, match_id,
 			match.time,
 			match.num_stars,
 			match.num_streams,
+			is_starred,
 			match.game,
 			match.division,
 			match.fingerprint,
-			is_starred,
-			tuple(_get_displayed_streamer(streamer) for added, streamer in streamers),
+			tuple(_get_displayed_streamer(streamer, is_starred)
+					for added, streamer, is_starred in streamers),
 			prev_time,
 			prev_streamer_id,
 			next_time,
 			next_streamer_id)
 
 
-def _get_displayed_team_match(match, team_id, opponent_team):
-	opponent_team = DisplayedTeam(opponent_team.id, opponent_team.name, opponent_team.num_stars)
+def _get_displayed_team_match(match, team_id, opponent_team, is_starred):
+	opponent_team = DisplayedTeam(
+			opponent_team.id, opponent_team.name, opponent_team.num_stars, False)
 	if match.team1_id == team_id:
 		team1 = None
 		team2 = opponent_team
@@ -1566,13 +1636,15 @@ def _get_displayed_team_match(match, team_id, opponent_team):
 			team2,
 			match.time,
 			match.num_stars,
-			match.num_streams)
+			match.num_streams,
+			is_starred)
 
 """A paginator for opponents of a team.
 """
 class MatchOpponentsPaginator:
-	def __init__(self, team_id):
+	def __init__(self, team_id, client_id):
 		self.team_id = team_id
+		self.client_id = client_id
 
 	def get_first_id(self):
 		first_match_opponent = common_db.optional_one(
@@ -1582,8 +1654,16 @@ class MatchOpponentsPaginator:
 		return first_match_opponent.match_id if first_match_opponent else None
 
 	def get_partial_list_query(self):
-		return session\
-				.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)\
+		if self.client_id:
+			query = session\
+					.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team, StarredMatch)\
+					.outerjoin(StarredMatch, sa.and_(
+						StarredMatch.match_id == MatchOpponent.match_id,
+						StarredMatch.user_id == self.client_id))
+		else:
+			query = session\
+					.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)
+		return query\
 				.join(Match, MatchOpponent.match_id == Match.id)\
 				.join(Team, MatchOpponent.opponent_id == Team.id)\
 				.filter(MatchOpponent.team_id == self.team_id)
@@ -1592,15 +1672,21 @@ class MatchOpponentsPaginator:
 		return (MatchOpponent.time, MatchOpponent.match_id)
 
 	def execute_query(self, matches_query):
-		return tuple((match, opponent_team)
-				for match_id, team_id, match, opponent_team in matches_query)
+		if self.client_id:
+			# Convert any found StarredMatch to an is_starred value of True.
+			return tuple((match, opponent_team, bool(starred_match))
+					for match_id, team_id, match, opponent_team, starred_match
+						in matches_query)
+		else:
+			return tuple((match, opponent_team, False)
+					for match_id, team_id, match, opponent_team in matches_query)
 
 	def get_pagination_values(self, item):
-		match, opponent_team = item
+		match = item[0]
 		return (match.time, match.id)
 
 	def has_first_id(self, first_id, item):
-		match, opponent_team = item
+		match = item[0]
 		return (match.id == first_id)
 
 @close_session
@@ -1618,7 +1704,7 @@ def get_displayed_team(client_id, team_id,
 	is_starred = (starred_team is not None)
 
 	# Get the partial list of matches for this team.
-	paginator = MatchOpponentsPaginator(team_id)
+	paginator = MatchOpponentsPaginator(team_id, client_id)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	
@@ -1626,12 +1712,12 @@ def get_displayed_team(client_id, team_id,
 	return DisplayedTeamDetails(team_id,
 			team.name,
 			team.num_stars,
+			is_starred,
 			team.game,
 			team.division,
 			team.fingerprint,
-			is_starred,
-			tuple(_get_displayed_team_match(match, team_id, opponent_team)
-					for match, opponent_team in matches),
+			tuple(_get_displayed_team_match(match, team_id, opponent_team, is_starred)
+					for match, opponent_team, is_starred in matches),
 			prev_time,
 			prev_match_id,
 			next_time,
@@ -1641,8 +1727,9 @@ def get_displayed_team(client_id, team_id,
 """A paginator for matches streamed by a user.
 """
 class StreamedMatchesPaginator:
-	def __init__(self, streamer_id, team_alias1=None, team_alias2=None):
+	def __init__(self, streamer_id, client_id, team_alias1=None, team_alias2=None):
 		self.streamer_id = streamer_id
+		self.client_id = client_id
 		self.team_alias1 = team_alias1 if team_alias1 else sa_orm.aliased(Team)
 		self.team_alias2 = team_alias2 if team_alias2 else sa_orm.aliased(Team)
 
@@ -1655,21 +1742,25 @@ class StreamedMatchesPaginator:
 
 	def get_partial_list_query(self):
 		return _get_streamed_match_query(
-				self.streamer_id, self.team_alias1, self.team_alias2)
+				self.streamer_id, self.client_id, self.team_alias1, self.team_alias2)
 
 	def get_order_by_columns(self):
 		return (StreamedMatch.time, StreamedMatch.match_id)
 
 	def execute_query(self, matches_query):
-		return tuple((match, team1, team2)
-				for match_id, match, team1, team2 in matches_query)
+		if self.client_id:
+			return tuple((match, team1, team2, bool(starred_match))
+					for match_id, match, team1, team2, starred_match in matches_query)
+		else:
+			return tuple((match, team1, team2, False)
+					for match_id, match, team1, team2 in matches_query)
 
 	def get_pagination_values(self, item):
-		match, team1, team2 = item
+		match = item[0]
 		return (match.time, match.id)
 
 	def has_first_id(self, first_id, item):
-		match, team1, team2 = item
+		match = item[0]
 		return (match.id == first_id)
 
 
@@ -1686,7 +1777,7 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 	is_starred = (starred_streamer is not None)
 
 	# Get the partial list of matches streamed by this user.
-	paginator = StreamedMatchesPaginator(streamer.id)
+	paginator = StreamedMatchesPaginator(streamer.id, client_id)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	
@@ -1694,13 +1785,13 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 	return DisplayedStreamerDetails(streamer.id,
 			streamer.name,
 			streamer.num_stars,
+			is_starred,
 			streamer.image_url_small,
 			streamer.image_url_large,
 			streamer.url_by_id,
 			streamer.url_by_name,
-			is_starred,
-			tuple(_get_displayed_match(match, team1, team2)
-					for match, team1, team2 in matches),
+			tuple(_get_displayed_match(match, team1, team2, is_starred)
+					for match, team1, team2, is_starred in matches),
 			prev_time,
 			prev_match_id,
 			next_time,
