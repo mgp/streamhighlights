@@ -7,11 +7,21 @@
 {% block title %}Settings{% endblock title %}
 
 {% block content %}
+	<div id="time-compare" class="main-data">
+		<h2>Server time in UTC:</h2>
+		<span>TODO</span>
+
+		<h2>Your time:</h2>
+		<span>TODO</span>
+	</div>
+
 	<div id="time-format" class="setting">
 		<h2>Time Format:</h2>
 		<select data-placeholder="Choose a time format" class="chzn-select">
 		{% for time_format, value in time_formats_map|dictsort %}
-			<option value="{{ value }}">{{ time_format }}</option>
+			<option value="{{ value }}"{% if value == time_format %}
+				selected="selected"
+			{% endif %}>{{ time_format }}</option>
 		{% endfor %}
 		</select>
 	</div>
@@ -19,8 +29,12 @@
 	<div id="country" class="setting">
 		<h2>Country:</h2>
 		<select data-placeholder="Choose a country" class="chzn-select">
+			<option value=""></option>
 		{% for country_name in sorted_country_names %}
-			<option value="{{ country_names_map[country_name] }}">{{ country_name }}</option>
+			{% set country_code = country_names_map[country_name] %}
+			<option value="{{ country_code }}"{% if country_code == country %}
+				selected="selected"
+			{% endif %}>{{ country_name }}</option>
 		{% endfor %}
 		</select>
 	</div>
