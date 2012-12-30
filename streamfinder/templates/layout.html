@@ -11,6 +11,7 @@
 		{% assets "js_all" %}
 			<script src="{{ ASSET_URL }}"></script>
 		{% endassets %}
+		{% block head %}{% endblock head %}
 		<title>{% block title %}{% endblock title %} - Stream Calendars</title>
 	</head>
 	<body>

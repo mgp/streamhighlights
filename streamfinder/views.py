@@ -478,6 +478,15 @@ def twitch_user_by_id(twitch_id):
 	return flask.render_template('streamer.html', streamer=streamer)
 
 
+_TIME_FORMAT_TO_VALUE_MAP = {
+		'12 hour': '12_hour',
+		'24 hour': '24_hour',
+}
+_SORTED_COUNTRY_NAMES = tuple(country.name for country in countries)
+_COUNTRY_NAME_TO_VALUE_MAP = {
+		country.name: country.alpha2 for country in countries
+}
+
 _SETTINGS_ROUTE = '/settings'
 
 @app.route(_SETTINGS_ROUTE)
@@ -487,11 +496,10 @@ def get_settings():
 	return flask.render_template('settings.html',
 			time_format=settings.time_format,
 			country=settings.country,
-			time_zone=settings.time_zone)
-
-_COUNTRY_NAME_TO_CODE_MAP = {
-		country.name: country.alpha2 for country in countries
-}
+			time_zone=settings.time_zone,
+			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
+			sorted_country_names=_SORTED_COUNTRY_NAMES,
+			country_names_map=_COUNTRY_NAME_TO_VALUE_MAP)
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
@@ -510,13 +518,8 @@ def save_settings():
 	if not country:
 		country = None
 	if country:
-		if len(country) != 2:
+		if (len(country) != 2) or (country not in _COUNTRY_NAME_TO_VALUE_MAP):
 			errors.add('invalid_country')
-		else:
-			try:
-				countries.get(country)
-			except KeyError:
-				errors.add('invalid_country')
 
 	# Validate the time zone.
 	time_zone = flask.request.form.get('time_zone', None)

@@ -1,8 +1,39 @@
 {% extends "layout.html" %}
 
+{% block head %}
+	<link rel="stylesheet" href="/static/chosen.css" />
+{% endblock head %}
+
 {% block title %}Settings{% endblock title %}
 
 {% block content %}
-	TODO
+	<div id="time-format" class="setting">
+		<h2>Choose Time Format:</h2>
+		<select data-placeholder="Choose a time format" class="chzn-select" style="width:400px">
+		{% for time_format, value in time_formats_map|dictsort %}
+			<option value="{{ value }}">{{ time_format }}</option>
+		{% endfor %}
+		</select>
+	</div>
+
+	<div id="country" class="setting">
+		<h2>Choose Country:</h2>
+		<select data-placeholder="Choose a country" class="chzn-select" style="width: 400px">
+		{% for country_name in sorted_country_names %}
+			<option value="{{ country_names_map[country_name] }}">{{ country_name }}</option>
+		{% endfor %}
+		</select>
+	</div>
+
+
+	<div id="time-zone" class="setting">
+		<h2>Choose Time Zone:</h2>
+		TODO
+	</div>
+
+	<script src="static/chosen.jquery.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+ 		$(".chzn-select").chosen();
+	</script>
 {% endblock content %}
 
