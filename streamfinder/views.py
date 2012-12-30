@@ -6,6 +6,7 @@ import db
 import flask
 import functools
 from flask_openid import OpenID
+from iso3166 import countries
 import pytz
 import regex as re
 import requests
@@ -475,4 +476,67 @@ def twitch_user_by_id(twitch_id):
 			flask.g.client_id, twitch_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	return flask.render_template('streamer.html', streamer=streamer)
+
+
+_SETTINGS_ROUTE = '/settings'
+
+@app.route(_SETTINGS_ROUTE)
+@login_required
+def get_settings():
+	settings = db.get_settings(flask.g.client_id)
+	return flask.render_template('settings.html',
+			time_format=settings.time_format,
+			country=settings.country,
+			time_zone=settings.time_zone)
+
+_COUNTRY_NAME_TO_CODE_MAP = {
+		country.name: country.alpha2 for country in countries
+}
+
+@app.route(_SETTINGS_ROUTE, methods=['POST'])
+@login_required
+def save_settings():
+	errors = set()
+
+	# Validate the time format.
+	time_format = flask.request.form['time_format']
+	if time_format is None:
+		errors.add('missing_time_format')
+	elif time_format not in db._SETTINGS_TIME_FORMATS:
+		errors.add('invalid_time_format')
+
+	# Validate the country code.
+	country = flask.request.form.get('country', None)
+	if not country:
+		country = None
+	if country:
+		if len(country) != 2:
+			errors.add('invalid_country')
+		else:
+			try:
+				countries.get(country)
+			except KeyError:
+				errors.add('invalid_country')
+
+	# Validate the time zone.
+	time_zone = flask.request.form.get('time_zone', None)
+	if not time_zone:
+		time_zone = None
+	if time_zone:
+		if not country:
+			errors.add('missing_country')
+		else:
+			# TODO: Validate the time zone in the selected country.
+			pass
+
+	# Update the client settings if there are no errors.
+	if not errors:
+		db.save_settings(flask.g.client_id, time_format, country, time_zone)
+	saved = not errors
+	return flask.render_template('settings.html',
+			time_format=time_format,
+			country=country,
+			time_zone=time_zone,
+			errors=errors,
+			saved=saved)
 

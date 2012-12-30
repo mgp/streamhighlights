@@ -36,6 +36,7 @@ class User(common_db.UserMixin, common_db._Base):
 				self.twitch_user)
 
 
+_SETTINGS_TIME_FORMATS = ('12_hour', '24_hour')
 _DEFAULT_SETTINGS_TIME_FORMAT = '24_hour'
 
 class Settings(common_db._Base):
@@ -43,7 +44,7 @@ class Settings(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	time_format = sa.Column(
-			sa.Enum('12_hour', '24_hour', name='SettingsTimeFormat'),
+			sa.Enum(*_SETTINGS_TIME_FORMATS, name='SettingsTimeFormat'),
 			nullable=False, default=_DEFAULT_SETTINGS_TIME_FORMAT)
 	country = sa.Column(sa.String)
 	time_zone = sa.Column(sa.String)
