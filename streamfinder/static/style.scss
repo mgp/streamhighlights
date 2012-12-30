@@ -146,11 +146,33 @@ ul.match-list li {
 	}
 }
 
-.setting {
+div.setting {
 	font-size: $medium-font-size;
 	h2 {
 		color: $dark-gray;
 		text-transform: uppercase;
+	}
+	select {
+		width: 75%;
+	}
+	& + div.setting {
+		margin-top: (2 * $padding);
+	}
+
+	// Styles that override those in the Chosen stylesheet.
+	.chzn-container {
+		font-size: $medium-font-size;
+	}
+	.chzn-container-single .chzn-single {
+		$height: $medium-font-size * 1.1;
+		height: $height;
+		line-height: $height;
+	}
+	.chzn-container .chzn-results li {
+		line-height: $medium-font-size;
+	}
+	.chzn-container-single .chzn-search input {
+		font-family: 'LeagueGothic';
 	}
 }
 

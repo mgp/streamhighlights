@@ -8,8 +8,8 @@
 
 {% block content %}
 	<div id="time-format" class="setting">
-		<h2>Choose Time Format:</h2>
-		<select data-placeholder="Choose a time format" class="chzn-select" style="width:400px">
+		<h2>Time Format:</h2>
+		<select data-placeholder="Choose a time format" class="chzn-select">
 		{% for time_format, value in time_formats_map|dictsort %}
 			<option value="{{ value }}">{{ time_format }}</option>
 		{% endfor %}
@@ -17,8 +17,8 @@
 	</div>
 
 	<div id="country" class="setting">
-		<h2>Choose Country:</h2>
-		<select data-placeholder="Choose a country" class="chzn-select" style="width: 400px">
+		<h2>Country:</h2>
+		<select data-placeholder="Choose a country" class="chzn-select">
 		{% for country_name in sorted_country_names %}
 			<option value="{{ country_names_map[country_name] }}">{{ country_name }}</option>
 		{% endfor %}
@@ -27,7 +27,7 @@
 
 
 	<div id="time-zone" class="setting">
-		<h2>Choose Time Zone:</h2>
+		<h2>Time Zone:</h2>
 		TODO
 	</div>
 
