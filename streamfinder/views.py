@@ -489,10 +489,6 @@ _COUNTRY_NAME_TO_CODE_MAP = {
 		country.name: country.alpha2 for country in countries
 }
 
-_TRANSLATION_TABLE = string.maketrans("_", " ")
-def _get_time_zone_name(time_zone):
-	return time_zone.zone.split('/', 1)[1].translate(_TRANSLATION_TABLE)
-
 _COUNTRY_CODE_TO_TIME_ZONE_MAP = {
 	'AQ': {
 		'Palmer': 'Antarctica/Palmer',
@@ -607,6 +603,9 @@ _COUNTRY_CODE_TO_TIME_ZONE_MAP = {
 	'MY': {
 		'Kuala_Lumpur': 'Asia/Kuala_Lumpur',
 	},
+	'NZ': {
+		'Auckland': 'Pacific/Auckland',
+	},
 	'PF': {
 		'Tahiti': 'Pacific/Tahiti',
 		'Marquesas': 'Pacific/Marquesas',
@@ -641,31 +640,43 @@ _COUNTRY_CODE_TO_TIME_ZONE_MAP = {
 		'Wake': 'Pacific/Wake',
 	},
 	'US': {
-		'Hawaii Time': None,
-		'Alaska Time': None,
-		'Pacific Time': None,
-		'Mountain Time': None,
-		'Mountain Time - Arizona': None,
-		'Central Time': None,
-		'Eastern Time': None
+		'Hawaii Time': 'Pacific/Honolulu',
+		'Alaska Time': 'America/Anchorage',
+		'Pacific Time': 'America/Los_Angeles',
+		'Mountain Time': 'America/Denver',
+		'Mountain Time - Arizona': 'America/Phoenix',
+		'Central Time': 'America/Chicago',
+		'Eastern Time': 'America/New_York', 
 	},
 	'UZ': {
 		'Tashkent': 'Asia/Tashkent',
 	}
 }
 
+_TRANSLATION_TABLE = string.maketrans("_", " ")
+def _get_time_zone_name(time_zone):
+	return str(time_zone).rsplit('/', 1)[1].translate(_TRANSLATION_TABLE)
+
 def _init_time_zone_map():
+	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
+		for name, time_zone in time_zone_map.iteritems():
+			time_zone_map[name] = pytz.timezone(time_zone)
+
 	for country_code in _COUNTRY_NAME_TO_CODE_MAP.itervalues():
-		if country_code in pytz.country_timezones:
-			time_zones = tuple(pytz.timezone(time_zone)
-					for time_zone in pytz.country_timezones[country_code])
-			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zones
-	
-	for country_code in sorted(_COUNTRY_CODE_TO_TIME_ZONE_MAP):
-		# print ' country_code=%s' % country_code
-		time_zones = _COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code]
-		# for time_zone in time_zones:
-		#	print '  %s' % time_zone # _get_time_zone_name(time_zone)
+		country_code = country_code.upper()
+
+		if country_code not in pytz.country_timezones:
+			continue
+		time_zones = pytz.country_timezones[country_code]
+		if len(time_zones) > 1:
+			assert country_code in _COUNTRY_CODE_TO_TIME_ZONE_MAP
+		else:
+			time_zone = time_zones[0]
+			time_zone_name = _get_time_zone_name(time_zone)
+			time_zone_map = {
+				time_zone_name: pytz.timezone(time_zone),
+			}
+			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zone_map
 _init_time_zone_map()
 
 _SETTINGS_ROUTE = '/settings'
