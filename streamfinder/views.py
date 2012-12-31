@@ -679,6 +679,32 @@ def _init_time_zone_map():
 			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zone_map
 _init_time_zone_map()
 
+_MINUTES_PER_DAY = 1440
+_SECONDS_PER_MINUTE = 60
+
+def _get_readable_offset(utc_offset):
+	offset_minutes = 0
+	offset_minutes += (utc_offset.days * _MINUTES_PER_DAY)
+	offset_minutes += (utc_offset.seconds / _SECONDS_PER_MINUTE)
+
+	if offset_minutes < 0:
+		offset_prefix = 'UTC-'
+		offset_minutes = abs(offset_minutes)
+	else:
+		offset_prefix = 'UTC+'
+	offset_hours, offset_minutes = (offset_minutes / 60, offset_minutes % 60)
+	return '%s%02d:%02d' % (offset_prefix, offset_hours, offset_minutes)
+
+def _get_zone_readable_offset_map():
+	now = datetime.utcnow()
+	zone_readable_offset_map = {}
+	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
+		for time_zone in time_zone_map.itervalues():
+			utc_offset = time_zone.utcoffset(now)
+			zone_readable_offset_map[time_zone.zone] = _get_readable_offset(utc_offset)
+	return zone_readable_offset_map
+_get_zone_readable_offset_map()
+
 _SETTINGS_ROUTE = '/settings'
 
 @app.route(_SETTINGS_ROUTE)
