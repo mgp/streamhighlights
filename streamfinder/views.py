@@ -655,7 +655,7 @@ _COUNTRY_CODE_TO_TIME_ZONE_MAP = {
 
 _TRANSLATION_TABLE = string.maketrans("_", " ")
 def _get_time_zone_name(time_zone):
-	return str(time_zone).rsplit('/', 1)[1].translate(_TRANSLATION_TABLE)
+	return str(time_zone.rsplit('/', 1)[1]).translate(_TRANSLATION_TABLE)
 
 def _init_time_zone_map():
 	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
@@ -700,7 +700,7 @@ def _get_zone_readable_offset_map():
 	zone_readable_offset_map = {}
 	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
 		for time_zone in time_zone_map.itervalues():
-			utc_offset = time_zone.utcoffset(now)
+			utc_offset = time_zone.utcoffset(now, is_dst=False)
 			zone_readable_offset_map[time_zone.zone] = _get_readable_offset(utc_offset)
 	return zone_readable_offset_map
 _get_zone_readable_offset_map()
