@@ -10,6 +10,7 @@ from iso3166 import countries
 import pytz
 import regex as re
 import requests
+import string
 
 oid = OpenID(app)
 
@@ -482,10 +483,190 @@ _TIME_FORMAT_TO_VALUE_MAP = {
 		'12 hour': '12_hour',
 		'24 hour': '24_hour',
 }
+
 _SORTED_COUNTRY_NAMES = tuple(country.name for country in countries)
-_COUNTRY_NAME_TO_VALUE_MAP = {
+_COUNTRY_NAME_TO_CODE_MAP = {
 		country.name: country.alpha2 for country in countries
 }
+
+_TRANSLATION_TABLE = string.maketrans("_", " ")
+def _get_time_zone_name(time_zone):
+	return time_zone.zone.split('/', 1)[1].translate(_TRANSLATION_TABLE)
+
+_COUNTRY_CODE_TO_TIME_ZONE_MAP = {
+	'AQ': {
+		'Palmer': 'Antarctica/Palmer',
+		'Rothera': 'Antarctica/Rothera',
+		'Syowa': 'Antarctica/Syowa',
+		'Mawson': 'Antarctica/Mawson',
+		'Vostok': 'Antarctica/Vostok',
+		'Davis': 'Antarctica/Davis',
+		'Casey': 'Antarctica/Casey',
+		"Dumont D'Urville": 'Antarctica/DumontDUrville',
+	},
+	'AR': {
+  	'Buenos Aires': 'America/Argentina/Buenos_Aires',
+	},
+	'AU': {
+		'Western Time - Perth': 'Australia/Perth',
+		'Central Time - Adelaide': 'Australia/Adelaide',
+		'Central Time - Darwin': 'Australia/Darwin',
+		'Eastern Time - Brisbane': 'Australia/Brisbane',
+		'Eastern Time - Hobart': 'Australia/Hobart',
+		'Eastern Time - Melbourne, Sydney': 'Australia/Melbourne',
+	},
+	'BR': {
+		'Boa Vista': 'America/Boa_Vista',
+		'Campo Grande': 'America/Campo_Grande',
+		'Cuiaba': 'America/Cuiaba',
+		'Manaus': 'America/Manaus',
+		'Porto Velho': 'America/Porto_Velho',
+		'Rio Branco': 'America/Rio_Branco',
+		'Araguaina': 'America/Araguaina',
+		'Belem': 'America/Belem',
+		'Fortaleza': 'America/Fortaleza',
+		'Maceio': 'America/Maceio',
+		'Recife': 'America/Recife',
+		'Sao Paulo': 'America/Sao_Paulo',
+		'Noronha': 'America/Noronha',
+	},
+	'CA': {
+		'Pacific Time - Vancouver': 'America/Vancouver',
+		'Pacific Time - Whitehorse': 'America/Whitehorse',
+		'Mountain Time - Dawson Creek': 'America/Dawson_Creek',
+		'Mountain Time - Edmonton': 'America/Edmonton',
+		'Mountain Time - Yellowknife': 'America/Yellowknife',
+		'Central Time - Regina': 'America/Regina',
+		'Central Time - Winnipeg': 'America/Winnipeg',
+		'Eastern Time - Iqaluit': 'America/Iqaluit',
+		'Eastern Time - Montreal': 'America/Montreal',
+		'Eastern Time - Toronto': 'America/Toronto',
+		'Atlantic Time - Halifax': 'America/Halifax',
+		'Newfoundland Time - St Johns': 'America/St_Johns',
+	},
+	'CD': {
+		'Kinshasa': 'Africa/Kinshasa',
+		'Lubumbashi': 'Africa/Lubumbashi',
+	},
+	'CL': {
+  	'Easter Island': 'Pacific/Easter',
+		'Santiago': 'America/Santiago',
+	},
+	'CN': {
+		'Shanghai': 'Asia/Shanghai',
+	},
+	'EC': {
+		'Galapagos': 'Pacific/Galapagos',
+		'Guayaquil': 'America/Guayaquil',
+	},
+	'ES': {
+		'Canary Islands': 'Atlantic/Canary',
+		'Ceuta': 'Africa/Ceuta',
+		'Madrid': 'Europe/Madrid',
+	},
+	'FM': {
+		'Chuuk': 'Pacific/Chuuk',
+		'Kosrae': 'Pacific/Kosrae',
+		'Pohnpei': 'Pacific/Ponape',
+	},
+	'GL': {
+		'Thule': 'America/Thule',
+		'Godthab': 'America/Godthab',
+		'Scoresbysund': 'America/Scoresbysund',
+		'Danmarkshavn': 'America/Danmarkshavn',
+	},
+	'ID': {
+		'Jakarta': 'Asia/Jakarta',
+		'Makassar': 'Asia/Makassar',
+		'Jayapura': 'Asia/Jayapura',
+	},
+	'KI': {
+		'Tarawa': 'Pacific/Tarawa',
+		'Kiritimati': 'Pacific/Kiritimati',
+	},
+	'KZ': {
+		'Aqtau': 'Asia/Aqtau',
+		'Aqtobe': 'Asia/Aqtobe',
+		'Almaty': 'Asia/Almaty',
+	},
+	'MH': {
+		'Kwajalein': 'Pacific/Kwajalein',
+		'Majuro': 'Pacific/Majuro',
+	},
+	'MN': {
+		'Hovd': 'Asia/Hovd',
+		'Choibalsan': 'Asia/Choibalsan',
+		'Ulaanbaatar': 'Asia/Ulaanbaatar',
+	},
+	'MX': {
+		'Pacific Time - Tijuana': 'America/Tijuana',
+		'Mountain Time - Hermosillo': 'America/Hermosillo',
+		'Mountain Time - Chihuahua, Mazatlan': 'America/Chihuahua',
+		'Central Time - Mexico City': 'America/Mexico_City',
+	},
+	'MY': {
+		'Kuala_Lumpur': 'Asia/Kuala_Lumpur',
+	},
+	'PF': {
+		'Tahiti': 'Pacific/Tahiti',
+		'Marquesas': 'Pacific/Marquesas',
+		'Gambier': 'Pacific/Gambier',
+	},
+	'PS': {
+		'Gaza': 'Asia/Gaza',
+	},
+	'PT': {
+		'Azores': 'Atlantic/Azores',
+		'Lisbon': 'Europe/Lisbon',
+	},
+	'RU': {
+		'Moscow-01 - Kaliningrad': 'Europe/Kaliningrad',
+		'Moscow+00': 'Europe/Moscow',
+		'Moscow+00 - Samara': 'Europe/Samara',
+		'Moscow+02 - Yekaterinburg': 'Asia/Yekaterinburg',
+		'Moscow+03 - Omsk, Novosibirsk': 'Asia/Omsk',
+		'Moscow+04 - Krasnoyarsk': 'Asia/Krasnoyarsk',
+		'Moscow+05 - Irkutsk': 'Asia/Irkutsk',
+		'Moscow+06 - Yakutsk': 'Asia/Yakutsk',
+		'Moscow+07 - Yuzhno-Sakhalinsk': 'Asia/Sakhalin',
+		'Moscow+08 - Petropavlovsk-Kamchatskiy': 'Asia/Kamchatka',
+		'Moscow+08 - Magadan': 'Asia/Magadan',
+	},
+	'UA': {
+		'Kiev': 'Europe/Kiev',
+	},
+	'UM': {
+		'Johnston': 'Pacific/Johnston',
+		'Midway': 'Pacific/Midway',
+		'Wake': 'Pacific/Wake',
+	},
+	'US': {
+		'Hawaii Time': None,
+		'Alaska Time': None,
+		'Pacific Time': None,
+		'Mountain Time': None,
+		'Mountain Time - Arizona': None,
+		'Central Time': None,
+		'Eastern Time': None
+	},
+	'UZ': {
+		'Tashkent': 'Asia/Tashkent',
+	}
+}
+
+def _init_time_zone_map():
+	for country_code in _COUNTRY_NAME_TO_CODE_MAP.itervalues():
+		if country_code in pytz.country_timezones:
+			time_zones = tuple(pytz.timezone(time_zone)
+					for time_zone in pytz.country_timezones[country_code])
+			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zones
+	
+	for country_code in sorted(_COUNTRY_CODE_TO_TIME_ZONE_MAP):
+		# print ' country_code=%s' % country_code
+		time_zones = _COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code]
+		# for time_zone in time_zones:
+		#	print '  %s' % time_zone # _get_time_zone_name(time_zone)
+_init_time_zone_map()
 
 _SETTINGS_ROUTE = '/settings'
 
@@ -499,7 +680,7 @@ def get_settings():
 			time_zone=settings.time_zone,
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
-			country_names_map=_COUNTRY_NAME_TO_VALUE_MAP)
+			country_names_map=_COUNTRY_NAME_TO_CODE_MAP)
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
@@ -518,7 +699,7 @@ def save_settings():
 	if not country:
 		country = None
 	if country:
-		if (len(country) != 2) or (country not in _COUNTRY_NAME_TO_VALUE_MAP):
+		if (len(country) != 2) or (country not in _COUNTRY_NAME_TO_CODE_MAP):
 			errors.add('invalid_country')
 
 	# Validate the time zone.
