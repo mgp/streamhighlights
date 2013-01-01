@@ -7,6 +7,7 @@ import flask
 import functools
 from flask_openid import OpenID
 from iso3166 import countries
+import json
 import pytz
 import regex as re
 import requests
@@ -657,6 +658,9 @@ _TRANSLATION_TABLE = string.maketrans("_", " ")
 def _get_time_zone_name(time_zone):
 	return str(time_zone.rsplit('/', 1)[1]).translate(_TRANSLATION_TABLE)
 
+def _time_zone_encoder(time_zone):
+	return time_zone.zone
+
 def _init_time_zone_map():
 	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
 		for name, time_zone in time_zone_map.iteritems():
@@ -677,6 +681,10 @@ def _init_time_zone_map():
 				time_zone_name: pytz.timezone(time_zone),
 			}
 			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zone_map
+	
+	global _COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON
+	_COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON = json.dumps(
+			_COUNTRY_CODE_TO_TIME_ZONE_MAP, default=_time_zone_encoder)
 _init_time_zone_map()
 
 _MINUTES_PER_DAY = 1440
@@ -717,7 +725,8 @@ def get_settings():
 			time_zone=settings.time_zone,
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
-			country_names_map=_COUNTRY_NAME_TO_CODE_MAP)
+			country_codes_map=_COUNTRY_NAME_TO_CODE_MAP,
+			time_zones_map_json=_COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON)
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
