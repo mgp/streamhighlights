@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block head %}
-	<link rel="stylesheet" href="/static/chosen.css" />
+	<link rel="stylesheet" href="/static/select2.css" />
 {% endblock head %}
 
 {% block title %}Settings{% endblock title %}
@@ -17,7 +17,7 @@
 
 	<div id="time-format" class="setting">
 		<h2>Time Format:</h2>
-		<select data-placeholder="Choose a time format" class="chzn-select">
+		<select>
 		{% for time_format, value in time_formats_map|dictsort %}
 			<option value="{{ value }}"{% if value == time_format %}
 				selected="selected"
@@ -28,7 +28,7 @@
 
 	<div id="country" class="setting">
 		<h2>Country:</h2>
-		<select data-placeholder="Choose a country" class="chzn-select">
+		<select>
 			<option value=""></option>
 		{% for country_name in sorted_country_names %}
 			{% set country_code = country_codes_map[country_name] %}
@@ -39,16 +39,25 @@
 		</select>
 	</div>
 
-
 	<div id="time-zone" class="setting">
 		<h2>Time Zone:</h2>
 		TODO
 	</div>
 
-	<script src="static/chosen.jquery.min.js" type="text/javascript"></script>
+	<script src="static/select2.js" type="text/javascript"></script>
 	<script type="text/javascript">
- 		$(".chzn-select").chosen();
 		$("#time-zone").data("time_zone_map", {{ time_zones_map_json|safe }});
+		$(document).ready(function() {
+			$("#time-format > select").select2({
+				width: '500px',
+				placeholder: "Choose a time format",
+				containerCssClass: "settingsSelect",
+			});
+			$("#country > select").select2({
+				width: '500px',
+				placeholder: "Choose a country",
+			});
+		});
 	</script>
 {% endblock content %}
 
