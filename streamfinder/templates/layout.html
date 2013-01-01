@@ -5,11 +5,11 @@
 	<head>
 		<link rel="stylesheet" href="/static/reset.css" />
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
-		{% assets "js_all" %}
+		{% assets "app_js" %}
 			<script src="{{ ASSET_URL }}"></script>
 		{% endassets %}
 		{% block head %}{% endblock head %}
-		{% assets "css_all" %}
+		{% assets "all_css" %}
 			<link rel="stylesheet" href="{{ ASSET_URL }}" />
 		{% endassets %}
 		<title>{% block title %}{% endblock title %} - Stream Calendars</title>
