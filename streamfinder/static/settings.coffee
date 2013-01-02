@@ -31,6 +31,14 @@ clientTime = $('#client-time')
 clientTime12Hour = $('div.format-12-hour', clientTime)
 clientTime24Hour = $('div.format-24-hour', clientTime)
 
+# Displays the 12-hour and 24-hour times for this offset.
+showClientTime = (offset) ->
+	clientTime12Hour.text(offset[1])
+	clientTime24Hour.text(offset[2])
+	# This may be the first time zone chosen after choosing a new country.
+	clientTime.show()
+	return
+
 timeZoneSelect = $('#time-zone > select')
 # Initializes the time zone selector with Select2. Must also be called after a
 # new country is chosen, or else Select2 will not display the updated list of
@@ -56,6 +64,7 @@ $.initTimeZone = (countryCode, timeZone) ->
 			option = $('<option></option>').val(value).html(text).data('offset', offset)
 			if timeZone and timeZone == value
 				option.attr 'selected', 'selected'
+				showClientTime offset
 			timeZoneSelect.append option
 	
 	timeZoneSelect.select2 {
@@ -82,9 +91,6 @@ countrySelect.on 'change', (e) ->
 timeZoneSelect.change ->
 	# Display the 12-hour and 24-hour times for this offset.
 	offset = $('option:selected', this).data 'offset'
-	clientTime12Hour.text(offset[1])
-	clientTime24Hour.text(offset[2])
-	# This may be the first time zone chosen after choosing a new country.
-	clientTime.show()
+	showClientTime offset
 	return
 
