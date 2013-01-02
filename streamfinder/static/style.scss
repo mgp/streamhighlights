@@ -190,6 +190,12 @@ $select2-height: round(1.3 * $select2-font-size);
 	}
 }
 
+#time-compare {
+	h2 {
+		color: $dark-gray;
+	}
+}
+
 div.setting {
 	text-transform: uppercase;
 	h2 {
