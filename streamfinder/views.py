@@ -758,21 +758,20 @@ def _get_displayed_offset_map(now, offset_minutes_set):
 
 _SETTINGS_ROUTE = '/settings'
 
-@app.route(_SETTINGS_ROUTE)
-@login_required
-def get_settings():
+def _render_settings(
+		selected_time_format, selected_country_code, selected_time_zone,
+		errors=(), saved=False):
 	now = datetime.utcnow()
 	datetime_12_hour = now.strftime(_DATETIME_FORMAT_12_HOUR_UTC)
 	datetime_24_hour = now.strftime(_DATETIME_FORMAT_24_HOUR_UTC)
 	country_offset_minutes_map, offset_minutes_set = _get_offset_minutes_map(now)
 	displayed_offset_map = _get_displayed_offset_map(now, offset_minutes_set)
 
-	settings = db.get_settings(flask.g.client_id)
 	return flask.render_template('settings.html',
 			# The current user settings.
-			selected_time_format=settings.time_format,
-			selected_country_code=settings.country,
-			selected_time_zone=settings.time_zone,
+			selected_time_format=selected_time_format,
+			selected_country_code=selected_country_code,
+			selected_time_zone=selected_time_zone,
 			# The time format and country options.
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
@@ -781,6 +780,13 @@ def get_settings():
 			server_time_24_hour=datetime_24_hour,
 			country_offset_minutes_map=json.dumps(country_offset_minutes_map),
 			displayed_offset_map=json.dumps(displayed_offset_map))
+
+@app.route(_SETTINGS_ROUTE)
+@login_required
+def get_settings():
+	settings = db.get_settings(flask.g.client_id)
+	return _render_settings(
+			settings.time_format, settings.country, settings.time_zone)
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
@@ -817,10 +823,6 @@ def save_settings():
 	if not errors:
 		db.save_settings(flask.g.client_id, time_format, country, time_zone)
 	saved = not errors
-	return flask.render_template('settings.html',
-			time_format=time_format,
-			country=country,
-			time_zone=time_zone,
-			errors=errors,
-			saved=saved)
+
+	return _render_settings(time_format, country, time_zone, errors, saved)
 
