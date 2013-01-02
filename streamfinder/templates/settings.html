@@ -10,19 +10,27 @@
 	<div id="time-compare" class="main-data">
 		<div id="server-time">
 			<h2>Server time in UTC:</h2>
-			<div class="format-12-hour"{% if time_format != "12_hour" %} style="display: none;"{% endif %}>
+			<div class="format-12-hour"{% if selected_time_format != "12_hour" %}
+				style="display: none;"
+			{% endif %}>
 				{{ server_time_12_hour }}
 			</div>
-			<div class="format-24-hour"{% if time_format != "24_hour" %} style="display: none;"{% endif %}>
+			<div class="format-24-hour"{% if selected_time_format != "24_hour" %}
+				style="display: none;"
+			{% endif %}>
 				{{ server_time_24_hour }}
 			</div>
 		</div>
 
-		<div id="client-time"{% if not time_zone %} style="display: none;"{% endif %}>
+		<div id="client-time"{% if not selected_time_zone %} style="display: none;"{% endif %}>
 			<h2>Your time:</h2>
-			<div class="format-12-hour"{% if time_format != "12_hour" %} style="display: none;"{% endif %}>
+			<div class="format-12-hour"{% if selected_time_format != "12_hour" %}
+				style="display: none;"
+			{% endif %}>
 			</div>
-			<div class="format-24-hour"{% if time_format != "24_hour" %} style="display: none;"{% endif %}>
+			<div class="format-24-hour"{% if selected_time_format != "24_hour" %}
+				style="display: none;"
+			{% endif %}>
 			</div>
 		</div>
 	</div>
@@ -30,10 +38,10 @@
 	<div id="time-format" class="setting">
 		<h2>Time Format:</h2>
 		<select>
-		{% for name, value in time_formats_map|dictsort %}
-			<option value="{{ value }}"{% if value == time_format %}
+		{% for time_format_name, time_format in time_formats_map|dictsort %}
+			<option value="{{ time_format }}"{% if time_format == selected_time_format %}
 				selected="selected"
-			{% endif %}>{{ name }}</option>
+			{% endif %}>{{ time_format_name }}</option>
 		{% endfor %}
 		</select>
 	</div>
@@ -43,7 +51,7 @@
 		<select>
 			<option value=""></option>
 		{% for country_name, country_code in sorted_country_names %}
-			<option value="{{ country_code }}"{% if country_code == country %}
+			<option value="{{ country_code }}"{% if country_code == selected_country_code %}
 				selected="selected"
 			{% endif %}>{{ country_name }}</option>
 		{% endfor %}
@@ -64,10 +72,10 @@
 	<script type="text/javascript">
 		$("#time-zone").data("countryOffsetMinutesMap", {{ country_offset_minutes_map|safe }});
 		$("#time-zone").data("displayedOffsetMap", {{ displayed_offset_map|safe }});
-		{% if country and time_zone %}
-			$.initTimeZone("{{ country|safe }}", "{{ time_zone|safe }}");
-		{% elif country %}
-			%.initTimeZone("{{ country|safe }}");	
+		{% if selected_country_code and selected_time_zone %}
+			$.initTimeZone("{{ selected_country_code|safe }}", "{{ selected_time_zone|safe }}");
+		{% elif selected_country_code %}
+			$.initTimeZone("{{ selected_country_code|safe }}");	
 		{% else %}
 			$.initTimeZone();
 		{% endif %}

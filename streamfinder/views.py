@@ -767,11 +767,11 @@ def get_settings():
 	settings = db.get_settings(flask.g.client_id)
 	return flask.render_template('settings.html',
 			# The current user settings.
-			time_format=settings.time_format,
-			country='US', # settings.country,
-			time_zone='America/Los_Angeles', # settings.time_zone,
+			selected_time_format=settings.time_format,
+			selected_country_code=settings.country,
+			selected_time_zone=settings.time_zone,
+			# The time format and country options.
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
-			# The sorted list of all countries.
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
 			# Data for changing the time zone.
 			server_time_12_hour=datetime_12_hour,
