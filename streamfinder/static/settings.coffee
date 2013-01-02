@@ -75,7 +75,7 @@ $.initTimeZone = (countryCode, timeZone) ->
 
 # Replaces the dash with a longer dash more visible with LeagueGothic.
 replaceDash = (s) ->
-	return s.replace "-", "&ndash;"
+	return s.replace /-/g, "&ndash;"
 
 # Called when a different country is selected, and the list of time zone options
 # must be updated.
