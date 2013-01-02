@@ -716,12 +716,14 @@ def _get_offset_minutes_map(now):
 	offset_minutes_set = set()
 	country_offset_minutes_map = {}
 	for country_code, time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.iteritems():
-		name_offset_minutes_map = {}
+		name_offset_minutes_list = []
 		for name, time_zone in time_zone_map.iteritems():
 			offset_minutes = _get_offset_minutes(now, time_zone)
 			offset_minutes_set.add(offset_minutes)
-			name_offset_minutes_map[name] = (time_zone.zone, offset_minutes)
-		country_offset_minutes_map[country_code] = name_offset_minutes_map
+			name_offset_minutes_list.append((name, time_zone.zone, offset_minutes))
+
+		country_offset_minutes_map[country_code] = sorted(
+				name_offset_minutes_list, key=lambda e: (e[2], e[0]))
 
 	return country_offset_minutes_map, offset_minutes_set
 
