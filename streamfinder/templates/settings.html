@@ -9,7 +9,12 @@
 {% block content %}
 	<div id="time-compare" class="main-data">
 		<h2>Server time in UTC:</h2>
-		<span>TODO</span>
+		<div class="12-hour"{% if time_format != "12_hour" %} style="display: none;"{% endif %}>
+			{{ server_time_12_hour }}
+		</div>
+		<div class="24-hour"{% if time_format != "24_hour" %} style="display: none;"{% endif %}>
+			{{ server_time_24_hour }}
+		</div>
 
 		<h2>Your time:</h2>
 		<span>TODO</span>
@@ -18,10 +23,10 @@
 	<div id="time-format" class="setting">
 		<h2>Time Format:</h2>
 		<select>
-		{% for time_format, value in time_formats_map|dictsort %}
+		{% for name, value in time_formats_map|dictsort %}
 			<option value="{{ value }}"{% if value == time_format %}
 				selected="selected"
-			{% endif %}>{{ time_format }}</option>
+			{% endif %}>{{ name }}</option>
 		{% endfor %}
 		</select>
 	</div>

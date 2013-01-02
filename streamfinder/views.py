@@ -110,18 +110,28 @@ def _get_match_external_url(match):
 		return 'http://play.esea.net/index.php?s=stats&d=match&id=%s' % remainder
 
 
-_DATETIME_FORMAT_LOCALIZED = '%a %b %d %I:%M%p'
-_DATETIME_FORMAT_UTC = '%a %b %d %I:%M%p %Z'
+_DATETIME_FORMAT_12_HOUR_LOCALIZED = '%a %b %d %I:%M%p'
+_DATETIME_FORMAT_24_HOUR_LOCALIZED = '%a %b %d %H:%M'
+_DATETIME_FORMAT_12_HOUR_UTC = '%a %b %d %I:%M%p %Z'
+_DATETIME_FORMAT_24_HOUR_UTC = '%a %b %d %H:%M %Z'
 
 def _get_readable_datetime(dt):
 	"""Returns the datetime as a string, using the user's timezone if logged in."""
 	utc_datetime = pytz.utc.localize(dt)
-	timezone = flask.g.timezone
-	if timezone:
-		localized_datetime = utc_datetime.astimezone(timezone)
-		return localized_datetime.strftime(_DATETIME_FORMAT_LOCALIZED)
+	time_zone = flask.g.time_zone
+	if time_zone:
+		localized_datetime = utc_datetime.astimezone(time_zone)
+		if flask.g.time_format == '12_hour':
+			datetime_format = _DATETIME_FORMAT_12_HOUR_LOCALIZED
+		else:
+			datetime_format = _DATETIME_FORMAT_24_HOUR_LOCALIZED
+		return localized_datetime.strftime(datetime_format)
 	else:
-		return utc_datetime.strftime(_DATETIME_FORMAT_UTC)
+		if flask.g.time_format == '12_hour':
+			datetime_format = _DATETIME_FORMAT_12_HOUR_UTC
+		else:
+			datetime_format = _DATETIME_FORMAT_24_HOUR_UTC
+		return utc_datetime.strftime(datetime_format)
 
 _SECONDS_PER_HOUR = 60 * 60
 _SECONDS_PER_MINUTE = 60
@@ -265,12 +275,12 @@ def login_optional(f):
 		if client_id is None:
 			flask.g.logged_in = False
 			flask.g.client_id = None
-			flask.g.timezone = None
+			flask.g.time_zone = None
 		else:
 			flask.g.logged_in = True
 			flask.g.client_id = client_id
 			# TODO: Get from cookie
-			flask.g.timezone = pytz.timezone('America/Los_Angeles')
+			flask.g.time_zone = pytz.timezone('America/Los_Angeles')
 
 		return f(*pargs, **kwargs)
 	return decorated_function
@@ -658,10 +668,14 @@ _TRANSLATION_TABLE = string.maketrans("_", " ")
 def _get_time_zone_name(time_zone):
 	return str(time_zone.rsplit('/', 1)[1]).translate(_TRANSLATION_TABLE)
 
-def _time_zone_encoder(time_zone):
-	return time_zone.zone
-
 def _init_time_zone_map():
+	"""Creates a mapping from country codes to time zones.
+
+	A country can contain multiple time zones, therefore the value of a country
+	code is also a mapping, where time zones are mapped to by their displayed
+	names.
+	"""
+
 	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
 		for name, time_zone in time_zone_map.iteritems():
 			time_zone_map[name] = pytz.timezone(time_zone)
@@ -682,42 +696,85 @@ def _init_time_zone_map():
 			}
 			_COUNTRY_CODE_TO_TIME_ZONE_MAP[country_code] = time_zone_map
 	
-	global _COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON
-	_COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON = json.dumps(
-			_COUNTRY_CODE_TO_TIME_ZONE_MAP, default=_time_zone_encoder)
 _init_time_zone_map()
 
 _MINUTES_PER_DAY = 1440
 _SECONDS_PER_MINUTE = 60
 
-def _get_readable_offset(utc_offset):
+def _get_offset_minutes(now, time_zone):
+	utc_offset = time_zone.utcoffset(now, is_dst=False)
 	offset_minutes = 0
 	offset_minutes += (utc_offset.days * _MINUTES_PER_DAY)
 	offset_minutes += (utc_offset.seconds / _SECONDS_PER_MINUTE)
+	return offset_minutes
 
+def _get_offset_minutes_map(now):
+	"""Given the current time, extends the mapping from country codes to time zones
+	to also include the UTC offset for each time zone.
+
+	Each displayed time zone name maps to a pair containing the time zone and its
+	UTC offset in minutes.
+	"""
+
+	offset_minutes_set = set()
+	country_offset_minutes_map = {}
+	for country_code, time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.iteritems():
+		name_offset_minutes_map = {}
+		for name, time_zone in time_zone_map.iteritems():
+			offset_minutes = _get_offset_minutes(now, time_zone)
+			offset_minutes_set.add(offset_minutes)
+			name_offset_minutes_map[name] = (time_zone.zone, offset_minutes)
+		country_offset_minutes_map[country_code] = name_offset_minutes_map
+
+	return country_offset_minutes_map, offset_minutes_set
+
+def _get_displayed_offset(offset_minutes):
 	if offset_minutes < 0:
 		offset_prefix = 'UTC-'
 		offset_minutes = abs(offset_minutes)
 	else:
 		offset_prefix = 'UTC+'
-	offset_hours, offset_minutes = (offset_minutes / 60, offset_minutes % 60)
-	return '%s%02d:%02d' % (offset_prefix, offset_hours, offset_minutes)
+	return '%s%02d:%02d' % (offset_prefix, offset_minutes / 60, offset_minutes % 60)
 
-def _get_zone_readable_offset_map():
+def _get_displayed_offset_map(now, offset_minutes_set):
+	"""Given all UTC offsets, returns a map from each offset to a tuple containing
+	the displayed offset, the current time in 12-hour format after applying the
+	offset, and the current time in 24-hour format after applying the offset.
+	"""
+
+	displayed_offset_map = {}
+	for offset_minutes in sorted(offset_minutes_set):
+		displayed_offset = _get_displayed_offset(offset_minutes)
+		now_offset = now + timedelta(minutes=offset_minutes)
+
+		displayed_offset_map[offset_minutes] = (
+				displayed_offset, 
+				now_offset.strftime(_DATETIME_FORMAT_12_HOUR_LOCALIZED),
+				now_offset.strftime(_DATETIME_FORMAT_24_HOUR_LOCALIZED))
+	return displayed_offset_map
+
+"""
+def test():
 	now = datetime.utcnow()
-	zone_readable_offset_map = {}
-	for time_zone_map in _COUNTRY_CODE_TO_TIME_ZONE_MAP.itervalues():
-		for time_zone in time_zone_map.itervalues():
-			utc_offset = time_zone.utcoffset(now, is_dst=False)
-			zone_readable_offset_map[time_zone.zone] = _get_readable_offset(utc_offset)
-	return zone_readable_offset_map
-_get_zone_readable_offset_map()
+	country_offset_minutes_map, offset_minutes_set = _get_offset_minutes_map(now)
+	print 'country_offset_minutes_map=%s' % country_offset_minutes_map
+	displayed_offset_map = _get_displayed_offset_map(now, offset_minutes_set)
+	print 'displayed_offset_map=%s' % displayed_offset_map
+
+test()
+"""
 
 _SETTINGS_ROUTE = '/settings'
 
 @app.route(_SETTINGS_ROUTE)
 @login_required
 def get_settings():
+	now = datetime.utcnow()
+	datetime_12_hour = now.strftime(_DATETIME_FORMAT_12_HOUR_UTC)
+	datetime_24_hour = now.strftime(_DATETIME_FORMAT_24_HOUR_UTC)
+	country_offset_minutes_map, offset_minutes_set = _get_offset_minutes_map(now)
+	displayed_offset_map = _get_displayed_offset_map(now, offset_minutes_set)
+
 	settings = db.get_settings(flask.g.client_id)
 	return flask.render_template('settings.html',
 			time_format=settings.time_format,
@@ -726,7 +783,9 @@ def get_settings():
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
 			country_codes_map=_COUNTRY_NAME_TO_CODE_MAP,
-			time_zones_map_json=_COUNTRY_CODE_TO_TIME_ZONE_MAP_JSON)
+			time_zones_map_json='{}',
+			server_time_12_hour=datetime_12_hour,
+			server_time_24_hour=datetime_24_hour)
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
