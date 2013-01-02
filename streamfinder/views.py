@@ -262,7 +262,8 @@ def login_required(f):
 		flask.g.logged_in = True
 		flask.g.client_id = client_id
 		# TODO: Get from cookie
-		flask.g.timezone = pytz.timezone('America/Los_Angeles')
+		flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
+		flask.g.time_zone = pytz.timezone('America/Los_Angeles')
 		return f(*pargs, **kwargs)
 	return decorated_function
 
@@ -275,11 +276,13 @@ def login_optional(f):
 		if client_id is None:
 			flask.g.logged_in = False
 			flask.g.client_id = None
+			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
 			flask.g.time_zone = None
 		else:
 			flask.g.logged_in = True
 			flask.g.client_id = client_id
 			# TODO: Get from cookie
+			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
 			flask.g.time_zone = pytz.timezone('America/Los_Angeles')
 
 		return f(*pargs, **kwargs)
