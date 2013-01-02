@@ -35,8 +35,7 @@
 		<h2>Country:</h2>
 		<select>
 			<option value=""></option>
-		{% for country_name in sorted_country_names %}
-			{% set country_code = country_codes_map[country_name] %}
+		{% for country_name, country_code in sorted_country_names %}
 			<option value="{{ country_code }}"{% if country_code == country %}
 				selected="selected"
 			{% endif %}>{{ country_name }}</option>
@@ -53,7 +52,8 @@
 
 	<script src="static/select2.js" type="text/javascript"></script>
 	<script type="text/javascript">
-		$("#time-zone").data("timeZoneMap", {{ time_zones_map_json|safe }});
+		$("#time-zone").data("countryOffsetMinutesMap", {{ country_offset_minutes_map|safe }});
+		$("#time-zone").data("displayedOffsetMap", {{ displayed_offset_map|safe }});
 	</script>
 	{% assets "settings_js" %}
 		<script src="{{ ASSET_URL }}"></script>

@@ -20,10 +20,10 @@ resetTimeZone()
 
 countrySelect.on 'change', (e) ->
 	timeZoneSelect.empty()
-	timeZoneMap = $('#time-zone').data('timeZoneMap')[e.val]
+	countryOffsetMinutesMap = $('#time-zone').data('countryOffsetMinutesMap')[e.val]
 	timeZoneSelect.append $ '<option></option>'
-	$.each timeZoneMap, (key, value) ->
-		timeZoneSelect.append $('<option></option>').val(value).html(key)
+	$.each countryOffsetMinutesMap, (key, value) ->
+		timeZoneSelect.append $('<option></option>').val(value[0]).html(key)
 		return
 	resetTimeZone()
 	return

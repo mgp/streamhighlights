@@ -495,10 +495,7 @@ _TIME_FORMAT_TO_VALUE_MAP = {
 		'24 hour': '24_hour',
 }
 
-_SORTED_COUNTRY_NAMES = tuple(country.name for country in countries)
-_COUNTRY_NAME_TO_CODE_MAP = {
-		country.name: country.alpha2 for country in countries
-}
+_SORTED_COUNTRY_NAMES = tuple((country.name, country.alpha2) for country in countries)
 
 _COUNTRY_CODE_TO_TIME_ZONE_MAP = {
 	'AQ': {
@@ -680,7 +677,7 @@ def _init_time_zone_map():
 		for name, time_zone in time_zone_map.iteritems():
 			time_zone_map[name] = pytz.timezone(time_zone)
 
-	for country_code in _COUNTRY_NAME_TO_CODE_MAP.itervalues():
+	for country_name, country_code in _SORTED_COUNTRY_NAMES:
 		country_code = country_code.upper()
 
 		if country_code not in pytz.country_timezones:
@@ -753,16 +750,6 @@ def _get_displayed_offset_map(now, offset_minutes_set):
 				now_offset.strftime(_DATETIME_FORMAT_24_HOUR_LOCALIZED))
 	return displayed_offset_map
 
-"""
-def test():
-	now = datetime.utcnow()
-	country_offset_minutes_map, offset_minutes_set = _get_offset_minutes_map(now)
-	print 'country_offset_minutes_map=%s' % country_offset_minutes_map
-	displayed_offset_map = _get_displayed_offset_map(now, offset_minutes_set)
-	print 'displayed_offset_map=%s' % displayed_offset_map
-
-test()
-"""
 
 _SETTINGS_ROUTE = '/settings'
 
@@ -777,15 +764,18 @@ def get_settings():
 
 	settings = db.get_settings(flask.g.client_id)
 	return flask.render_template('settings.html',
+			# The current user settings.
 			time_format=settings.time_format,
 			country=settings.country,
 			time_zone=settings.time_zone,
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
+			# The sorted list of all countries.
 			sorted_country_names=_SORTED_COUNTRY_NAMES,
-			country_codes_map=_COUNTRY_NAME_TO_CODE_MAP,
-			time_zones_map_json='{}',
+			# Data for changing the time zone.
 			server_time_12_hour=datetime_12_hour,
-			server_time_24_hour=datetime_24_hour)
+			server_time_24_hour=datetime_24_hour,
+			country_offset_minutes_map=json.dumps(country_offset_minutes_map),
+			displayed_offset_map=json.dumps(displayed_offset_map))
 
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
@@ -804,7 +794,7 @@ def save_settings():
 	if not country:
 		country = None
 	if country:
-		if (len(country) != 2) or (country not in _COUNTRY_NAME_TO_CODE_MAP):
+		if (len(country) != 2) or (country not in _COUNTRY_CODE_TO_TIME_ZONE_MAP):
 			errors.add('invalid_country')
 
 	# Validate the time zone.
