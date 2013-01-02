@@ -18,9 +18,12 @@ resetTimeZone = ->
 	return
 resetTimeZone()
 
+replaceDash = (s) ->
+	return s.replace "-", "&ndash;"
+
 countrySelect.on 'change', (e) ->
 	countryOffsetMinutes = $('#time-zone').data('countryOffsetMinutesMap')[e.val]
-	displayedOffsetMap = $('#time-zone').data('displayedOffsetMap')
+	displayedOffsetMap = $('#time-zone').data 'displayedOffsetMap'
 
 	timeZoneSelect.empty()
 	timeZoneSelect.append $ '<option></option>'
@@ -29,7 +32,7 @@ countrySelect.on 'change', (e) ->
 		value = element[1]
 		offset = displayedOffsetMap[element[2]]
 		
-		text = '(' + offset[0].replace("-", "&ndash;") + ') ' + name
+		text = '(' + replaceDash(offset[0]) + ') ' + replaceDash(name)
 		timeZoneSelect.append $('<option></option>').val(value).html(text)
 		return
 	resetTimeZone()
