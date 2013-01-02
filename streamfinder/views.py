@@ -768,8 +768,8 @@ def get_settings():
 	return flask.render_template('settings.html',
 			# The current user settings.
 			time_format=settings.time_format,
-			country=settings.country,
-			time_zone=settings.time_zone,
+			country='US', # settings.country,
+			time_zone='America/Los_Angeles', # settings.time_zone,
 			time_formats_map=_TIME_FORMAT_TO_VALUE_MAP,
 			# The sorted list of all countries.
 			sorted_country_names=_SORTED_COUNTRY_NAMES,

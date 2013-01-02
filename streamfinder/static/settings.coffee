@@ -35,13 +35,34 @@ timeZoneSelect = $('#time-zone > select')
 # Initializes the time zone selector with Select2. Must also be called after a
 # new country is chosen, or else Select2 will not display the updated list of
 # time zones.
-resetTimeZone = ->
+$.initTimeZone = (countryCode, timeZone) ->
+	if countryCode
+		countryOffsetMinutes = $('#time-zone').data('countryOffsetMinutesMap')[countryCode]
+		displayedOffsetMap = $('#time-zone').data 'displayedOffsetMap'
+
+		# Remove all previous time zone options.
+		timeZoneSelect.empty()
+		# Add the placeholder option again.
+		timeZoneSelect.append $ '<option></option>'
+		$.each countryOffsetMinutes, (index, element) ->
+			# Get the name and value for this time zone.
+			name = element[0]
+			value = element[1]
+			# Get the offset tuple; the first element is the offset format for display.
+			offset = displayedOffsetMap[element[2]]
+			
+			# Create and append the option for this time zone.
+			text = '(' + replaceDash(offset[0]) + ') ' + replaceDash(name)
+			option = $('<option></option>').val(value).html(text).data('offset', offset)
+			if timeZone and timeZone == value
+				option.attr 'selected', 'selected'
+			timeZoneSelect.append option
+	
 	timeZoneSelect.select2 {
 		width: '600px',
 		placeholder: 'Choose a time zone',
 	}
 	return
-resetTimeZone()
 
 # Replaces the dash with a longer dash more visible with LeagueGothic.
 replaceDash = (s) ->
@@ -50,27 +71,7 @@ replaceDash = (s) ->
 # Called when a different country is selected, and the list of time zone options
 # must be updated.
 countrySelect.on 'change', (e) ->
-	countryOffsetMinutes = $('#time-zone').data('countryOffsetMinutesMap')[e.val]
-	displayedOffsetMap = $('#time-zone').data 'displayedOffsetMap'
-
-	# Remove all previous time zone options.
-	timeZoneSelect.empty()
-	# Add the placeholder option again.
-	timeZoneSelect.append $ '<option></option>'
-	$.each countryOffsetMinutes, (index, element) ->
-		# Get the name and value for this time zone.
-		name = element[0]
-		value = element[1]
-		# Get the offset tuple; the first element is the offset format for display.
-		offset = displayedOffsetMap[element[2]]
-		
-		# Create and append the option for this time zone.
-		text = '(' + replaceDash(offset[0]) + ') ' + replaceDash(name)
-		option = $('<option></option>').data('offset', offset).val(value).html(text)
-		timeZoneSelect.append option
-		return
-	
-	resetTimeZone()
+	$.initTimeZone(e.val)
 	# A new country was chosen, so no time zone is chosen yet.
 	clientTime.hide()
 	clientTime12Hour.empty()
