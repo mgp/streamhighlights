@@ -1,7 +1,7 @@
 # Initialize the time format selector with Select2.
 timeFormatSelect = $('#time-format > select')
 timeFormatSelect.select2 {
-	width: '600px',
+	width: 'resolve',
 	placeholder: 'Choose a time format',
 }
 
@@ -22,7 +22,7 @@ timeFormatSelect.change ->
 # Initialize the country selector with Select2.
 countrySelect = $('#country > select')
 countrySelect.select2 {
-	width: '600px',
+	width: 'resolve',
 	placeholder: 'Choose a country',
 }
 
@@ -68,7 +68,7 @@ $.initTimeZone = (countryCode, timeZone) ->
 			timeZoneSelect.append option
 	
 	timeZoneSelect.select2 {
-		width: '600px',
+		width: 'resolve',
 		placeholder: 'Choose a time zone',
 	}
 	return

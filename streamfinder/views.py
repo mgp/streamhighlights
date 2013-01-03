@@ -1,5 +1,6 @@
 from streamfinder import app
 
+from collections import defaultdict
 import common_db
 from datetime import datetime, timedelta
 import db
@@ -760,7 +761,7 @@ _SETTINGS_ROUTE = '/settings'
 
 def _render_settings(
 		selected_time_format, selected_country_code, selected_time_zone,
-		errors=(), saved=False):
+		errors={}, saved=None):
 	now = datetime.utcnow()
 	datetime_12_hour = now.strftime(_DATETIME_FORMAT_12_HOUR_UTC)
 	datetime_24_hour = now.strftime(_DATETIME_FORMAT_24_HOUR_UTC)
@@ -779,7 +780,9 @@ def _render_settings(
 			server_time_12_hour=datetime_12_hour,
 			server_time_24_hour=datetime_24_hour,
 			country_offset_minutes_map=json.dumps(country_offset_minutes_map),
-			displayed_offset_map=json.dumps(displayed_offset_map))
+			displayed_offset_map=json.dumps(displayed_offset_map),
+			errors=errors,
+			saved=saved)
 
 @app.route(_SETTINGS_ROUTE)
 @login_required
@@ -788,17 +791,21 @@ def get_settings():
 	return _render_settings(
 			settings.time_format, settings.country, settings.time_zone)
 
+_TIME_FORMAT_ERROR = 'time_format'
+_COUNTRY_ERROR = 'country'
+_TIME_ZONE_ERROR = 'time_zone'
+
 @app.route(_SETTINGS_ROUTE, methods=['POST'])
 @login_required
 def save_settings():
-	errors = set()
+	errors = defaultdict(list)
 
 	# Validate the time format.
 	time_format = flask.request.form['time_format']
 	if time_format is None:
-		errors.add('missing_time_format')
+		errors[_TIME_FORMAT_ERROR].append('missing')
 	elif time_format not in db._SETTINGS_TIME_FORMATS:
-		errors.add('invalid_time_format')
+		errors[_TIME_FORMAT_ERROR].append('invalid')
 
 	# Validate the country code.
 	country = flask.request.form.get('country', None)
@@ -806,7 +813,7 @@ def save_settings():
 		country = None
 	if country:
 		if (len(country) != 2) or (country not in _COUNTRY_CODE_TO_TIME_ZONE_MAP):
-			errors.add('invalid_country')
+			errors[_COUNTRY_ERROR].append('invalid')
 
 	# Validate the time zone.
 	time_zone = flask.request.form.get('time_zone', None)
@@ -814,10 +821,14 @@ def save_settings():
 		time_zone = None
 	if time_zone:
 		if not country:
-			errors.add('missing_country')
+			# Cannot have a time zone without a country specified.
+			errors[_COUNTRY_ERROR].append('missing')
 		else:
-			# TODO: Validate the time zone in the selected country.
-			pass
+			# Validate the time zone in the selected country.
+			country_time_zones = (time_zone.zone
+					for time_zone in _COUNTRY_CODE_TO_TIME_ZONE_MAP[country].itervalues())
+			if time_zone not in country_time_zones:
+				errors[_TIME_ZONE_ERROR].append('invalid')
 
 	# Update the client settings if there are no errors.
 	if not errors:

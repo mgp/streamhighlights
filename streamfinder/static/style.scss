@@ -196,6 +196,31 @@ $select2-height: round(1.3 * $select2-font-size);
 	}
 }
 
+$settings-width: 600px;
+$save-settings-failure-background-color: #fcf27a;
+%settings-block {
+	text-transform: uppercase;
+	color: $dark-gray;
+}
+%settings-message {
+	width: $settings-width - $padding;
+	padding: $padding / 2;
+}
+%save-settings-status {
+	@extend %settings-block;
+	@extend %settings-message;
+	font-size: $medium-font-size;
+	margin-bottom: 2 * $padding;
+}
+div.save-settings-success {
+	@extend %save-settings-status;
+	background-color: #d6ec94;
+}
+div.save-settings-failure {
+	@extend %save-settings-status;
+	background-color: $save-settings-failure-background-color;
+}
+
 div.setting {
 	text-transform: uppercase;
 	h2 {
@@ -203,10 +228,19 @@ div.setting {
 		font-size: $medium-font-size;
 	}
 	select {
-		width: 75%;
+		width: $settings-width;
 	}
 	& + div.setting {
 		margin-top: (2 * $padding);
+	}
+	ul.errors {
+		@extend %settings-block;
+		font-size: $small-font-size;
+		li {
+			@extend %settings-message;
+			background-color: $save-settings-failure-background-color;
+			margin-top: $padding / 2;
+		}
 	}
 }
 

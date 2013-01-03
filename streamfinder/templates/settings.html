@@ -35,6 +35,16 @@
 		</div>
 	</div>
 
+	{% if saved == True %}
+		<div class='save-settings-success'>
+			Settings saved
+		</div>
+	{% elif saved == False %}
+		<div class="save-settings-failure">
+			Settings not saved, please fix errors below
+		</div>
+	{% endif %}
+
 	<form method="POST">
 		<div id="time-format" class="setting">
 			<h2>Time Format:</h2>
@@ -45,6 +55,20 @@
 				{% endif %}>{{ time_format_name }}</option>
 			{% endfor %}
 			</select>
+
+			{% if "time_format" in errors %}
+				<ul class="errors">
+				{% for error in errors["time_format"] %}
+					<li>
+					{% if error == "invalid" %}
+						Time format is invalid
+					{% elif error == "missing" %}
+						Time format is missing
+					{% endif %}
+					</li>
+				{% endfor %}
+				</ul>
+			{% endif %}
 		</div>
 
 		<div id="country" class="setting">
@@ -57,6 +81,20 @@
 				{% endif %}>{{ country_name }}</option>
 			{% endfor %}
 			</select>
+
+			{% if "country" in errors %}
+				<ul class="errors">
+				{% for error in errors["country"] %}
+					<li>
+					{% if error == "invalid" %}
+						Country is invalid
+					{% elif error == "missing" %}
+						Country is missing
+					{% endif %}
+					</li>
+				{% endfor %}
+				</ul>
+			{% endif %}
 		</div>
 
 		<div id="time-zone" class="setting">
@@ -64,6 +102,18 @@
 			<select name="time_zone">
 				<option value=""></option>
 			</select>
+
+			{% if "time_zone" in errors %}
+				<ul class="errors">
+				{% for error in errors["time_zone"] %}
+					<li>
+					{% if error == "invalid" %}
+						Time zone is invalid
+					{% endif %}
+					</li>
+				{% endfor %}
+				</ul>
+			{% endif %}
 		</div>
 
 		<input type="submit" value="Submit" />
