@@ -95,10 +95,12 @@
 {%- endmacro %}
 
 
-{% macro write_match_list_element(match) -%}
+{% macro write_match_list_element(match, should_write_star_with_count) -%}
 	<li>
 		<a href="{{ url_for('match_details', match_id=match|match_url_part) }}">
-			{{ write_star_with_count(match.is_starred, match.num_stars) }}
+			{% if should_write_star_with_count %}
+				{{ write_star_with_count(match.is_starred, match.num_stars) }}
+			{% endif %}
 			{{ write_small_game_icon(match.game) }}
 			<div>
 				<div class="teams">

@@ -174,13 +174,13 @@ def _get_time_until(dt, now):
 	days, hours, minutes = _get_time_between(dt, now)
 
 	if not days and not hours and not minutes:
-		return 'Starting now'
+		return 'starting now'
 	else:
-		return 'Starting in %s' % _get_time_between_string(days, hours, minutes)
+		return 'starting in %s' % _get_time_between_string(days, hours, minutes)
 
 def _get_time_since(dt, now):
 	days, hours, minutes = _get_time_between(now, dt)
-	return 'Started %s ago' % _get_time_between_string(days, hours, minutes)
+	return 'started %s ago' % _get_time_between_string(days, hours, minutes)
 
 def _get_readable_timedelta(dt, now=None):
 	"""Returns the time until or time since the given datetime as a string."""
@@ -310,18 +310,17 @@ def _render_calendar(db_getter, template_name):
 	calendar = db_getter(flask.g.client_id,
 			prev_time, prev_match_id, next_time, next_match_id)
 	assert calendar is not None
-	# TODO
-	return flask.render_template(template_name)
+	return flask.render_template(template_name, calendar=calendar)
 
 @app.route('/calendar/viewer')
 @login_required
 def viewer_calendar():
-	return _render_calendar(db.get_displayed_viewer_calendar, 'viewer_calendar.html')
+	return _render_calendar(db.get_displayed_viewer_calendar, 'calendar_viewer.html')
 
 @app.route('/calendar/streamer')
 @login_required
 def streamer_calendar():
-	return _render_calendar(db.get_displayed_streamer_calendar, 'streamer_calendar.html')
+	return _render_calendar(db.get_displayed_streamer_calendar, 'calendar_streamer.html')
 
 
 def _render_matches_list(db_getter, template_name):

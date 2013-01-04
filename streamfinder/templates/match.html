@@ -4,7 +4,7 @@
 {% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock %}
 
 {% block content %}
-	<h2 class="header">{{ match.time|readable_timedelta }}:</h2>
+	<h2 class="header">{{ match.time|readable_timedelta|capitalize }}:</h2>
 	{{ macros.write_match(match, True) }}
 
 	{% if match.streamers %}

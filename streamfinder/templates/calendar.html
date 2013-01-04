@@ -1,0 +1,19 @@
+{% extends "layout.html" %}
+{% import "macros.html" as macros %}
+
+{% block content %}
+	{% if calendar.next_match %}
+		<h2 class="header">Next match {{ calendar.next_match.time|readable_timedelta }}:</h2>
+		{{ macros.write_match(calendar.next_match, False) }}
+
+		<h3 class="header">Upcoming streamed matches:</h2>
+		<ul class="data-list match-list">
+		{% for match in calendar.matches %}
+			{{ macros.write_match_list_element(match, False) }}
+		{% endfor %}
+		</ul>
+	{% else %}
+		<h3 class="header">No upcoming streamed matches found :(</h3>
+	{% endif %}
+{% endblock %}
+
