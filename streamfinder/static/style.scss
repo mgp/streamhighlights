@@ -91,12 +91,11 @@ $padding: 10px;
 }
 
 #next-match {
+	display: block;
 	text-decoration: none;
-	div {
-		background-color: transparent;
-		&:hover {
-			background-color: $light-gray;
-		}
+	background-color: transparent;
+	&:hover {
+		background-color: $light-gray;
 	}
 }
 ul.data-list {
