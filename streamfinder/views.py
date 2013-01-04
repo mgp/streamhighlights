@@ -251,6 +251,8 @@ def _read_client_id_from_session(session=None):
 	return user['id']
 
 def login_required(f):
+	page_name = f.__name__
+
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		client_id = _read_client_id_from_session()
@@ -265,10 +267,13 @@ def login_required(f):
 		# TODO: Get from cookie
 		flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
 		flask.g.time_zone = pytz.timezone('America/Los_Angeles')
+		flask.g.page_name = page_name
 		return f(*pargs, **kwargs)
 	return decorated_function
 
 def login_optional(f):
+	page_name = f.__name__
+
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
 		client_id = _read_client_id_from_session()
@@ -285,7 +290,7 @@ def login_optional(f):
 			# TODO: Get from cookie
 			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
 			flask.g.time_zone = pytz.timezone('America/Los_Angeles')
-
+		flask.g.page_name = page_name
 		return f(*pargs, **kwargs)
 	return decorated_function
 
