@@ -69,6 +69,15 @@ $padding: 10px;
 		float: right;
 	}
 }
+#next-match {
+	display: block;
+	text-decoration: none;
+	background-color: transparent;
+
+	&:hover {
+		background-color: $light-gray;
+	}
+}
 
 #team {
 	h3 {
@@ -90,14 +99,6 @@ $padding: 10px;
 	}
 }
 
-#next-match {
-	display: block;
-	text-decoration: none;
-	background-color: transparent;
-	&:hover {
-		background-color: $light-gray;
-	}
-}
 ul.data-list {
 	$data-list-vert-padding: 5px;
 
@@ -110,21 +111,22 @@ ul.data-list {
 		$border: 2px solid $light-gray;
 
 		border-bottom: $border;
-		padding: $data-list-vert-padding $padding;
 
-		&:hover {
-			background-color: $light-gray;
-		}
 		&:first-child {
 			border-top: $border;
 		}
 		a {
 			display: block;
+			padding: $data-list-vert-padding $padding;
 			text-decoration: none;
 			color: $medium-gray;
-		}
-		div.counts {
-			float: right;
+
+			&:hover {
+				background-color: $light-gray;
+			}
+			div.counts {
+				float: right;
+			}
 		}
 	}
 }
@@ -135,7 +137,7 @@ ul.team-list {
 ul.streamer-list {
 }
 
-ul.match-list li {
+ul.match-list {
 	img.game-logo {
 		float: left;
 
