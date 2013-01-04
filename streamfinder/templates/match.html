@@ -5,24 +5,7 @@
 
 {% block content %}
 	<h2 class="header">{{ match.time|readable_timedelta }}:</h2>
-	<div id="match" class="main-data clearfix">
-		<h3>
-			{{ macros.write_large_game_icon(match.game) }}
-			<a href="{{ url_for('team_details', team_id=match.team1|team_url_part) }}" class="team-name">
-				{{ match.team1.name }}</a>
-			vs 
-			<a href="{{ url_for('team_details', team_id=match.team2|team_url_part) }}" class="team-name">
-				{{ match.team2.name }}</a>
-
-			{{ macros.write_large_external_link(match|match_external_url) }}
-		</h3>
-
-		{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
-		<div class="datetime">{{ match.time|readable_datetime }}</div>
-		<div class="division">
-			{{ macros.write_division(match.game, match.division) }}
-		</div>
-	</div>
+	{{ macros.write_match(match, True) }}
 
 	{% if match.streamers %}
 		<h3 class="header">Streamed by {{ match.num_streams }}
