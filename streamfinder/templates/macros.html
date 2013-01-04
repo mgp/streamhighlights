@@ -61,37 +61,15 @@
 {%- endmacro %}
 
 
-{% macro write_division(game, division) -%}
+{% macro write_division(game, division, should_write_external_link) -%}
 	{% set league_id = division|league_id %}
 	{% if league_id %}
 		<img class="league-logo" src="/static/{{ league_id }}.png" />
 		{{ division|division_name }}
-		{{ write_small_external_link(division|division_external_url) }}
-	{% endif %}
-{%- endmacro %}
-
-
-{% macro write_match(match, should_write_star_with_count) -%}
-	<div id="match" class="main-data clearfix">
-		<h3>
-			{{ write_large_game_icon(match.game) }}
-			<a href="{{ url_for('team_details', team_id=match.team1|team_url_part) }}" class="team-name">
-				{{ match.team1.name }}</a>
-			vs 
-			<a href="{{ url_for('team_details', team_id=match.team2|team_url_part) }}" class="team-name">
-				{{ match.team2.name }}</a>
-
-			{{ write_large_external_link(match|match_external_url) }}
-		</h3>
-
-		{% if should_write_star_with_count %}
-			{{ write_star_with_count(match.is_starred, match.num_stars) }}
+		{% if should_write_external_link %}
+			{{ write_small_external_link(division|division_external_url) }}
 		{% endif %}
-		<div class="datetime">{{ match.time|readable_datetime }}</div>
-		<div class="division">
-			{{ write_division(match.game, match.division) }}
-		</div>
-	</div>
+	{% endif %}
 {%- endmacro %}
 
 

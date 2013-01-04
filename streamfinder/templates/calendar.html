@@ -2,9 +2,24 @@
 {% import "macros.html" as macros %}
 
 {% block content %}
-	{% if calendar.next_match %}
-		<h2 class="header">Next match {{ calendar.next_match.time|readable_timedelta }}:</h2>
-		{{ macros.write_match(calendar.next_match, False) }}
+	{% set next_match = calendar.next_match %}
+	{% if next_match %}
+		<h2 class="header">Next match {{ next_match.time|readable_timedelta }}:</h2>
+		<a id="next-match" href="{{ url_for('match_details', match_id=next_match|match_url_part) }}">
+			<div class="main-data clearfix">
+				<h3>
+					{{ macros.write_large_game_icon(next_match.game) }}
+					<span class="team-name">{{ next_match.team1.name }}</span>
+					vs 
+					<span class="team-name">{{ next_match.team2.name }}</span>
+				</h3>
+
+				<div class="datetime">{{ next_match.time|readable_datetime }}</div>
+				<div class="division">
+					{{ macros.write_division(next_match.game, next_match.division, False) }}
+				</div>
+			</div>
+		</a>
 
 		<h3 class="header">Upcoming streamed matches:</h2>
 		<ul class="data-list match-list">
