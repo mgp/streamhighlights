@@ -552,18 +552,25 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.team3_id = db.add_team(self.team3_name, self.game, self.division,
 				self.team3_url, self.team3_fingerprint)
 
+		# The first match is in the past, but not beyond the cutoff.
+		self.time1 = db._get_upcoming_matches_cutoff(self.now) + timedelta(minutes=1)
 		# The second and third matches happen at the same time.
 		self.time2 = self.time + timedelta(days=1)
 		self.time3 = self.time2
 		self.time4 = self.time3 + timedelta(days=1)
 		self.time5 = self.time4 + timedelta(days=1)
 
-		# Create the matches.
+		# Create a match that is beyond the cutoff, and should not be returned.
+		self.time0 = db._get_upcoming_matches_cutoff(self.now) - timedelta(minutes=1)
+		self.match_fingerprint0 = 'match_fingerprint0'
+		self.match_id0 = db.add_match(self.team1_id, self.team2_id, self.time0,
+				self.game, self.division, self.match_fingerprint0, now=self.now)
+		# Create the returned matches.
 		self.match_fingerprint2 = 'match_fingerprint2'
 		self.match_fingerprint3 = 'match_fingerprint3'
 		self.match_fingerprint4 = 'match_fingerprint4'
 		self.match_fingerprint5 = 'match_fingerprint5'
-		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time,
+		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time1,
 				self.game, self.division, self.match_fingerprint, now=self.now)
 		self.match_id2 = db.add_match(self.team1_id, self.team3_id, self.time2,
 				self.game, self.division, self.match_fingerprint2, now=self.now)
@@ -579,7 +586,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_next_match():
 			next_match = displayed_calendar.next_match
 			self._assert_displayed_match(next_match, self.match_id1,
-					self.time, num_streams=1, game=self.game, division=self.division)
+					self.time1, num_streams=1, game=self.game, division=self.division)
 			self._assert_displayed_team(next_match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(next_match.team2, self.team2_id, self.team2_name)
 
@@ -592,7 +599,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated matches.
 			match = displayed_calendar.matches[0]
 			self._assert_displayed_match(match,
-					self.match_id1, self.time, num_streams=1, game=self.game, division=self.division)
+					self.match_id1, self.time1, num_streams=1, game=self.game, division=self.division)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 			match = displayed_calendar.matches[1]
@@ -654,8 +661,12 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the streaming user, who streams all matches.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
-		for match_id in (
-				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+		for match_id in (self.match_id0,
+				self.match_id1,
+				self.match_id2,
+				self.match_id3,
+				self.match_id4,
+				self.match_id5):
 			db.add_stream_match(streamer_id, match_id)
 		# Star the streamer.
 		db.add_star_streamer(client_id, streamer_id)
@@ -687,8 +698,12 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the client, who streams the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
-		for match_id in (
-				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+		for match_id in (self.match_id0,
+				self.match_id1,
+				self.match_id2,
+				self.match_id3,
+				self.match_id4,
+				self.match_id5):
 			db.add_stream_match(client_id, match_id)
 
 		def _get_next_page(displayed_calendar):
@@ -717,8 +732,12 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		# Create the streaming user, who streams all matches.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
-		for match_id in (
-				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+		for match_id in (self.match_id0,
+				self.match_id1,
+				self.match_id2,
+				self.match_id3,
+				self.match_id4,
+				self.match_id5):
 			db.add_stream_match(streamer_id, match_id)
 
 		def _get_next_page():
@@ -741,7 +760,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated matches.
 			match = displayed_streamer.matches[0]
 			self._assert_displayed_match(match,
-					self.match_id1, self.time, num_streams=1, game=self.game, division=self.division)
+					self.match_id1, self.time1, num_streams=1, game=self.game, division=self.division)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 			match = displayed_streamer.matches[1]
@@ -820,7 +839,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					next_time=self.time2, next_match_id=self.match_id2)
 			# Assert the partial list of paginated matches.
 			match = displayed_team.matches[0]
-			self._assert_displayed_match(match, self.match_id1, self.time)
+			self._assert_displayed_match(match, self.match_id1, self.time1)
 			self.assertIsNone(match.team1)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 			match = displayed_team.matches[1]
@@ -888,7 +907,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			# Assert the partial list of paginated matches.
 			match = displayed_matches.matches[0]
 			self._assert_displayed_match(match,
-					self.match_id1, self.time, game=self.game, division=self.division,
+					self.match_id1, self.time1, game=self.game, division=self.division,
 					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
@@ -973,8 +992,12 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 
 		# Create the client, who stars the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
-		for match_id in (
-				self.match_id1, self.match_id2, self.match_id3, self.match_id4, self.match_id5):
+		for match_id in (self.match_id0,
+				self.match_id1,
+				self.match_id2,
+				self.match_id3,
+				self.match_id4,
+				self.match_id5):
 			db.add_star_match(client_id, match_id)
 
 		def _get_next_page(displayed_matches):

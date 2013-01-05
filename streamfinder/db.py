@@ -1342,8 +1342,11 @@ class StarredMatchesPaginator(_MatchesPaginator):
 """
 class AllMatchesPaginator(_MatchesPaginator):
 	def get_first_id(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		first_match = common_db.optional_one(
-				session.query(Match.id).order_by(Match.time.asc(), Match.id.asc()))
+				session.query(Match.id)
+				.filter(Match.time > cutoff_time)
+				.order_by(Match.time.asc(), Match.id.asc()))
 		return first_match.id if first_match else None
 	
 	def get_partial_list_query(self):
