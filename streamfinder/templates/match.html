@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% import "macros.html" as macros %}
 
-{% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock %}
+{% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock title %}
 
 {% block content %}
 	<h2 class="header">{{ match.time|readable_timedelta|capitalize }}:</h2>
@@ -49,5 +49,5 @@
 	<script>
 		$.addStarRollover($("#match div.counts img"))
 	</script>
-{% endblock %}
+{% endblock content %}
 
