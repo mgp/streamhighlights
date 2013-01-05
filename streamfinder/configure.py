@@ -1,6 +1,9 @@
 from streamfinder import app
 from flask.ext.assets import Environment, Bundle
 
+# Remove some whitespace from the HTML.
+app.jinja_env.trim_blocks = True
+
 env = Environment(app)
 env.config['coffee_no_bare'] = True
 # Compile Sass.
