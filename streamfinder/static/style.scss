@@ -54,6 +54,9 @@ $padding: 10px;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
 
+	& > div {
+		margin-top: round($small-font-size / 6);
+	}
 	h3 {
 		color: $dark-gray;
 		font-size: $large-font-size;
@@ -68,9 +71,6 @@ $padding: 10px;
 	img.game-logo {
 		margin-top: 7px;
 		float: left;
-	}
-	& > div {
-		margin-top: round($small-font-size / 6);
 	}
 	div.teams {
 		margin-left: 72px;
