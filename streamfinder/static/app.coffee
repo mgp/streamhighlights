@@ -65,11 +65,11 @@ clickStar = ->
 	requestInProgress = true
 	starImg = $(this)
 	switch starImg.attr 'src'
-		when EMPTY_HOVER
+		when EMPTY_HOVER, EMPTY
 			toggleStar starImg, true
 			starImg.attr 'src', FULL
 			adjustCount starImg, +1
-		when FULL_HOVER
+		when FULL_HOVER, FULL
 			toggleStar starImg, false
 			starImg.attr 'src', EMPTY
 			adjustCount starImg, -1
