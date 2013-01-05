@@ -8,9 +8,13 @@
 		<a id="next-match" class="main-data clearfix" href="{{ url_for('match_details', match_id=next_match|match_url_part) }}">
 			<h3>
 				{{ macros.write_large_game_icon(next_match.game) }}
-				<span class="team-name">{{ next_match.team1.name }}</span>
-				vs 
-				<span class="team-name">{{ next_match.team2.name }}</span>
+				<div class="teams">
+					<span>
+						<span class="team-name">{{ next_match.team1.name }}</span>
+						vs 
+					</span>
+					<span class="team-name">{{ next_match.team2.name }}</span>
+				</div>
 			</h3>
 
 			<div class="datetime">{{ next_match.time|readable_datetime }}</div>
