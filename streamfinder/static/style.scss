@@ -74,10 +74,12 @@ $padding: 10px;
 	}
 	div.teams {
 		margin-left: 72px;
+		color: $medium-gray;
 		text-transform: none;
 
 		.team-name {
 			text-transform: uppercase;
+			color: $dark-gray;
 		}
 		& > span {
 			display: inline-block;
@@ -87,6 +89,14 @@ $padding: 10px;
 }
 #match {
 	@extend %match-main-data;
+	a {
+		&:link, &:visited {
+			text-decoration: none;
+		}
+		&:hover, &:active {
+			text-decoration: underline;
+		}
+	}
 	div.counts {
 		float: right;
 	}
