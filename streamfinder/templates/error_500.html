@@ -1,0 +1,8 @@
+{% extends "error.html" %}
+
+{% set error_description = "Internal server error" %}
+
+{% block title %}{{ error_description|title }}{% endblock title %}
+{% block error_header %}{{ error_description }}{% endblock error_header %}
+{% block error_text %}500 :( Plz try again l8r{% endblock error_text %}
+

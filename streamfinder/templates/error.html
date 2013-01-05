@@ -1,0 +1,9 @@
+{% extends "layout.html" %}
+
+{% block content %}
+	<div class="main-data">
+		<h3>{% block error_header %}{% endblock error_header %}</h3>
+		{% block error_text %}{% endblock error_text %}
+	</div>
+{% endblock content %}
+

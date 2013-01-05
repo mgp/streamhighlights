@@ -841,3 +841,11 @@ def save_settings():
 
 	return _render_settings(time_format, country, time_zone, errors, saved)
 
+@app.errorhandler(404)
+def page_not_found(e):
+	return flask.render_template('error_404.html'), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+	return flask.render_template('error_500.html'), 500
+
