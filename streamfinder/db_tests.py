@@ -33,8 +33,8 @@ class AbstractFinderDbTestCase(DbTestCase):
 		self.team2_name = 'team2_name'
 		self.team2_fingerprint = 'team2_fingerprint'
 		self.match_fingerprint = 'match_fingerprint'
-		self.time = datetime(2012, 11, 3, 18, 0, 0)
 		self.now = datetime(2012, 11, 5, 12, 0, 0)
+		self.time = self.now + timedelta(days=3)
 
 	def _get_steam_urls(self, steam_id, name):
 		url_by_id = common_db._get_steam_url_by_id(steam_id)
@@ -322,7 +322,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Each streamer is streaming the match.
 		streamer_added_time1 = self.now + timedelta(minutes=1)
@@ -564,15 +564,15 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.match_fingerprint4 = 'match_fingerprint4'
 		self.match_fingerprint5 = 'match_fingerprint5'
 		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.division, self.match_fingerprint, now=None)
+				self.game, self.division, self.match_fingerprint, now=self.now)
 		self.match_id2 = db.add_match(self.team1_id, self.team3_id, self.time2,
-				self.game, self.division, self.match_fingerprint2, now=None)
+				self.game, self.division, self.match_fingerprint2, now=self.now)
 		self.match_id3 = db.add_match(self.team1_id, self.team3_id, self.time3,
-				self.game, self.division, self.match_fingerprint3, now=None)
+				self.game, self.division, self.match_fingerprint3, now=self.now)
 		self.match_id4 = db.add_match(self.team1_id, self.team2_id, self.time4,
-				self.game, self.division, self.match_fingerprint4, now=None)
+				self.game, self.division, self.match_fingerprint4, now=self.now)
 		self.match_id5 = db.add_match(self.team1_id, self.team3_id, self.time5,
-				self.game, self.division, self.match_fingerprint5, now=None)
+				self.game, self.division, self.match_fingerprint5, now=self.now)
 
 	def _test_get_displayed_calendar_pagination(self,
 			displayed_calendar, get_next_page, get_prev_page):
@@ -663,14 +663,17 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page(displayed_calendar):
 			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
 					next_time=displayed_calendar.next_time,
-					next_match_id=displayed_calendar.next_match_id)
+					next_match_id=displayed_calendar.next_match_id,
+					now=self.now)
 
 		def _get_prev_page(displayed_calendar):
 			return db.get_displayed_viewer_calendar(client_id, page_limit=2,
 					prev_time=displayed_calendar.prev_time,
-					prev_match_id=displayed_calendar.prev_match_id)
+					prev_match_id=displayed_calendar.prev_match_id,
+					now=self.now)
 
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id, page_limit=2)
+		displayed_calendar = db.get_displayed_viewer_calendar(
+				client_id, page_limit=2, now=self.now)
 		self._test_get_displayed_calendar_pagination(
 				displayed_calendar, _get_next_page, _get_prev_page)
 
@@ -680,7 +683,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		# Add a match that will not be streamed.
 		match_fingerprint6 = 'match_fingerprint6'
 		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.division, match_fingerprint6, now=None)
+				self.game, self.division, match_fingerprint6, now=self.now)
 
 		# Create the client, who streams the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -691,14 +694,17 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page(displayed_calendar):
 			return db.get_displayed_streamer_calendar(client_id, page_limit=2,
 					next_time=displayed_calendar.next_time,
-					next_match_id=displayed_calendar.next_match_id)
+					next_match_id=displayed_calendar.next_match_id,
+					now=self.now)
 			
 		def _get_prev_page(displayed_calendar):
 			return db.get_displayed_streamer_calendar(client_id, page_limit=2,
 					prev_time=displayed_calendar.prev_time,
-					prev_match_id=displayed_calendar.prev_match_id)
+					prev_match_id=displayed_calendar.prev_match_id,
+					now=self.now)
 
-		displayed_calendar = db.get_displayed_streamer_calendar(client_id, page_limit=2)
+		displayed_calendar = db.get_displayed_streamer_calendar(
+				client_id, page_limit=2, now=self.now)
 		self._test_get_displayed_calendar_pagination(
 				displayed_calendar, _get_next_page, _get_prev_page)
 
@@ -718,12 +724,14 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page():
 			return db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
 					next_time=displayed_streamer.next_time,
-					next_match_id=displayed_streamer.next_match_id)
+					next_match_id=displayed_streamer.next_match_id,
+					now=self.now)
 
 		def _get_prev_page():
 			return db.get_displayed_streamer(client_id, streamer_id, page_limit=2,
 					prev_time=displayed_streamer.prev_time,
-					prev_match_id=displayed_streamer.prev_match_id)
+					prev_match_id=displayed_streamer.prev_match_id,
+					now=self.now)
 
 		def _assert_first_page():
 			self._assert_displayed_streamer_details(displayed_streamer,
@@ -773,7 +781,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id, page_limit=2)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, page_limit=2, now=self.now)
 		_assert_first_page()
 		displayed_streamer = _get_next_page()
 		_assert_second_page()
@@ -795,12 +804,14 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page():
 			return db.get_displayed_team(client_id, self.team1_id, page_limit=2,
 					next_time=displayed_team.next_time,
-					next_match_id=displayed_team.next_match_id)
+					next_match_id=displayed_team.next_match_id,
+					now=self.now)
 		
 		def _get_prev_page():
 			return db.get_displayed_team(client_id, self.team1_id, page_limit=2,
 					prev_time=displayed_team.prev_time,
-					prev_match_id=displayed_team.prev_match_id)
+					prev_match_id=displayed_team.prev_match_id,
+					now=self.now)
 	
 		def _assert_first_page():
 			self._assert_displayed_team_details(displayed_team,
@@ -845,7 +856,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		# Assert that, clicking Next, the pages are correct.
-		displayed_team = db.get_displayed_team(client_id, self.team1_id, page_limit=2)
+		displayed_team = db.get_displayed_team(
+				client_id, self.team1_id, page_limit=2, now=self.now)
 		_assert_first_page()
 		displayed_team = _get_next_page()
 		_assert_second_page()
@@ -938,14 +950,16 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page(displayed_matches):
 			return db.get_all_matches(client_id, page_limit=2,
 					next_time=displayed_matches.next_time,
-					next_match_id=displayed_matches.next_match_id)
+					next_match_id=displayed_matches.next_match_id,
+					now=self.now)
 		
 		def _get_prev_page(displayed_matches):
 			return db.get_all_matches(client_id, page_limit=2,
 					prev_time=displayed_matches.prev_time,
-					prev_match_id=displayed_matches.prev_match_id)
+					prev_match_id=displayed_matches.prev_match_id,
+					now=self.now)
 
-		displayed_matches = db.get_all_matches(client_id, page_limit=2)
+		displayed_matches = db.get_all_matches(client_id, page_limit=2, now=self.now)
 		self._test_get_matches_pagination(
 				displayed_matches, _get_next_page, _get_prev_page)
 	
@@ -955,7 +969,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		# Add a match that will not be streamed.
 		match_fingerprint6 = 'match_fingerprint6'
 		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.division, match_fingerprint6, now=None)
+				self.game, self.division, match_fingerprint6, now=self.now)
 
 		# Create the client, who stars the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -966,14 +980,16 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _get_next_page(displayed_matches):
 			return db.get_starred_matches(client_id, page_limit=2,
 					next_time=displayed_matches.next_time,
-					next_match_id=displayed_matches.next_match_id)
+					next_match_id=displayed_matches.next_match_id,
+					now=self.now)
 		
 		def _get_prev_page(displayed_matches):
 			return db.get_starred_matches(client_id, page_limit=2,
 					prev_time=displayed_matches.prev_time,
-					prev_match_id=displayed_matches.prev_match_id)
+					prev_match_id=displayed_matches.prev_match_id,
+					now=self.now)
 
-		displayed_matches = db.get_starred_matches(client_id, page_limit=2)
+		displayed_matches = db.get_starred_matches(client_id, page_limit=2, now=self.now)
 		self._test_get_matches_pagination(
 				displayed_matches, _get_next_page, _get_prev_page,
 				match_num_stars=1, is_starred=True)
@@ -1003,7 +1019,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		with self.assertRaises(common_db.DbException):
 			db.add_star_match(missing_client_id, match_id, now=self.now)
@@ -1070,7 +1086,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Add a star for the match.
 		db.add_star_match(client_id, match_id, now=self.now)
@@ -1082,7 +1098,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Add a star for the match again.
@@ -1095,7 +1111,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				num_stars=1, is_starred=True)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the match.
@@ -1107,7 +1123,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the match again.
@@ -1118,7 +1134,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				match_id, self.time, self.game, self.division, self.match_fingerprint)
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	"""Test that adds and removes a star for a match that is casted.
@@ -1132,7 +1148,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1152,7 +1168,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_streamer(displayed_match.streamers[0],
 				streamer_id, self.streamer_name, url_by_id, url_by_name=url_by_name)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1171,7 +1187,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_streamer(displayed_match.streamers[0],
 				streamer_id, self.streamer_name, url_by_id, url_by_name=url_by_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 	"""Test that adds and removes a star for a team in a match that is not casted.
@@ -1185,12 +1201,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Add a star for team2.
 		db.add_star_team(client_id, team2_id, now=self.now)
 		# Assert that the team has a star.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
@@ -1199,14 +1215,14 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 		
 		# Add a star for team2 again.
 		with self.assertRaises(common_db.DbException):
 			db.add_star_team(client_id, team2_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
@@ -1214,13 +1230,13 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_match(match, match_id, self.time)
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 		
 		# Remove the star for team2.
 		db.remove_star_team(client_id, team2_id, now=self.now)
 		# Assert that team2 no longer has a star.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_matches=1)
@@ -1229,13 +1245,13 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 		# Remove the star for team2 again.
 		db.remove_star_team(client_id, team2_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_matches=1)
@@ -1243,7 +1259,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_match(match, match_id, self.time)
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 		
 	"""Test that adds and removes a star for a team in a match that is casted.
@@ -1257,7 +1273,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1267,7 +1283,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Add a star for team2.
 		db.add_star_team(client_id, team2_id, now=self.now)
 		# Assert that the team has a star.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
@@ -1276,7 +1292,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1286,7 +1302,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Remove the star for team2.
 		db.remove_star_team(client_id, team2_id, now=self.now)
 		# Assert that team2 no longer has a star.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_matches=1)
@@ -1295,7 +1311,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 	"""Test that adds and removes a star for a streamer that is not casting a
@@ -1311,42 +1327,46 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Add a star for the streamer.
 		db.add_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the streamer has a star.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id,
 				num_stars=1, url_by_name=url_by_name, is_starred=True)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Add the star for the streamer again.
 		with self.assertRaises(common_db.DbException):
 			db.add_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id,
 				num_stars=1, url_by_name=url_by_name, is_starred=True)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 	
 		# Remove the star for the streamer.
 		db.remove_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the streamer no longer has a star.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id, url_by_name=url_by_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Remove the star for the streamer again.
 		db.remove_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that this had no effect.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id, url_by_name=url_by_name)
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	"""Test that adds and removes a star for a streamer that is casting a match.
@@ -1362,7 +1382,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1373,7 +1393,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Add a star for the streamer.
 		db.add_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the streamer has a star.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id,
 				num_stars=1, url_by_name=url_by_name, is_starred=True, num_matches=1)
@@ -1383,7 +1404,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(match.team2, team2_id, self.team2_name)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1395,7 +1416,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Remove the star for the streamer.
 		db.remove_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the streamer no longer has a star.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id,
 				url_by_name=url_by_name, num_matches=1)
@@ -1405,7 +1427,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(match.team2, team2_id, self.team2_name)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	def _remove_multi_stars(self, client_id, streamer_id, streamer_steam_id,
@@ -1413,7 +1435,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1425,7 +1447,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Remove the star for the match.
 		db.remove_star_match(client_id, match_id, now=self.now)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1438,7 +1460,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		db.remove_star_team(client_id, team1_id, now=self.now)
 		db.remove_star_team(client_id, team2_id, now=self.now)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1450,7 +1472,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Remove the star from the streamer.
 		db.remove_star_streamer(client_id, streamer_id, now=self.now)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 		# Assert that the match should no longer have a star.
@@ -1461,7 +1483,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(displayed_match.team1, team1_id, self.team1_name)
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 		# Assert that team1 no longer has a star.
-		displayed_team = db.get_displayed_team(client_id, team1_id)
+		displayed_team = db.get_displayed_team(client_id, team1_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team1_id, self.team1_name, self.game, self.division, self.team1_fingerprint,
 				num_matches=1)
@@ -1470,7 +1492,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self.assertIsNone(match.team1)
 		self._assert_displayed_team(match.team2, team2_id, self.team2_name)
 		# Assert that team2 no longer has a star.
-		displayed_team = db.get_displayed_team(client_id, team2_id)
+		displayed_team = db.get_displayed_team(client_id, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_matches=1)
@@ -1479,7 +1501,8 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(match.team1, team1_id, self.team1_name)
 		self.assertIsNone(match.team2)
 		# The streamer should no longer have a star.
-		displayed_streamer = db.get_displayed_streamer(client_id, streamer_id)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id, streamer_id, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id, self.streamer_name, url_by_id,
 				url_by_name=url_by_name, num_matches=1)
@@ -1502,7 +1525,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -1534,7 +1557,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
 
@@ -1565,7 +1588,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		team2_id = db.add_team(self.team2_name, self.game, self.division,
 				self.team2_fingerprint)
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Add a star for the match.
 		db.add_star_match(client_id, match_id, now=self.now)
 
@@ -1578,7 +1601,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# The first streamer streams the match.
 		db.add_stream_match(streamer_id1, match_id)
 		# Assert that the user's calendar has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1590,7 +1613,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# The second streamer streams the match.
 		db.add_stream_match(streamer_id2, match_id)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1602,7 +1625,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# The first streamer is no longer streaming the match.
 		db.remove_stream_match(streamer_id1, match_id)
 		# Assert that the user's calendar still has the match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1614,7 +1637,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# The second streamer is no longer streaming the match.
 		db.remove_stream_match(streamer_id2, match_id)
 		# Assert that the user's calendar is empty.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar)
 
 	# TODO: Test remove_stream_match.
@@ -1637,7 +1660,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				updated_team_name, updated_game, updated_division, self.team1_fingerprint)
 		# Assert that only the name was updated.
 		self.assertEqual(team_id, updated_team_id)
-		displayed_team = db.get_displayed_team(client_id, team_id)
+		displayed_team = db.get_displayed_team(client_id, team_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team_id, updated_team_name, self.game, self.division, self.team1_fingerprint)
 
@@ -1657,12 +1680,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.team2_fingerprint)
 		# Create the match.
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 
 		# Attempt to add the match again.
 		updated_match_id = db.add_match(team1_id, team2_id,
 				updated_time, updated_game, updated_division, self.match_fingerprint,
-				now=None)
+				now=self.now)
 		# Assert that this had no effect.
 		self.assertEqual(match_id, updated_match_id)
 		displayed_match = db.get_displayed_match(client_id, match_id)
@@ -1685,12 +1708,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.division,
-				match_fingerprint2, now=None)
+				match_fingerprint2, now=self.now)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1734,7 +1757,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(displayed_match.team2, team2_id, self.team2_name)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1744,7 +1767,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1775,12 +1798,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team3_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team2_id, team3_id, time2, self.game, self.division,
-				match_fingerprint2, now=None)
+				match_fingerprint2, now=self.now)
 
 		# Create the streaming user.
 		streamer_steam_id, streamer_id = self._create_steam_user(self.streamer_name)
@@ -1794,29 +1817,29 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		db.add_star_team(client_id2, team2_id)
 
 		# Assert that the first team has a star by the first user.
-		displayed_team = db.get_displayed_team(client_id1, team1_id)
+		displayed_team = db.get_displayed_team(client_id1, team1_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team1_id, self.team1_name, self.game, self.division, self.team1_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
 		# Assert that the second team has no star by the first user.
-		displayed_team = db.get_displayed_team(client_id1, team2_id)
+		displayed_team = db.get_displayed_team(client_id1, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_stars=1, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
-		displayed_team = db.get_displayed_team(client_id2, team1_id)
+		displayed_team = db.get_displayed_team(client_id2, team1_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team1_id, self.team1_name, self.game, self.division, self.team1_fingerprint,
 				num_stars=1, num_matches=1)
 		# Assert that the second team has a star by the second user.
-		displayed_team = db.get_displayed_team(client_id2, team2_id)
+		displayed_team = db.get_displayed_team(client_id2, team2_id, now=self.now)
 		self._assert_displayed_team_details(displayed_team,
 				team2_id, self.team2_name, self.game, self.division, self.team2_fingerprint,
 				num_stars=1, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1827,7 +1850,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(next_match.team2, team3_id, team3_name)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1853,12 +1876,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.division,
-				match_fingerprint2, now=None)
+				match_fingerprint2, now=self.now)
 
 		# Create the first streaming user and stream the first match.
 		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
@@ -1877,29 +1900,33 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		db.add_star_streamer(client_id2, streamer_id2)
 
 		# Assert that the first streamer has a star by the first user.
-		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id1, streamer_id1, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id1, self.streamer_name, url_by_id1,
 				num_stars=1, url_by_name=url_by_name1, is_starred=True, num_matches=1)
 		# Assert that the second streamer has no star by the first user.
-		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id1, streamer_id2, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id2, streamer_name2, url_by_id2,
 				num_stars=1, url_by_name=url_by_name2, num_matches=1)
 
 		# Assert that the first team has no star by the second user.
-		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id2, streamer_id1, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id1, self.streamer_name, url_by_id1,
 				num_stars=1, url_by_name=url_by_name1, num_matches=1)
 		# Assert that the second team has a star by the second user.
-		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id2, streamer_id2, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id2, streamer_name2, url_by_id2,
 				num_stars=1, url_by_name=url_by_name2, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1909,7 +1936,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1934,12 +1961,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.team2_fingerprint)
 		# Create the first match.
 		match_id1 = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
-				self.match_fingerprint, now=None)
+				self.match_fingerprint, now=self.now)
 		# Create the second match.
 		time2 = self.time + timedelta(days=1)
 		match_fingerprint2 = 'match_fingerprint2'
 		match_id2 = db.add_match(team1_id, team2_id, time2, self.game, self.division,
-				match_fingerprint2, now=None)
+				match_fingerprint2, now=self.now)
 
 		# Create the first streaming user.
 		streamer_steam_id1, streamer_id1 = self._create_steam_user(self.streamer_name)
@@ -1960,29 +1987,33 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		db.add_star_streamer(client_id2, streamer_id2)
 
 		# Assert that the first streamer has a star by the first user.
-		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id1)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id1, streamer_id1, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id1, self.streamer_name, url_by_id1,
 				num_stars=1, url_by_name=url_by_name1, is_starred=True, num_matches=1)
 		# Assert that the second streamer has no star by the first user.
-		displayed_streamer = db.get_displayed_streamer(client_id1, streamer_id2)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id1, streamer_id2, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id2, streamer_name2, url_by_id2,
 				num_stars=1, url_by_name=url_by_name2, num_matches=1)
 
 		# Assert that the second streamer has no star by the first user.
-		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id1)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id2, streamer_id1, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id1, self.streamer_name, url_by_id1,
 				num_stars=1, url_by_name=url_by_name1, num_matches=1)
 		# Assert that the second streamer has a star by the second user.
-		displayed_streamer = db.get_displayed_streamer(client_id2, streamer_id2)
+		displayed_streamer = db.get_displayed_streamer(
+				client_id2, streamer_id2, now=self.now)
 		self._assert_displayed_streamer_details(displayed_streamer,
 				streamer_id2, streamer_name2, url_by_id2,
 				num_stars=1, url_by_name=url_by_name2, is_starred=True, num_matches=1)
 
 		# Assert that the first user's calendar has the first match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id1)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id1, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match
@@ -1992,7 +2023,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self._assert_displayed_team(next_match.team2, team2_id, self.team2_name)
 
 		# Assert that the second user's calendar has the second match.
-		displayed_calendar = db.get_displayed_viewer_calendar(client_id2)
+		displayed_calendar = db.get_displayed_viewer_calendar(client_id2, now=self.now)
 		self._assert_displayed_calendar(displayed_calendar,
 				has_next_match=True, num_matches=1)
 		next_match = displayed_calendar.next_match

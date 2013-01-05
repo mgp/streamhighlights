@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 import sqlalchemy as sa
 import sqlalchemy.engine as sa_engine
@@ -1061,6 +1061,11 @@ class DisplayedStreamerList:
 				self.next_streamer_id)
 
 
+_UPCOMING_MATCHES_CUTOFF = timedelta(minutes=-60)
+
+def _get_upcoming_matches_cutoff(now):
+	return now + _UPCOMING_MATCHES_CUTOFF
+
 # The default number of entities per page.
 _PAGE_LIMIT = 25
 
@@ -1144,17 +1149,19 @@ def _get_displayed_match(match, team1, team2, is_starred):
 			match.game,
 			match.division)
 
-def _get_calendar_entry_query(client_id, team_alias1, team_alias2):
+def _get_calendar_entry_query(client_id, team_alias1, team_alias2, now):
+	cutoff_time = _get_upcoming_matches_cutoff(now)
 	return session\
 			.query(CalendarEntry.match_id, Match, team_alias1, team_alias2)\
 			.join(Match, CalendarEntry.match_id == Match.id)\
 			.join(team_alias1, Match.team1_id == team_alias1.id)\
 			.join(team_alias2, Match.team2_id == team_alias2.id)\
 			.filter(CalendarEntry.user_id == client_id)\
+			.filter(CalendarEntry.time > cutoff_time)
 
-def _get_next_viewer_match(client_id, team_alias1, team_alias2):
+def _get_next_viewer_match(client_id, team_alias1, team_alias2, now):
 	result = common_db.optional_one(
-			_get_calendar_entry_query(client_id, team_alias1, team_alias2)
+			_get_calendar_entry_query(client_id, team_alias1, team_alias2, now)
 				.order_by(CalendarEntry.time.asc(), CalendarEntry.match_id.asc()))
 	if result is None:
 		return None
@@ -1166,14 +1173,15 @@ def _get_next_viewer_match(client_id, team_alias1, team_alias2):
 """A paginator for entries on the client's viewing calendar.
 """
 class CalendarEntriesPaginator:
-	def __init__(self, client_id, team_alias1, team_alias2):
+	def __init__(self, client_id, team_alias1, team_alias2, now):
 		self.client_id = client_id
 		self.team_alias1 = team_alias1
 		self.team_alias2 = team_alias2
+		self.now = now
 	
 	def get_partial_list_query(self):
 		return _get_calendar_entry_query(
-				self.client_id, self.team_alias1, self.team_alias2)
+				self.client_id, self.team_alias1, self.team_alias2, self.now)
 
 	def get_order_by_columns(self):
 		return (CalendarEntry.time, CalendarEntry.match_id)
@@ -1193,20 +1201,22 @@ class CalendarEntriesPaginator:
 @close_session
 def get_displayed_viewer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedCalendar containing calendar entries for streamed matches
 	where the client has starred the match, either team, or a streamer.
 	"""
+	now = _get_now(now)
+
 	# Get the next match for viewing by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
-	first_match = _get_next_viewer_match(client_id, team_alias1, team_alias2)
+	first_match = _get_next_viewer_match(client_id, team_alias1, team_alias2, now)
 	if first_match is None:
 		# No next match, so return an empty calendar.
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
-	paginator = CalendarEntriesPaginator(client_id, team_alias1, team_alias2)
+	paginator = CalendarEntriesPaginator(client_id, team_alias1, team_alias2, now)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			first_id=first_match.match_id)
@@ -1221,7 +1231,7 @@ def get_displayed_viewer_calendar(client_id,
 			next_match_id)
 
 
-def _get_streamed_match_query(streamer_id, client_id, team_alias1, team_alias2):
+def _get_streamed_match_query(streamer_id, client_id, team_alias1, team_alias2, now):
 	if client_id:
 		query = session\
 				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2, StarredMatch)\
@@ -1231,15 +1241,17 @@ def _get_streamed_match_query(streamer_id, client_id, team_alias1, team_alias2):
 	else:
 		query = session\
 				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)
+	cutoff_time = _get_upcoming_matches_cutoff(now)
 	return query\
 			.join(Match, StreamedMatch.match_id == Match.id)\
 			.join(team_alias1, Match.team1_id == team_alias1.id)\
 			.join(team_alias2, Match.team2_id == team_alias2.id)\
-			.filter(StreamedMatch.streamer_id == streamer_id)
+			.filter(StreamedMatch.streamer_id == streamer_id)\
+			.filter(StreamedMatch.time > cutoff_time)
 
-def _get_next_streamer_match(client_id, team_alias1, team_alias2):
+def _get_next_streamer_match(client_id, team_alias1, team_alias2, now):
 	result = common_db.optional_one(
-			_get_streamed_match_query(client_id, None, team_alias1, team_alias2)
+			_get_streamed_match_query(client_id, None, team_alias1, team_alias2, now)
 				.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
 	if result is None:
 		return None
@@ -1251,20 +1263,23 @@ def _get_next_streamer_match(client_id, team_alias1, team_alias2):
 @close_session
 def get_displayed_streamer_calendar(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedCalendar containing calendar entries for matches that the
 	client is streaming.
 	"""
+	now = _get_now(now)
+
 	# Get the next match streamed by the client.
 	team_alias1 = sa_orm.aliased(Team)
 	team_alias2 = sa_orm.aliased(Team)
-	first_match = _get_next_streamer_match(client_id, team_alias1, team_alias2)
+	first_match = _get_next_streamer_match(client_id, team_alias1, team_alias2, now)
 	if first_match is None:
 		# No next match, so return an empty calendar.
 		return DisplayedCalendar(None, ())
 
 	# Get the partial list of matches.
-	paginator = StreamedMatchesPaginator(client_id, None, team_alias1, team_alias2)
+	paginator = StreamedMatchesPaginator(
+			client_id, None, now, team_alias1, team_alias2)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			first_id=first_match.match_id)
@@ -1280,10 +1295,11 @@ def get_displayed_streamer_calendar(client_id,
 
 
 class _MatchesPaginator:
-	def __init__(self, client_id):
+	def __init__(self, client_id, now):
 		self.team_alias1 = sa_orm.aliased(Team)
 		self.team_alias2 = sa_orm.aliased(Team)
 		self.client_id = client_id
+		self.now = now
 
 	def get_pagination_values(self, item):
 		match = item[0]
@@ -1297,19 +1313,23 @@ class _MatchesPaginator:
 """
 class StarredMatchesPaginator(_MatchesPaginator):
 	def get_first_id(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		first_starred_match = common_db.optional_one(
 				session.query(StarredMatch.match_id)
 					.filter(StarredMatch.user_id == self.client_id)
+					.filter(StarredMatch.time > cutoff_time)
 					.order_by(StarredMatch.time.asc(), StarredMatch.match_id.asc()))
 		return first_starred_match.match_id if first_starred_match else None
 	
 	def get_partial_list_query(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		return session\
 				.query(StarredMatch.match_id, Match, self.team_alias1, self.team_alias2)\
 				.join(Match, StarredMatch.match_id == Match.id)\
 				.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
 				.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
-				.filter(StarredMatch.user_id == self.client_id)
+				.filter(StarredMatch.user_id == self.client_id)\
+				.filter(StarredMatch.time > cutoff_time)
 	
 	def get_order_by_columns(self):
 		return (StarredMatch.time, StarredMatch.match_id)
@@ -1327,6 +1347,7 @@ class AllMatchesPaginator(_MatchesPaginator):
 		return first_match.id if first_match else None
 	
 	def get_partial_list_query(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		if self.client_id:
 			query = session.query(Match, self.team_alias1, self.team_alias2, StarredMatch)\
 					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
@@ -1338,6 +1359,7 @@ class AllMatchesPaginator(_MatchesPaginator):
 			query = session.query(Match, self.team_alias1, self.team_alias2)\
 					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
 					.join(self.team_alias2, Match.team2_id == self.team_alias2.id)
+		query = query.filter(Match.time > cutoff_time)
 		return query
 
 	def get_order_by_columns(self):
@@ -1494,18 +1516,20 @@ def _get_match_list(
 @close_session
 def get_starred_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns matches starred by the client."""
-	paginator = StarredMatchesPaginator(client_id)
+	now = _get_now(now)
+	paginator = StarredMatchesPaginator(client_id, now)
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			paginator)
 
 @close_session
 def get_all_matches(client_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns all matches."""
-	paginator = AllMatchesPaginator(client_id)
+	now = _get_now(now)
+	paginator = AllMatchesPaginator(client_id, now)
 	return _get_match_list(prev_time, prev_match_id, next_time, next_match_id, page_limit,
 			paginator)
 
@@ -1708,14 +1732,17 @@ def _get_displayed_team_match(match, team_id, opponent_team, is_starred):
 """A paginator for opponents of a team.
 """
 class MatchOpponentsPaginator:
-	def __init__(self, team_id, client_id):
+	def __init__(self, team_id, client_id, now):
 		self.team_id = team_id
 		self.client_id = client_id
+		self.now = now
 
 	def get_first_id(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		first_match_opponent = common_db.optional_one(
 				session.query(MatchOpponent.match_id)
 					.filter(MatchOpponent.team_id == self.team_id)
+					.filter(MatchOpponent.time > cutoff_time)
 					.order_by(MatchOpponent.time.asc(), MatchOpponent.match_id.asc()))
 		return first_match_opponent.match_id if first_match_opponent else None
 
@@ -1729,10 +1756,12 @@ class MatchOpponentsPaginator:
 		else:
 			query = session\
 					.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		return query\
 				.join(Match, MatchOpponent.match_id == Match.id)\
 				.join(Team, MatchOpponent.opponent_id == Team.id)\
-				.filter(MatchOpponent.team_id == self.team_id)
+				.filter(MatchOpponent.team_id == self.team_id)\
+				.filter(MatchOpponent.time > cutoff_time)
 
 	def get_order_by_columns(self):
 		return (MatchOpponent.time, MatchOpponent.match_id)
@@ -1758,7 +1787,7 @@ class MatchOpponentsPaginator:
 @close_session
 def get_displayed_team(client_id, team_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedTeam containing scheduled matches."""
 	# Get the team.
 	team, starred_team = session.query(Team, StarredTeam)\
@@ -1770,7 +1799,8 @@ def get_displayed_team(client_id, team_id,
 	is_starred = (starred_team is not None)
 
 	# Get the partial list of matches for this team.
-	paginator = MatchOpponentsPaginator(team_id, client_id)
+	now = _get_now(now)
+	paginator = MatchOpponentsPaginator(team_id, client_id, now)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	
@@ -1793,11 +1823,13 @@ def get_displayed_team(client_id, team_id,
 """A paginator for matches streamed by a user.
 """
 class StreamedMatchesPaginator:
-	def __init__(self, streamer_id, client_id, team_alias1=None, team_alias2=None):
+	def __init__(self, streamer_id, client_id, now,
+			team_alias1=None, team_alias2=None):
 		self.streamer_id = streamer_id
 		self.client_id = client_id
 		self.team_alias1 = team_alias1 if team_alias1 else sa_orm.aliased(Team)
 		self.team_alias2 = team_alias2 if team_alias2 else sa_orm.aliased(Team)
+		self.now = now
 
 	def get_first_id(self):
 		first_streamed_match = common_db.optional_one(
@@ -1807,8 +1839,11 @@ class StreamedMatchesPaginator:
 		return first_streamed_match.match_id if first_streamed_match else None
 
 	def get_partial_list_query(self):
-		return _get_streamed_match_query(
-				self.streamer_id, self.client_id, self.team_alias1, self.team_alias2)
+		return _get_streamed_match_query(self.streamer_id,
+				self.client_id,
+				self.team_alias1,
+				self.team_alias2,
+				self.now)
 
 	def get_order_by_columns(self):
 		return (StreamedMatch.time, StreamedMatch.match_id)
@@ -1832,7 +1867,9 @@ class StreamedMatchesPaginator:
 
 @close_session
 def _get_displayed_streamer_by_filter(client_id, filter_adder,
-		prev_time, prev_match_id, next_time, next_match_id, page_limit):
+		prev_time, prev_match_id, next_time, next_match_id, page_limit, now):
+	now = _get_now(now)
+
 	# Get the streamer.
 	query = session.query(User, StarredStreamer)\
 			.outerjoin(StarredStreamer, sa.and_(
@@ -1843,7 +1880,7 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 	is_starred = (starred_streamer is not None)
 
 	# Get the partial list of matches streamed by this user.
-	paginator = StreamedMatchesPaginator(streamer.id, client_id)
+	paginator = StreamedMatchesPaginator(streamer.id, client_id, now)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
 	
@@ -1865,7 +1902,7 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 
 def get_displayed_streamer(client_id, streamer_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedStreamer containing scheduled streamed matches.
 	
 	The returned streaming user is found by its identifier.
@@ -1873,11 +1910,11 @@ def get_displayed_streamer(client_id, streamer_id,
 	def _filter_adder(query):
 		return query.filter(User.id == streamer_id)
 	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
-			prev_time, prev_match_id, next_time, next_match_id, page_limit)
+			prev_time, prev_match_id, next_time, next_match_id, page_limit, now)
 
 def get_displayed_streamer_by_twitch_id(client_id, twitch_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedStreamer containing scheduled streamed matches.
 	
 	The returned streaming user is found by its Twitch identifier.
@@ -1886,11 +1923,11 @@ def get_displayed_streamer_by_twitch_id(client_id, twitch_id,
 	def _filter_adder(query):
 		return query.filter(User.url_by_id == url_by_id)
 	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
-			prev_time, prev_match_id, next_time, next_match_id, page_limit)
+			prev_time, prev_match_id, next_time, next_match_id, page_limit, now)
 
 def get_displayed_streamer_by_twitch_name(client_id, twitch_name,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
-		page_limit=None):
+		page_limit=None, now=None):
 	"""Returns a DisplayedStreamer containing scheduled streamed matches.
 	
 	The returned streaming user is found by its Twitch username.
@@ -1899,7 +1936,7 @@ def get_displayed_streamer_by_twitch_name(client_id, twitch_name,
 	def _filter_adder(query):
 		return query.filter(User.url_by_name == url_by_name)
 	return _get_displayed_streamer_by_filter(client_id, _filter_adder,
-			prev_time, prev_match_id, next_time, next_match_id, page_limit)
+			prev_time, prev_match_id, next_time, next_match_id, page_limit, now)
 
 
 def twitch_user_logged_in(twitch_id, name, display_name, logo, access_token,
