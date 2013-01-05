@@ -1832,9 +1832,11 @@ class StreamedMatchesPaginator:
 		self.now = now
 
 	def get_first_id(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
 		first_streamed_match = common_db.optional_one(
 				session.query(StreamedMatch.match_id)\
 					.filter(StreamedMatch.streamer_id == self.streamer_id)\
+					.filter(StreamedMatch.time > cutoff_time)\
 					.order_by(StreamedMatch.time.asc(), StreamedMatch.match_id.asc()))
 		return first_streamed_match.match_id if first_streamed_match else None
 
