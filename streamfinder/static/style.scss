@@ -73,7 +73,7 @@ $padding: 10px;
 		margin-top: round($small-font-size / 6);
 	}
 	div.teams {
-		margin-left: 68px;
+		margin-left: 72px;
 		text-transform: none;
 
 		.team-name {
@@ -161,6 +161,7 @@ ul.streamer-list {
 ul.match-list {
 	img.game-logo {
 		float: left;
+		margin-top: 2px;
 
 		& + div {
 			margin-left: 40px;
