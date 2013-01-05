@@ -1,5 +1,6 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import db
+import pytz
 
 def _recreate_tables():
 	db.drop_all()
@@ -33,20 +34,41 @@ def _add_teams():
 
 def _add_matches(
 		xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id):
-	match1_time = datetime(2012, 12, 24, 20, 0, 0, 0)
-	match1_fingerprint = 'esea:3085088'
-	match_id1 = db.add_match(classic_mixup_id, apocalypse_gaming_id,
-			match1_time, game, division, match1_fingerprint)
-	
-	match2_time = datetime(2012, 12, 27, 20, 30, 0, 0)
-	match2_fingerprint = 'esea:3088406'
-	match_id2 = db.add_match(xensity_id, classic_mixup_id,
-			match2_time, game, division, match2_fingerprint)
+	eastern_tz = pytz.timezone('US/Eastern')
+	now = eastern_tz.localize(datetime.utcnow())
 
-	match3_time = datetime(2013, 1, 6, 21, 0, 0, 0)
+	match1_time = now + timedelta(days=3)
+	match1_time = match1_time.replace(hour=21, minute=0, second=0, microsecond=0)
+	print match1_time.astimezone(pytz.utc)
+	match1_fingerprint = 'esea:3085088'
+	match_id1 = db.add_match(classic_mixup_id,
+			apocalypse_gaming_id,
+			match1_time.astimezone(pytz.utc).replace(tzinfo=None),
+			game,
+			division,
+			match1_fingerprint)
+	
+	match2_time = now + timedelta(days=5)
+	match2_time = match2_time.replace(hour=20, minute=0, second=0, microsecond=0)
+	print match2_time.astimezone(pytz.utc)
+	match2_fingerprint = 'esea:3088406'
+	match_id2 = db.add_match(xensity_id,
+			classic_mixup_id,
+			match2_time.astimezone(pytz.utc).replace(tzinfo=None),
+			game,
+			division,
+			match2_fingerprint)
+
+	match3_time = now + timedelta(days=5)
+	match3_time = match3_time.replace(hour=20, minute=30, second=0, microsecond=0)
+	print match3_time.astimezone(pytz.utc)
 	match3_fingerprint = 'esea:3085090'
-	match_id3 = db.add_match(laser_beams_id, xensity_id,
-			match3_time, game, division, match3_fingerprint)
+	match_id3 = db.add_match(laser_beams_id,
+			xensity_id,
+			match3_time.astimezone(pytz.utc).replace(tzinfo=None),
+			game,
+			division,
+			match3_fingerprint)
 
 	return match_id1, match_id2, match_id3
 
