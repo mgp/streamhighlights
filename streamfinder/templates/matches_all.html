@@ -1,8 +1,8 @@
 {% extends "matches.html" %}
 
-{% set found_header_value = "All matches" %}
+{% set found_header_value = "All upcoming matches" %}
 
 {% block title %}{{ found_header_value|title }}{% endblock title %}
 {% block found_header %}{{ found_header_value }}{% endblock found_header %}
-{% block missing_header %}No matches found :({% endblock missing_header %}
+{% block missing_header %}No upcoming matches found :({% endblock missing_header %}
 
