@@ -44,7 +44,11 @@
 			</div>
 		</div>
 		<div id="footer">
-			<!-- privacy, terms, about -->
+			<ol>
+				<li><a href="{{ url_for('privacy') }}">Privacy</a></li>
+				<li><a href="{{ url_for('terms') }}">Terms</a></li>
+				<li><a href="{{ url_for('about') }}">About</a></li>
+			</ol>
 		</div>
 	</body>
 </html>

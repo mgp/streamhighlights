@@ -841,6 +841,18 @@ def save_settings():
 
 	return _render_settings(time_format, country, time_zone, errors, saved)
 
+@app.route('/privacy')
+def privacy():
+	return flask.render_template('privacy.html')
+
+@app.route('/terms')
+def terms():
+	return flask.render_template('terms.html')
+
+@app.route('/about')
+def about():
+	return flask.render_template('about.html')
+
 @app.errorhandler(404)
 def page_not_found(e):
 	return flask.render_template('error_404.html'), 404
