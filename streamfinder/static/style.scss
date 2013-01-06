@@ -81,19 +81,26 @@ $sidebar-width: 200px;
 			font-size: $medium-font-size;
 			text-transform: uppercase;
 		}
+		a {
+			color: $dark-gray;
+		}
 		p {
 			font-family: 'Vollkorn', serif;
 			font-size: 18pt;
 			line-height: 120%;
 		}
 		ul {
-			margin-top: $padding;
-		}
-		img {
-			padding-right: 8px;
-		}
-		a {
-			color: $dark-gray;
+			@extend %links;
+			text-transform: uppercase;
+			font-size: $small-font-size;
+			margin-top: 2 * $padding;
+
+			li + li {
+				margin-top: $padding;
+			}
+			img {
+				padding-right: $padding / 2;
+			}
 		}
 	}
 }
