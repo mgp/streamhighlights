@@ -8,10 +8,13 @@
 		<p>The only resource I've really put into this site is my time, and so I'm not going to pay an expensive lawyer to write something here that only other lawyers can really understand. So here's the rundown from me:</p>
 
 		<ul>
-			<li>The server records every request and its originating IP address in a log file. This is helpful when fixing bugs, and for determining which parts and features of this site are actually useful and which aren't.</li>
+			<li>This site writes every HTTP request and its originating IP address to a log file. This is helpful when fixing bugs, and for determining which parts and features of this site are actually useful and which aren't.</li>
 			<li>This site uses an authentication cookie to determine whether you're logged in or not, and which account you're logged in under. It is cryptographically signed to prevent tampering.</li>
-			<li>When logging in via Steam or Twitch, only the most basic permissions are requested from you in order to authenticate. After logging in, your unique Steam identifier or Twitch identifier is stored in the database, along with your account name and picture URL. All of these stored values are accessible through the public APIs of Steam or Twitch without any authentication.</li>
+			<li>When logging in via Steam or Twitch, only the most basic permissions are requested from you in order to authenticate. After logging in, this site stores your unique Steam identifier or Twitch identifier in the database, along with your account name and picture URL. All of these stored values are accessible through the public APIs of Steam or Twitch without any authentication.</li>
+			<li>Specifying your country and time zone under Settings is entirely optional, and is only used to show localized times for matches.</li>
 		</ul>
+
+		<p>To summarize, this site stores no private information from your Steam or Twitch accounts, and definitely doesn't know any of your secrets, like how you totally have the hots for your cousin.</p>
 	</div>
 {% endblock content %}
 
