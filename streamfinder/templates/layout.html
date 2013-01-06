@@ -15,8 +15,36 @@
 		<title>{% block title %}{% endblock title %} - Stream Calendars</title>
 	</head>
 	<body>
-		<div id="site">
-			{% block content %}{% endblock content %}
+		<div id="header">
+			<!-- login/logout, settings -->
+		</div>
+		<div id="site" class="clearfix">
+			<div id="sidebar">
+				<ol>
+					<li><a href="{{ url_for('home') }}">Home</a></li>
+					<li><a href="{{ url_for('viewer_calendar') }}">Calendar</a></li>
+					<li><h3>Browse All</h3>
+						<ol>
+							<li><a href="{{ url_for('all_matches') }}">Matches</a></li>
+							<li><a href="{{ url_for('all_teams') }}">Teams</a></li>
+							<li><a href="{{ url_for('all_streamers') }}">Streamers</a></li>
+						</ol>
+					</li>
+					<li><h3>Starred</h3>
+						<ol>
+							<li><a href="{{ url_for('starred_matches') }}">Matches</a></li>
+							<li><a href="{{ url_for('starred_teams') }}">Teams</a></li>
+							<li><a href="{{ url_for('starred_streamers') }}">Streamers</a></li>
+						</ol>
+					</li>
+				</ol>
+			</div>
+			<div id="content">
+				{% block content %}{% endblock content %}
+			</div>
+		</div>
+		<div id="footer">
+			<!-- privacy, terms, about -->
 		</div>
 	</body>
 </html>

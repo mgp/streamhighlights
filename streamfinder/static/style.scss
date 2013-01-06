@@ -20,10 +20,54 @@ $small-font-size: 24pt;
 $medium-font-size: 30pt;
 $large-font-size: 60pt;
 
+%links {
+	a {
+		&:link, &:visited {
+			text-decoration: none;
+		}
+		&:hover, &:active {
+			text-decoration: underline;
+		}
+	}
+}
+
+$padding: 10px;
+
+$site-width: 1000px;
 #site {
-	width: 800px;
+	width: $site-width;
 	margin: 0 auto;
   font-family: 'LeagueGothic', arial, sans-serif;
+}
+
+$sidebar-width: 200px;
+#sidebar {
+	@extend %links;
+	float: left;
+	width: $sidebar-width;
+	font-size: $medium-font-size;
+	text-transform: uppercase;
+
+	h3 {
+		background-color: $light-gray;
+		color: $medium-gray;
+		display: inline;
+	}
+	a {
+		color: $dark-gray;
+	}
+	& > ol > li + li {
+		margin-top: $padding;	
+	}
+	ol ol li {
+		margin-top: $padding / 2;
+		padding-left: 20px;
+	}
+}
+
+#content {
+	width: $site-width - $sidebar-width;
+	margin-left: $sidebar-width;
 }
 
 .header {
@@ -41,7 +85,6 @@ img.league-logo {
 	margin-bottom: -2px;
 }
 
-$padding: 10px;
 .main-data {
 	$border: 2px solid $medium-gray;
 
@@ -87,16 +130,10 @@ $padding: 10px;
 		}
 	}
 }
+
 #match {
 	@extend %match-main-data;
-	a {
-		&:link, &:visited {
-			text-decoration: none;
-		}
-		&:hover, &:active {
-			text-decoration: underline;
-		}
-	}
+	@extend %links;
 	div.counts {
 		float: right;
 	}
