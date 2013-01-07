@@ -261,6 +261,7 @@ def login_required(f):
 			flask.abort(requests.codes.unauthorized)
 
 		_get_client_values(client)
+		flask.g.page_name = page_name
 		return f(*pargs, **kwargs)
 	return decorated_function
 
