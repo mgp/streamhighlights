@@ -841,6 +841,7 @@ def save_settings():
 
 	return _render_settings(time_format, country, time_zone, errors, saved)
 
+
 @app.route('/privacy')
 def privacy():
 	return flask.render_template('privacy.html')
@@ -853,6 +854,7 @@ def terms():
 def about():
 	return flask.render_template('about.html')
 
+
 @app.errorhandler(404)
 def page_not_found(e):
 	return flask.render_template('error_404.html'), 404
@@ -860,4 +862,17 @@ def page_not_found(e):
 @app.errorhandler(500)
 def internal_server_error(e):
 	return flask.render_template('error_500.html'), 500
+
+
+@app.route('/login/steam')
+def log_in_steam():
+	pass
+
+@app.route('/login/twitch')
+def log_in_twitch():
+	pass
+
+@app.route('/logout')
+def logout():
+	pass
 
