@@ -1098,6 +1098,44 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		with self.assertRaises(common_db.DbException):
 			db.add_star_streamer(client_id, missing_streamer_id, now=self.now)
 
+	def test_get_unknown_displayed_match(self):
+		"""Test that fails to return a match because the match identifier is unknown."""
+		missing_match_id = 99
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.get_displayed_team(client_id, missing_match_id)
+
+	def test_get_unknown_displayed_team(self):
+		"""Test that fails to return a team because the team identifier is unknown."""
+		missing_team_id = 99
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		with self.assertRaises(common_db.DbException):
+			db.get_displayed_team(client_id, missing_team_id)
+
+	def test_get_unknown_displayed_streamer(self):
+		"""Test that fails to return a streaming user because the streaming user
+		identifier is unknown.
+		"""
+		missing_streamer_id = 99
+		missing_twitch_id = 199
+		missing_twitch_name = 'missing_twitch_name'
+		# Create the client.
+		client_steam_id, client_id = self._create_steam_user(self.client_name)
+
+		# Fail to return by user identifier.
+		with self.assertRaises(common_db.DbException):
+			db.get_displayed_streamer(client_id, missing_streamer_id)
+		# Fail to return by Twitch identifier.
+		with self.assertRaises(common_db.DbException):
+			db.get_displayed_streamer_by_twitch_id(client_id, missing_twitch_id)
+		# Fail to return by Twitch name.
+		with self.assertRaises(common_db.DbException):
+			db.get_displayed_streamer_by_twitch_name(client_id, missing_twitch_name)
+
 	"""Test that adds and removes a star for a match that is not casted.
 	"""
 	def test_add_remove_match_star_not_casted(self):

@@ -412,9 +412,12 @@ def match_details(match_id):
 	next_time = args.get('next_time')
 	next_streamer_id = args.get('next_streamer_id')
 
-	match = db.get_displayed_match(flask.g.client_id, match_id,
-			prev_time, prev_streamer_id, next_time, next_streamer_id)
-	return flask.render_template('match.html', match=match)
+	try:
+		match = db.get_displayed_match(flask.g.client_id, match_id,
+				prev_time, prev_streamer_id, next_time, next_streamer_id)
+		return flask.render_template('match.html', match=match)
+	except common_db.DbException:
+		flask.abort(requests.codes.not_found)
 
 @app.route(_MATCH_DETAILS_ROUTE, methods=['POST'])
 @login_required
@@ -441,9 +444,12 @@ def team_details(team_id):
 	next_time = args.get('next_time')
 	next_match_id = args.get('next_match_id')
 
-	team = db.get_displayed_team(flask.g.client_id, team_id,
-			prev_time, prev_match_id, next_time, next_match_id)
-	return flask.render_template('team.html', team=team)
+	try:
+		team = db.get_displayed_team(flask.g.client_id, team_id,
+				prev_time, prev_match_id, next_time, next_match_id)
+		return flask.render_template('team.html', team=team)
+	except common_db.DbException:
+		flask.abort(requests.codes.not_found)
 
 @app.route(_TEAM_DETAILS_ROUTE, methods=['POST'])
 @login_required
@@ -467,10 +473,13 @@ def twitch_user_by_name(name):
 	next_time = args.get('next_time')
 	next_match_id = args.get('next_match_id')
 
-	streamer = db.get_displayed_streamer_by_twitch_name(
-			flask.g.client_id, name,
-			prev_time, prev_match_id, next_time, next_match_id)
-	return flask.render_template('streamer.html', streamer=streamer)
+	try:
+		streamer = db.get_displayed_streamer_by_twitch_name(
+				flask.g.client_id, name,
+				prev_time, prev_match_id, next_time, next_match_id)
+		return flask.render_template('streamer.html', streamer=streamer)
+	except common_db.DbException:
+		flask.abort(requests.codes.not_found)
 
 @app.route('/users/twitch_id/<int:twitch_id>')
 @login_optional
@@ -481,10 +490,13 @@ def twitch_user_by_id(twitch_id):
 	next_time = args.get('next_time')
 	next_match_id = args.get('next_match_id')
 
-	streamer = db.get_displayed_streamer_by_twitch_id(
-			flask.g.client_id, twitch_id,
-			prev_time, prev_match_id, next_time, next_match_id)
-	return flask.render_template('streamer.html', streamer=streamer)
+	try:
+		streamer = db.get_displayed_streamer_by_twitch_id(
+				flask.g.client_id, twitch_id,
+				prev_time, prev_match_id, next_time, next_match_id)
+		return flask.render_template('streamer.html', streamer=streamer)
+	except common_db.DbException:
+		flask.abort(requests.codes.not_found)
 
 
 _TIME_FORMAT_TO_VALUE_MAP = {

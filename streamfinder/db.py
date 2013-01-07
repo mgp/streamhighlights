@@ -1668,20 +1668,24 @@ def get_displayed_match(client_id, match_id,
 		prev_time=None, prev_streamer_id=None, next_time=None, next_streamer_id=None,
 		page_limit=None):
 	"""Returns a DisplayedMatch containing streaming users."""
-	# Get the match and teams.
-	team_alias1 = sa_orm.aliased(Team)
-	team_alias2 = sa_orm.aliased(Team)
-	match, team1, team2, starred_match = session\
-			.query(Match, team_alias1, team_alias2, StarredMatch)\
-			.join(team_alias1, Match.team1_id == team_alias1.id)\
-			.join(team_alias2, Match.team2_id == team_alias2.id)\
-			.outerjoin(StarredMatch, sa.and_(
-				StarredMatch.match_id == match_id,
-				StarredMatch.user_id == client_id))\
-			.filter(Match.id == match_id)\
-			.one()
-	displayed_team1 = _get_displayed_match_team(team1)
-	displayed_team2 = _get_displayed_match_team(team2)
+	try:
+		# Get the match and teams.
+		team_alias1 = sa_orm.aliased(Team)
+		team_alias2 = sa_orm.aliased(Team)
+		match, team1, team2, starred_match = session\
+				.query(Match, team_alias1, team_alias2, StarredMatch)\
+				.join(team_alias1, Match.team1_id == team_alias1.id)\
+				.join(team_alias2, Match.team2_id == team_alias2.id)\
+				.outerjoin(StarredMatch, sa.and_(
+					StarredMatch.match_id == match_id,
+					StarredMatch.user_id == client_id))\
+				.filter(Match.id == match_id)\
+				.one()
+		displayed_team1 = _get_displayed_match_team(team1)
+		displayed_team2 = _get_displayed_match_team(team2)
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	is_starred = (starred_match is not None)
 	
 	# Get the partial list of streamers for this match.
@@ -1792,13 +1796,17 @@ def get_displayed_team(client_id, team_id,
 		prev_time=None, prev_match_id=None, next_time=None, next_match_id=None,
 		page_limit=None, now=None):
 	"""Returns a DisplayedTeam containing scheduled matches."""
-	# Get the team.
-	team, starred_team = session.query(Team, StarredTeam)\
-			.outerjoin(StarredTeam, sa.and_(
-				StarredTeam.team_id == team_id,
-				StarredTeam.user_id == client_id))\
-			.filter(Team.id == team_id)\
-			.one()
+	try:
+		# Get the team.
+		team, starred_team = session.query(Team, StarredTeam)\
+				.outerjoin(StarredTeam, sa.and_(
+					StarredTeam.team_id == team_id,
+					StarredTeam.user_id == client_id))\
+				.filter(Team.id == team_id)\
+				.one()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	is_starred = (starred_team is not None)
 
 	# Get the partial list of matches for this team.
@@ -1873,18 +1881,21 @@ class StreamedMatchesPaginator:
 @close_session
 def _get_displayed_streamer_by_filter(client_id, filter_adder,
 		prev_time, prev_match_id, next_time, next_match_id, page_limit, now):
-	now = _get_now(now)
-
-	# Get the streamer.
-	query = session.query(User, StarredStreamer)\
-			.outerjoin(StarredStreamer, sa.and_(
-				StarredStreamer.streamer_id == User.id,
-				StarredStreamer.user_id == client_id))
-	query = filter_adder(query)
-	streamer, starred_streamer = query.one()
+	try:
+		# Get the streamer.
+		query = session.query(User, StarredStreamer)\
+				.outerjoin(StarredStreamer, sa.and_(
+					StarredStreamer.streamer_id == User.id,
+					StarredStreamer.user_id == client_id))
+		query = filter_adder(query)
+		streamer, starred_streamer = query.one()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
 	is_starred = (starred_streamer is not None)
 
 	# Get the partial list of matches streamed by this user.
+	now = _get_now(now)
 	paginator = StreamedMatchesPaginator(streamer.id, client_id, now)
 	matches, prev_time, prev_match_id, next_time, next_match_id = _paginate(
 			paginator, prev_time, prev_match_id, next_time, next_match_id, page_limit)
