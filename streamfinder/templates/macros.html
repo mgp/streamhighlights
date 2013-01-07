@@ -9,26 +9,26 @@
 
 {% macro write_small_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img class="game-logo" src="/static/tf2-small.png" />
+		<img class="game-logo" src="{{ url_for('static', filename='tf2-small.png') }}" />
 	{% endif %}
 {%- endmacro %}
 
 {% macro write_large_game_icon(game) -%}
 	{% if game == "tf2" %}
-		<img class="game-logo" src="/static/tf2-large.png" />
+		<img class="game-logo" src="{{ url_for('static', filename='tf2-large.png') }}" />
 	{% endif %}
 {%- endmacro %}
 
 
 {% macro write_small_external_link(external_link) -%}
 	<a href="{{ external_link }}" target="_blank">
-		<img class="external-link" src="/static/external-link-small.png" />
+		<img class="external-link" src="{{ url_for('static', filename='external-link-small.png') }}" />
 	</a>
 {%- endmacro %}
 
 {% macro write_large_external_link(external_link) -%}
 	<a href="{{ external_link }}" target="_blank">
-		<img class="external-link" src="/static/external-link-large.png" />
+		<img class="external-link" src="{{ url_for('static', filename='external-link-large.png') }}" />
 	</a>
 {%- endmacro %}
 
@@ -39,10 +39,10 @@
 
 {% macro write_star_with_count(is_starred, num_stars) -%}
 	{% if is_starred %}
-		{% set starImgSrc = "/static/star-full-dark.png" %}
+		{% set starImgSrc = url_for('static', filename='star-full-dark.png') %}
 		{% set starDivClass = "counts selected" %}
 	{% else %}
-		{% set starImgSrc = "/static/star-empty-light.png" %}
+		{% set starImgSrc = url_for('static', filename='star-empty-light.png') %}
 		{% set starDivClass = "counts" %}
 	{% endif %}
 
@@ -64,7 +64,7 @@
 {% macro write_division(game, division, should_write_external_link) -%}
 	{% set league_id = division|league_id %}
 	{% if league_id %}
-		<img class="league-logo" src="/static/{{ league_id }}.png" />
+		<img class="league-logo" src="{{ url_for('static', filename='%s.png'|format(league_id)) }}" />
 		{{ division|division_name }}
 		{% if should_write_external_link %}
 			{{ write_small_external_link(division|division_external_url) }}

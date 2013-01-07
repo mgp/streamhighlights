@@ -3,7 +3,7 @@
 <!doctype html>
 <html lang="en">
 	<head>
-		<link rel="stylesheet" href="/static/reset.css" />
+		<link rel="stylesheet" href="{{ url_for('static', filename='reset.css') }}" />
 		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 		{% assets "app_js" %}
 			<script src="{{ ASSET_URL }}"></script>
@@ -23,9 +23,9 @@
 					{% endif %}
 
 					{% if g.client_auth == 'steam' %}
-						<img src="/static/steam-logo-alt-24px.png" />
+						<img src="{{ url_for('static', filename='steam-logo-alt-24px.png') }}" />
 					{% elif g.client_auth == 'twitch' %}
-						<img src="/static/twitch-logo-24px.png" />
+						<img src="{{ url_for('static', filename='twitch-logo-24px.png') }}" />
 					{% endif %}
 
 					<ul>
@@ -40,10 +40,10 @@
 			{% else %}
 				<ul id="login">
 					<li>
-						<a href="{{ url_for('log_in_steam') }}"><img src="/static/sign-in-steam-large.png" /></a>
+						<a href="{{ url_for('log_in_steam') }}"><img src="{{ url_for('static', filename='sign-in-steam-large.png') }}" /></a>
 					</li>
 					<li>
-						<a href="{{ url_for('log_in_twitch') }}"><img src="/static/connect-twitch-dark.png" /></a>
+						<a href="{{ url_for('log_in_twitch') }}"><img src="{{ url_for('static', filename='connect-twitch-dark.png') }}" /></a>
 					</li>
 				</ul>
 			{% endif %}
