@@ -16,24 +16,15 @@
 	</head>
 	<body>
 		<div id="header" class="clearfix">
-			{% if True %}
-				<ul id="login">
-					<li>
-						<a href="{{ url_for('log_in_steam') }}"><img src="/static/sign-in-steam-large.png" /></a>
-					</li>
-					<li>
-						<a href="{{ url_for('log_in_twitch') }}"><img src="/static/connect-twitch-dark.png" /></a>
-					</li>
-				</ul>
-			{% else %}
+			{% if g.logged_in %}
 				<div id="client-options">
 					{% if g.client_name %}
 						<span id="client-name">{{ g.client_name }}</span>
 					{% endif %}
 
-					{% if g.client_logged_in == 'steam' %}
+					{% if g.client_auth == 'steam' %}
 						<img src="/static/steam-logo-alt-24px.png" />
-					{% elif g.client_logged_in == 'twitch' %}
+					{% elif g.client_auth == 'twitch' %}
 						<img src="/static/twitch-logo-24px.png" />
 					{% endif %}
 
@@ -46,6 +37,15 @@
 						</li>
 					</ul>
 				</div>
+			{% else %}
+				<ul id="login">
+					<li>
+						<a href="{{ url_for('log_in_steam') }}"><img src="/static/sign-in-steam-large.png" /></a>
+					</li>
+					<li>
+						<a href="{{ url_for('log_in_twitch') }}"><img src="/static/connect-twitch-dark.png" /></a>
+					</li>
+				</ul>
 			{% endif %}
 
 			<h1><a href="{{ url_for('home') }}">Stream Finder</a></h1>

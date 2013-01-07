@@ -13,6 +13,7 @@ import pytz
 import regex as re
 import requests
 import string
+import urllib
 
 oid = OpenID(app)
 
@@ -241,33 +242,25 @@ jinja_env.filters['division_name'] = _get_division_name
 jinja_env.filters['division_external_url'] = _get_division_external_url
 
 
-def _read_client_id_from_session(session=None):
-	"""Reads the client's user identifier from the session."""
-	if session is None:
-		session = flask.session
-	user = session.get('user', None)
-	if user is None:
-		return None
-	return user['id']
+def _get_client_values(client):
+	flask.g.logged_in = True
+	flask.g.client_id = client['id']
+	flask.g.client_name = client['name']
+	flask.g.client_auth = client['auth']
+	flask.g.time_format = client['time_format']
+	time_zone = client.get('time_zone')
+	flask.g.time_zone = pytz.timezone(time_zone) if time_zone else pytz.utc
 
 def login_required(f):
 	page_name = f.__name__
 
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		client_id = _read_client_id_from_session()
-		if client_id is None:
-			# Return status code 401 if user is not logged in.
-			# XXX
-			# flask.abort(requests.codes.unauthorized)
-			client_id = 1
+		client = flask.session.get('client', None)
+		if client is None:
+			flask.abort(requests.codes.unauthorized)
 
-		flask.g.logged_in = True
-		flask.g.client_id = client_id
-		# TODO: Get from cookie
-		flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
-		flask.g.time_zone = pytz.timezone('America/Los_Angeles')
-		flask.g.page_name = page_name
+		_get_client_values(client)
 		return f(*pargs, **kwargs)
 	return decorated_function
 
@@ -276,28 +269,23 @@ def login_optional(f):
 
 	@functools.wraps(f)
 	def decorated_function(*pargs, **kwargs):
-		client_id = _read_client_id_from_session()
-		# XXX
-		client_id = 1
-		if client_id is None:
+		client = flask.session.get('client', None)
+		if client:
+			_get_client_values(client)
+		else:
 			flask.g.logged_in = False
 			flask.g.client_id = None
 			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
-			flask.g.time_zone = None
-		else:
-			flask.g.logged_in = True
-			flask.g.client_id = client_id
-			# TODO: Get from cookie
-			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
-			flask.g.time_zone = pytz.timezone('America/Los_Angeles')
+			flask.g.time_zone = pytz.utc
 		flask.g.page_name = page_name
 		return f(*pargs, **kwargs)
 	return decorated_function
 
 
 @app.route('/')
+@login_optional
 def home():
-	flask.render_template('home.html')
+	return flask.render_template('home.html')
 
 
 def _render_calendar(db_getter, template_name):
@@ -438,7 +426,7 @@ def update_match_details(match_id):
 		else:
 			db.remove_star_match(flask.g.client_id, match_id)
 		return flask.jsonify(starred=starred)
-	return flask.abort(requests.codes.server_error)
+	flask.abort(requests.codes.server_error)
 
 _TEAM_DETAILS_ROUTE = '/teams/<team_id>'
 
@@ -467,7 +455,7 @@ def update_team_details(team_id):
 		else:
 			db.remove_star_team(flask.g.client_id, team_id)
 		return flask.jsonify(starred=starred)
-	return flask.abort(requests.codes.server_error)
+	flask.abort(requests.codes.server_error)
 
 @app.route('/users/twitch/<name>')
 @login_optional
@@ -836,30 +824,45 @@ def save_settings():
 
 	# Update the client settings if there are no errors.
 	if not errors:
+		# Save the settings in the database.
 		db.save_settings(flask.g.client_id, time_format, country, time_zone)
+		# Store the settings in the session.
+		client = flask.session['client']
+		client['time_format'] = time_format
+		if time_zone:
+			client['time_zone'] = time_zone
+		else:
+			client.pop('time_zone', None)
+		# XXX: This assignment may be unnecessary?
+		flask.session['client'] = client
 	saved = not errors
 
 	return _render_settings(time_format, country, time_zone, errors, saved)
 
 
 @app.route('/privacy')
+@login_optional
 def privacy():
 	return flask.render_template('privacy.html')
 
 @app.route('/terms')
+@login_optional
 def terms():
 	return flask.render_template('terms.html')
 
 @app.route('/about')
+@login_optional
 def about():
 	return flask.render_template('about.html')
 
 
 @app.errorhandler(404)
+@login_optional
 def page_not_found(e):
 	return flask.render_template('error_404.html'), 404
 
 @app.errorhandler(500)
+@login_optional
 def internal_server_error(e):
 	return flask.render_template('error_500.html'), 500
 
@@ -868,11 +871,91 @@ def internal_server_error(e):
 def log_in_steam():
 	pass
 
+_TWITCH_CLIENT_ID = 'd2wc1690jmvteanst3guuwu0wbcg2by'
+_TWITCH_CLIENT_SECRET = 'ms71l6svzlus4xwpbmbgogh4ux88gyf'
+_TWITCH_REDIRECT_URI = 'http://localhost:5000/complete-login/twitch'
+
+_TWITCH_API_URI_PREFIX = 'https://api.twitch.tv/kraken'
+_TWITCH_OAUTH_AUTHORIZE_URL = ('%s/oauth2/authorize?%s' % (
+		_TWITCH_API_URI_PREFIX,
+		urllib.urlencode({
+			'client_id': _TWITCH_CLIENT_ID,
+			'redirect_uri': _TWITCH_REDIRECT_URI,
+			'response_type': 'code',
+			'scope': 'user_read',
+		})
+))
+
 @app.route('/login/twitch')
 def log_in_twitch():
-	pass
+	# Store the URL that the user came from; redirect here when auth completes.
+	next_url = flask.request.args.get('next_url', None)
+	if next_url is not None:
+		flask.session['next_url'] = next_url
+	else:
+		# Don't use a previous stored value.
+		flask.session.pop('next_url', None)
+	# Redirect the user.
+	return flask.redirect(_TWITCH_OAUTH_AUTHORIZE_URL)
+
+_TWITCH_OAUTH_ACCESS_TOKEN_URL = '%s/oauth2/token' % _TWITCH_API_URI_PREFIX
+_TWITCH_AUTHENTICATED_USER_URL = '%s/user' % _TWITCH_API_URI_PREFIX
+
+@app.route('/complete-login/twitch')
+def complete_log_in_twitch():
+	# Given the code, get the access token for this user.
+	code = flask.request.args['code']
+	params = {
+		'client_id': _TWITCH_CLIENT_ID,
+		'client_secret': _TWITCH_CLIENT_SECRET,
+		'grant_type': 'authorization_code',
+		'redirect_uri': _TWITCH_REDIRECT_URI,
+		'code': code,
+	}
+	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
+	if response.status_code != requests.codes.ok:
+		flask.abort(requests.codes.server_error)
+	access_token = response.json['access_token']
+
+	# Given the access code for this user, get the user's information.
+	headers = {
+		'accept': 'application/vnd.twitchtv.v1+json',
+		'authorization': 'OAuth %s' % access_token
+	}
+	response = requests.get(_TWITCH_AUTHENTICATED_USER_URL, headers=headers)
+	if response.status_code != requests.codes.ok:
+		flask.abort(requests.codes.server_error)
+	elif 'error' in response.json:
+		flask.abort(requests.codes.server_error)
+	twitch_id = response.json['_id']
+	name = response.json['name']
+	display_name = response.json['display_name']
+	logo = response.json['logo']
+	
+	# Get the user's identifier and update the session so logged in.
+	user_id = db.twitch_user_logged_in(twitch_id, name, display_name, logo, None)
+	settings = db.get_settings(user_id)
+	flask.session['client'] = {
+		'id': user_id,
+		'name': display_name,
+		'auth': 'twitch',
+		'time_format': None,
+		'time_zone': None,
+	}
+
+	# Redirect to the URL that the user came from.
+	next_url = flask.session.pop('next_url', None)
+	if next_url is None:
+		next_url = flask.url_for('home')
+	return flask.redirect(next_url)
 
 @app.route('/logout')
 def logout():
-	pass
+	# Remove all client data from the session.
+	flask.session.pop('client', None)
+	# Redirect to the URL that the user came from.
+	next_url = flask.request.args.get('next_url', None)
+	if next_url is None:
+		next_url = flask.url_for('home')
+	return flask.redirect(next_url)
 
