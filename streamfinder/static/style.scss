@@ -33,7 +33,7 @@ $padding: 10px;
 $site-width: 1000px;
 
 body {
-	background-color: $medium-gray;
+	background-color: $light-gray;
 }
 
 #header {
@@ -41,14 +41,14 @@ body {
 	margin: $padding auto;
 	font-family: 'LeagueGothic', arial, sans-serif;
 	text-transform: uppercase;
-	color: $light-gray;
+	color: $medium-gray;
 
 	h1 {
 		font-size: $medium-font-size;
 
 		a {
 			@extend %links;
-			color: $light-gray;
+			color: $dark-gray;
 		}
 	}
 }
@@ -83,7 +83,7 @@ body {
 
 			& > a {
 				@extend %links;
-				color: $light-gray;
+				color: $medium-gray;
 			}
 		}
 	}
@@ -117,7 +117,7 @@ body {
 		}
 		& > a {
 			@extend %links;
-			color: $light-gray;
+			color: $medium-gray;
 		}
 	}
 }
