@@ -2,7 +2,7 @@
 
 {% set found_header_value = "All streamers" %}
 
-{% block title %}{{ found_header_value|title }}{% endblock title %}
+{% block page_name %}{{ found_header_value|title }}{% endblock page_name %}
 {% block found_header %}{{ found_header_value }}{% endblock found_header %}
 {% block missing_header %}No streamers found :({% endblock missing_header %}
 

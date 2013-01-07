@@ -12,7 +12,7 @@
 		{% assets "all_css" %}
 			<link rel="stylesheet" href="{{ ASSET_URL }}" />
 		{% endassets %}
-		<title>{% block title %}{% endblock title %} - Stream Calendars</title>
+		<title>{% block title %}{% block page_name %}{% endblock page_name %} - Stream Calendars{% endblock title %}</title>
 	</head>
 	<body>
 		<div id="header" class="clearfix">

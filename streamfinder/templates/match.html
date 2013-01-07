@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 {% import "macros.html" as macros %}
 
-{% block title %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock title %}
+{% block page_name %}{{ match.team1.name }} vs {{ match.team2.name }}{% endblock page_name %}
 
 {% block content %}
 	<h2 class="header">{{ match.time|readable_timedelta|capitalize }}:</h2>

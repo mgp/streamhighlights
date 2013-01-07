@@ -2,7 +2,7 @@
 
 {% set error_description = "Page not found" %}
 
-{% block title %}{{ error_description|title }}{% endblock title %}
+{% block page_name %}{{ error_description|title }}{% endblock page_name %}
 {% block error_header %}{{ error_description }}{% endblock error_header %}
 {% block error_text %}404 :( Check ur spelling?{% endblock error_text %}
 
