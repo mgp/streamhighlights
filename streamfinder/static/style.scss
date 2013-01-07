@@ -20,6 +20,10 @@ $small-font-size: 24pt;
 $medium-font-size: 30pt;
 $large-font-size: 60pt;
 
+body {
+	background-color: $medium-gray;
+}
+
 %links {
 	a {
 		&:link, &:visited {
@@ -35,9 +39,32 @@ $padding: 10px;
 
 $site-width: 1000px;
 #site {
+	background-color: white;
+}
+#site > div {
 	width: $site-width;
 	margin: 0 auto;
   font-family: 'LeagueGothic', arial, sans-serif;
+}
+#footer {
+	@extend %links;
+	width: $site-width;
+	margin: $padding auto;
+	font-family: 'LeagueGothic', arial, sans-serif;
+	font-size: $small-font-size;
+	text-transform: uppercase;
+	text-align: right;
+
+	& > li {
+		display: inline;
+
+		& + li {
+			margin-left: $padding;
+		}
+		& > a {
+			color: $light-gray;
+		}
+	}
 }
 
 $sidebar-width: 200px;
