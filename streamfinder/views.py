@@ -856,8 +856,8 @@ def save_settings():
 			client['time_zone'] = time_zone
 		else:
 			client.pop('time_zone', None)
-		# XXX: This assignment may be unnecessary?
-		flask.session['client'] = client
+		# Changes to mutable data are not picked up automatically.
+		flask.session.modified = True
 	saved = not errors
 
 	return _render_settings(time_format, country, time_zone, errors, saved)
@@ -879,12 +879,21 @@ def about():
 	return flask.render_template('about.html')
 
 
-@app.errorhandler(404)
+@app.errorhandler(requests.codes.unauthorized)
+def unauthorized(e):
+	response = 'unauthorized'
+	status = requests.codes.unauthorized
+	headers = {
+		'Content-Type': 'text/html; charset=utf-8',
+	}
+	return flask.make_response((response, status, headers))
+
+@app.errorhandler(requests.codes.not_found)
 @login_optional
 def page_not_found(e):
 	return flask.render_template('error_404.html'), 404
 
-@app.errorhandler(500)
+@app.errorhandler(requests.codes.server_error)
 @login_optional
 def internal_server_error(e):
 	return flask.render_template('error_500.html'), 500
@@ -901,6 +910,8 @@ def _finish_login(client_id, client_name, auth):
 	if settings.time_zone:
 		client['time_zone'] = settings.time_zone
 	flask.session['client'] = client
+	# Default session lifetime is 31 days.
+	flask.session.permanent = True
 
 	# Redirect to the URL that the user came from.
 	next_url = flask.session.pop('next_url', None)
