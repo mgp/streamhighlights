@@ -249,7 +249,7 @@ def _get_client_values(client):
 	flask.g.client_auth = client['auth']
 	flask.g.time_format = client['time_format']
 	time_zone = client.get('time_zone')
-	flask.g.time_zone = pytz.timezone(time_zone) if time_zone else pytz.utc
+	flask.g.time_zone = pytz.timezone(time_zone) if time_zone else None
 
 def login_required(f):
 	page_name = f.__name__
@@ -277,7 +277,7 @@ def login_optional(f):
 			flask.g.logged_in = False
 			flask.g.client_id = None
 			flask.g.time_format = db._DEFAULT_SETTINGS_TIME_FORMAT
-			flask.g.time_zone = pytz.utc
+			flask.g.time_zone = None
 		flask.g.page_name = page_name
 		return f(*pargs, **kwargs)
 	return decorated_function
