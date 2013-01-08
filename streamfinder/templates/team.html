@@ -39,6 +39,10 @@
 			</li>
 		{% endfor %}
 		</ul>
+
+		{% set prev_query_params = ('prev_time', team.prev_time, 'prev_match_id', team.prev_match_id) %}
+		{% set next_query_params = ('next_time', team.next_time, 'next_match_id', team.next_match_id) %}
+		{{ macros.write_earlier_later_pagination(prev_query_params, next_query_params) }}
 	{% else %}
 		<h3 class="header">No upcoming matches</h3>
 	{% endif %}

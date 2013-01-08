@@ -29,6 +29,10 @@
 			{{ macros.write_match_list_element(match, False) }}
 		{% endfor %}
 		</ul>
+
+		{% set prev_query_params = ('prev_time', calendar.prev_time, 'prev_match_id', calendar.prev_match_id) %}
+		{% set next_query_params = ('next_time', calendar.next_time, 'next_match_id', calendar.next_match_id) %}
+		{{ macros.write_earlier_later_pagination(prev_query_params, next_query_params) }}
 	{% else %}
 		<h3 class="header">No upcoming streamed matches found :(</h3>
 	{% endif %}

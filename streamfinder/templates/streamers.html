@@ -9,6 +9,10 @@
 			{{ macros.write_streamer_list_element(streamer) }}
 		{% endfor %}
 		</ul>
+
+		{% set prev_query_params = ('prev_name', prev_name, 'prev_streamer_id', prev_streamer_id) %}
+		{% set next_query_params = ('next_name', next_name, 'next_streamer_id', next_streamer_id) %}
+		{{ macros.write_previous_next_pagination(prev_query_params, next_query_params) }}
 	{% else %}
 		<h3 class="header">{% block missing_header %}{% endblock missing_header %}</h3>
 	{% endif %}

@@ -9,6 +9,10 @@
 			{{ macros.write_team_list_element(team) }}
 		{% endfor %}
 		</ul>
+
+		{% set prev_query_params = ('prev_name', prev_name, 'prev_team_id', prev_team_id) %}
+		{% set next_query_params = ('next_name', next_name, 'next_team_id', next_team_id) %}
+		{{ macros.write_previous_next_pagination(prev_query_params, next_query_params) }}
 	{% else %}
 		<h3 class="header">{% block missing_header %}{% endblock missing_header %}</h3>
 	{% endif %}

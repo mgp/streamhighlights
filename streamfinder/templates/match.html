@@ -42,6 +42,10 @@
 			{{ macros.write_streamer_list_element(streamer) }}
 		{% endfor %}
 		</ul>
+
+		{% set prev_query_params = ('prev_time', match.prev_time, 'prev_streamer_id', match.prev_streamer_id) %}
+		{% set next_query_params = ('next_time', match.next_time, 'next_streamer_id', match.next_streamer_id) %}
+		{{ macros.write_previous_next_pagination(prev_query_params, next_query_params) }}
 	{% else %}
 		<h3 class="header">Nobody streaming so far :(</h3>
 	{% endif %}

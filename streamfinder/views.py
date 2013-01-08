@@ -288,13 +288,32 @@ def login_optional(f):
 def home():
 	return flask.render_template('home.html')
 
+def _get_int(args, key):
+	"""Returns the value under the given key as an integer.
+
+	Raises ValueError if the value cannot be converted to an integer. If the key
+	is missing, returns None.
+	"""
+	value = args.get(key)
+	return None if value is None else int(value)
+
+def _get_datetime(args, key):
+	"""Returns the value under the given key as a datetime.
+
+	Raises ValueError if the value cannot be converted to a datetime. If the key
+	is missing, returns None.
+	"""
+	value = args.get(key)
+	# TODO
+	return value
+
 
 def _render_calendar(db_getter, template_name):
 	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_match_id = args.get('prev_match_id')
-	next_time = args.get('next_time')
-	next_match_id = args.get('next_match_id')
+	prev_time = _get_datetime(args, 'prev_time')
+	prev_match_id = _get_int(args, 'prev_match_id')
+	next_time = _get_datetime(args, 'next_time')
+	next_match_id = _get_int(args, 'next_match_id')
 
 	calendar = db_getter(flask.g.client_id,
 			prev_time, prev_match_id, next_time, next_match_id)
@@ -314,10 +333,10 @@ def streamer_calendar():
 
 def _render_matches_list(db_getter, template_name):
 	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_match_id = args.get('prev_match_id')
-	next_time = args.get('next_time')
-	next_match_id = args.get('next_match_id')
+	prev_time = _get_datetime(args, 'prev_time')
+	prev_match_id = _get_int(args, 'prev_match_id')
+	next_time = _get_datetime(args, 'next_time')
+	next_match_id = _get_int(args, 'next_match_id')
 
 	match_list = db_getter(flask.g.client_id,
 			prev_time, prev_match_id, next_time, next_match_id)
@@ -332,9 +351,9 @@ def _render_matches_list(db_getter, template_name):
 def _render_teams_list(db_getter, template_name):
 	args = flask.request.args
 	prev_name = args.get('prev_name')
-	prev_team_id = args.get('prev_team_id')
+	prev_team_id = _get_int(args, 'prev_team_id')
 	next_name = args.get('next_name')
-	next_team_id = args.get('next_team_id')
+	next_team_id = _get_int(args, 'next_team_id')
 
 	team_list = db_getter(flask.g.client_id,
 			prev_name, prev_team_id, next_name, next_team_id)
@@ -349,9 +368,9 @@ def _render_teams_list(db_getter, template_name):
 def _render_streamers_list(db_getter, template_name):
 	args = flask.request.args
 	prev_name = args.get('prev_name')
-	prev_streamer_id = args.get('prev_streamer_id')
+	prev_streamer_id = _get_int(args, 'prev_streamer_id')
 	next_name = args.get('next_name')
-	next_streamer_id = args.get('next_streamer_id')
+	next_streamer_id = _get_int(args, 'next_streamer_id')
 
 	streamer_list = db_getter(flask.g.client_id,
 			prev_name, prev_streamer_id, next_name, next_streamer_id)
@@ -408,16 +427,16 @@ def match_details(match_id):
 	try:
 		match_id = _get_id(match_id)
 		args = flask.request.args
-		prev_time = args.get('prev_time')
-		prev_streamer_id = args.get('prev_streamer_id')
-		next_time = args.get('next_time')
-		next_streamer_id = args.get('next_streamer_id')
+		prev_time = _get_datetime(args, 'prev_time')
+		prev_streamer_id = _get_int(args, 'prev_streamer_id')
+		next_time = _get_datetime(args, 'next_time')
+		next_streamer_id = _get_int(args, 'next_streamer_id')
 
 		match = db.get_displayed_match(flask.g.client_id, match_id,
 				prev_time, prev_streamer_id, next_time, next_streamer_id)
 		return flask.render_template('match.html', match=match)
 	except ValueError:
-		# Raised by _get_id if first part is not an integer.
+		# Raised if any value is not the expected type.
 		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
@@ -443,16 +462,16 @@ def team_details(team_id):
 	try:
 		team_id = _get_id(team_id)
 		args = flask.request.args
-		prev_time = args.get('prev_time')
-		prev_match_id = args.get('prev_match_id')
-		next_time = args.get('next_time')
-		next_match_id = args.get('next_match_id')
+		prev_time = _get_datetime(args, 'prev_time')
+		prev_match_id = _get_int(args, 'prev_match_id')
+		next_time = _get_datetime(args, 'next_time')
+		next_match_id = _get_int(args, 'next_match_id')
 
 		team = db.get_displayed_team(flask.g.client_id, team_id,
 				prev_time, prev_match_id, next_time, next_match_id)
 		return flask.render_template('team.html', team=team)
 	except ValueError:
-		# Raised by _get_id if first part is not an integer.
+		# Raised if any value is not the expected type.
 		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
@@ -473,17 +492,20 @@ def update_team_details(team_id):
 @app.route('/users/twitch/<name>')
 @login_optional
 def twitch_user_by_name(name):
-	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_match_id = args.get('prev_match_id')
-	next_time = args.get('next_time')
-	next_match_id = args.get('next_match_id')
-
 	try:
+		args = flask.request.args
+		prev_time = _get_datetime(args, 'prev_time')
+		prev_match_id = _get_int(args, 'prev_match_id')
+		next_time = _get_datetime(args, 'next_time')
+		next_match_id = _get_int(args, 'next_match_id')
+
 		streamer = db.get_displayed_streamer_by_twitch_name(
 				flask.g.client_id, name,
 				prev_time, prev_match_id, next_time, next_match_id)
 		return flask.render_template('streamer.html', streamer=streamer)
+	except ValueError:
+		# Raised if any value is not the expected type.
+		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
@@ -493,17 +515,17 @@ def twitch_user_by_id(twitch_id):
 	try:
 		twitch_id = int(twitch_id)
 		args = flask.request.args
-		prev_time = args.get('prev_time')
-		prev_match_id = args.get('prev_match_id')
-		next_time = args.get('next_time')
-		next_match_id = args.get('next_match_id')
+		prev_time = _get_datetime(args, 'prev_time')
+		prev_match_id = _get_int(args, 'prev_match_id')
+		next_time = _get_datetime(args, 'next_time')
+		next_match_id = _get_int(args, 'next_match_id')
 
 		streamer = db.get_displayed_streamer_by_twitch_id(
 				flask.g.client_id, twitch_id,
 				prev_time, prev_match_id, next_time, next_match_id)
 		return flask.render_template('streamer.html', streamer=streamer)
 	except ValueError:
-		# Raised by int if twitch_id is not an integer.
+		# Raised if any value is not the expected type.
 		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
@@ -983,7 +1005,7 @@ _TWITCH_OAUTH_AUTHORIZE_URL = ('%s/oauth2/authorize?%s' % (
 @app.route('/login/twitch')
 def log_in_twitch():
 	# Store the URL that the user came from; redirect here when auth completes.
-	next_url = flask.request.args.get('next_url', None)
+	next_url = flask.request.args.get('next_url')
 	if next_url is not None:
 		flask.session['next_url'] = next_url
 	else:
@@ -1035,7 +1057,7 @@ def logout():
 	# Remove all client data from the session.
 	flask.session.pop('client', None)
 	# Redirect to the URL that the user came from.
-	next_url = flask.request.args.get('next_url', None)
+	next_url = flask.request.args.get('next_url')
 	if next_url is None:
 		next_url = flask.url_for('home')
 	return flask.redirect(next_url)

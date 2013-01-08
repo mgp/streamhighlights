@@ -112,3 +112,30 @@
 	</li>
 {%- endmacro %}
 
+{% macro write_pagination_part(title, query_params) -%}
+	{% set value0, value1 = query_params[1], query_params[3] %}
+	{% if value0 or value1 %}
+		{% set key0, key1 = query_params[0], query_params[2] %}
+		<a href="?{{ key0 }}={{ value0 }}&{{ key1 }}={{ value1 }}">{{ title }}</a>
+	{% else %}
+		<span class="disabled">{{ title }}</span>
+	{% endif %}
+{%- endmacro %}
+
+{% macro write_pagination(prev_title, prev_query_params, next_title, next_query_params) -%}
+	<div id="pagination">
+		{% set full_prev_title = prev_title %}
+		{% set full_next_title = next_title %}
+		{{ write_pagination_part(full_prev_title, prev_query_params) }}
+		{{ write_pagination_part(full_next_title, next_query_params) }}
+	</div>
+{%- endmacro %}
+
+{% macro write_previous_next_pagination(prev_query_params, next_query_params) -%}
+	{{ write_pagination('Previous', prev_query_params, 'Next', next_query_params) }}
+{%- endmacro %}
+
+{% macro write_earlier_later_pagination(prev_query_params, next_query_params) -%}
+	{{ write_pagination('Earlier', prev_query_params, 'Later', next_query_params) }}
+{%- endmacro %}
+
