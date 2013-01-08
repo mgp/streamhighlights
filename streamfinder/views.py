@@ -405,17 +405,20 @@ _MATCH_DETAILS_ROUTE = '/matches/<match_id>'
 @app.route(_MATCH_DETAILS_ROUTE)
 @login_optional
 def match_details(match_id):
-	match_id = _get_id(match_id)
-	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_streamer_id = args.get('prev_streamer_id')
-	next_time = args.get('next_time')
-	next_streamer_id = args.get('next_streamer_id')
-
 	try:
+		match_id = _get_id(match_id)
+		args = flask.request.args
+		prev_time = args.get('prev_time')
+		prev_streamer_id = args.get('prev_streamer_id')
+		next_time = args.get('next_time')
+		next_streamer_id = args.get('next_streamer_id')
+
 		match = db.get_displayed_match(flask.g.client_id, match_id,
 				prev_time, prev_streamer_id, next_time, next_streamer_id)
 		return flask.render_template('match.html', match=match)
+	except ValueError:
+		# Raised by _get_id if first part is not an integer.
+		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
@@ -437,17 +440,20 @@ _TEAM_DETAILS_ROUTE = '/teams/<team_id>'
 @app.route(_TEAM_DETAILS_ROUTE)
 @login_optional
 def team_details(team_id):
-	team_id = _get_id(team_id)
-	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_match_id = args.get('prev_match_id')
-	next_time = args.get('next_time')
-	next_match_id = args.get('next_match_id')
-
 	try:
+		team_id = _get_id(team_id)
+		args = flask.request.args
+		prev_time = args.get('prev_time')
+		prev_match_id = args.get('prev_match_id')
+		next_time = args.get('next_time')
+		next_match_id = args.get('next_match_id')
+
 		team = db.get_displayed_team(flask.g.client_id, team_id,
 				prev_time, prev_match_id, next_time, next_match_id)
 		return flask.render_template('team.html', team=team)
+	except ValueError:
+		# Raised by _get_id if first part is not an integer.
+		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
@@ -481,20 +487,24 @@ def twitch_user_by_name(name):
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
-@app.route('/users/twitch_id/<int:twitch_id>')
+@app.route('/users/twitch_id/<twitch_id>')
 @login_optional
 def twitch_user_by_id(twitch_id):
-	args = flask.request.args
-	prev_time = args.get('prev_time')
-	prev_match_id = args.get('prev_match_id')
-	next_time = args.get('next_time')
-	next_match_id = args.get('next_match_id')
-
 	try:
+		twitch_id = int(twitch_id)
+		args = flask.request.args
+		prev_time = args.get('prev_time')
+		prev_match_id = args.get('prev_match_id')
+		next_time = args.get('next_time')
+		next_match_id = args.get('next_match_id')
+
 		streamer = db.get_displayed_streamer_by_twitch_id(
 				flask.g.client_id, twitch_id,
 				prev_time, prev_match_id, next_time, next_match_id)
 		return flask.render_template('streamer.html', streamer=streamer)
+	except ValueError:
+		# Raised by int if twitch_id is not an integer.
+		flask.abort(requests.codes.not_found)
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
