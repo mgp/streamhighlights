@@ -906,7 +906,7 @@ def unauthorized(e):
 	response = 'unauthorized'
 	status = requests.codes.unauthorized
 	headers = {
-		'Content-Type': 'text/html; charset=utf-8',
+		'Content-Type': 'text/plain; charset=utf-8',
 	}
 	return flask.make_response((response, status, headers))
 
