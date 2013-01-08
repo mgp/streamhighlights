@@ -75,7 +75,7 @@ class UserMixin(object):
 class SteamUser(_Base):
 	__tablename__ = 'SteamUsers'
 
-	steam_id = sa.Column(sa.Integer, primary_key=True)
+	steam_id = sa.Column(sa.BigInteger, primary_key=True)
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	# Used to construct URL to user on Steam.
 	profile_url = sa.Column(sa.String)

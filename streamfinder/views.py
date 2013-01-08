@@ -880,9 +880,69 @@ def internal_server_error(e):
 	return flask.render_template('error_500.html'), 500
 
 
+def _finish_login(client_id, client_name, auth):
+	settings = db.get_settings(client_id)
+	client = {
+		'id': client_id,
+		'name': client_name,
+		'auth': auth,
+		'time_format': settings.time_format,
+	}
+	if settings.time_zone:
+		client['time_zone'] = settings.time_zone
+	flask.session['client'] = client
+
+	# Redirect to the URL that the user came from.
+	next_url = flask.session.pop('next_url', None)
+	if next_url is None:
+		next_url = flask.url_for('home')
+	return flask.redirect(next_url)
+
+
+_STEAM_OPEN_ID_URL = 'http://steamcommunity.com/openid'
+
 @app.route('/login/steam')
+@oid.loginhandler
 def log_in_steam():
-	pass
+	return oid.try_login('http://steamcommunity.com/openid')
+
+_GET_STEAM_ID_REGEX = re.compile('http://steamcommunity.com/openid/id/(?P<steam_id>\d+)$')
+_STEAM_PLAYER_SUMMARY_URL = 'http://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002'
+_STEAM_WEB_API_KEY = '52F753EAA320784E9CD999A78997B5D1'
+
+@oid.after_login
+def complete_log_in_steam(response):
+	# Get the user's Steam identifier from the OpenID response.
+	steam_id_match = _GET_STEAM_ID_REGEX.search(response.identity_url)
+	if not steam_id_match:
+		flask.abort(requests.codes.server_error)
+	steam_id = int(steam_id_match.group('steam_id'))
+
+	# Given the user's Steam ID, get the user's information.
+	user_url = ('%s/?%s' % (
+			_STEAM_PLAYER_SUMMARY_URL,
+			urllib.urlencode({
+					'key': _STEAM_WEB_API_KEY,
+					'format': 'json',
+					'steamids': steam_id
+			})
+	))
+	response = requests.get(user_url)
+	if response.status_code != requests.codes.ok:
+		flask.abort(requests.codes.server_error)
+	elif ('response' not in response.json) or not response.json['response']['players']:
+		flask.abort(requests.codes.server_error)
+	player = response.json['response']['players'][0]
+	personaname = player['personaname']
+	profile_url = player.get('profileurl', None)
+	avatar = player.get('avatar', None)
+	avatar_full = player.get('avatarfull', None)
+
+	# Get the user's identifier and update the session so logged in.
+	user_id = db.steam_user_logged_in(
+			steam_id, personaname, profile_url, avatar, avatar_full)
+	return _finish_login(user_id, personaname, 'steam')
+
 
 _TWITCH_CLIENT_ID = 'd2wc1690jmvteanst3guuwu0wbcg2by'
 _TWITCH_CLIENT_SECRET = 'ms71l6svzlus4xwpbmbgogh4ux88gyf'
@@ -947,20 +1007,7 @@ def complete_log_in_twitch():
 	
 	# Get the user's identifier and update the session so logged in.
 	user_id = db.twitch_user_logged_in(twitch_id, name, display_name, logo, None)
-	settings = db.get_settings(user_id)
-	flask.session['client'] = {
-		'id': user_id,
-		'name': display_name,
-		'auth': 'twitch',
-		'time_format': None,
-		'time_zone': None,
-	}
-
-	# Redirect to the URL that the user came from.
-	next_url = flask.session.pop('next_url', None)
-	if next_url is None:
-		next_url = flask.url_for('home')
-	return flask.redirect(next_url)
+	return _finish_login(user_id, display_name, 'twitch')
 
 @app.route('/logout')
 def logout():
