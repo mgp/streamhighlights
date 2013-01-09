@@ -172,31 +172,35 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 	def setUp(self):
 		AbstractFinderDbTestCase.setUp(self)
 
-		# Create the streamers.
-		self.streamer_twitch_id1, self.streamer_id1 = self._create_twitch_user(
-				self.streamer_name)
-		self.url_by_id1, self.url_by_name1 = self._get_twitch_urls(
-				self.streamer_twitch_id1, self.streamer_name)
-		self.streamer_name2 = 'streamer_name2'
-		self.streamer_twitch_id2, self.streamer_id2 = self._create_twitch_user(
-				self.streamer_name2)
-		self.url_by_id2, self.url_by_name2 = self._get_twitch_urls(
-				self.streamer_twitch_id2, self.streamer_name2)
-		self.streamer_name3 = 'streamer_name3'
-		self.streamer_twitch_id3, self.streamer_id3 = self._create_twitch_user(
-				self.streamer_name3)
-		self.url_by_id3, self.url_by_name3 = self._get_twitch_urls(
-				self.streamer_twitch_id3, self.streamer_name3)
-		self.streamer_name4 = 'streamer_name4'
-		self.streamer_twitch_id4, self.streamer_id4 = self._create_twitch_user(
-				self.streamer_name4)
-		self.url_by_id4, self.url_by_name4 = self._get_twitch_urls(
-				self.streamer_twitch_id4, self.streamer_name4)
+		# Create the fifth streamer returned.
 		self.streamer_name5 = 'streamer_name5'
 		self.streamer_twitch_id5, self.streamer_id5 = self._create_twitch_user(
 				self.streamer_name5)
 		self.url_by_id5, self.url_by_name5 = self._get_twitch_urls(
 				self.streamer_twitch_id5, self.streamer_name5)
+		# Create the second streamer returned.
+		self.streamer_name2 = 'streamer_name2'
+		self.streamer_twitch_id2, self.streamer_id2 = self._create_twitch_user(
+				self.streamer_name2)
+		self.url_by_id2, self.url_by_name2 = self._get_twitch_urls(
+				self.streamer_twitch_id2, self.streamer_name2)
+		# Create the first streamer returned.
+		self.streamer_twitch_id1, self.streamer_id1 = self._create_twitch_user(
+				self.streamer_name)
+		self.url_by_id1, self.url_by_name1 = self._get_twitch_urls(
+				self.streamer_twitch_id1, self.streamer_name)
+		# Create the fourth streamer returned.
+		self.streamer_name4 = 'streamer_name4'
+		self.streamer_twitch_id4, self.streamer_id4 = self._create_twitch_user(
+				self.streamer_name4)
+		self.url_by_id4, self.url_by_name4 = self._get_twitch_urls(
+				self.streamer_twitch_id4, self.streamer_name4)
+		# Create the third streamer returned.
+		self.streamer_name3 = 'streamer_name3'
+		self.streamer_twitch_id3, self.streamer_id3 = self._create_twitch_user(
+				self.streamer_name3)
+		self.url_by_id3, self.url_by_name3 = self._get_twitch_urls(
+				self.streamer_twitch_id3, self.streamer_name3)
 	
 	def _assert_displayed_streamer_list(self, displayed_streamer_list, num_streams=0,
 			prev_name=None, prev_streamer_id=None, next_name=None, next_streamer_id=None):
@@ -407,26 +411,30 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 	def setUp(self):
 		AbstractFinderDbTestCase.setUp(self)
 
-		# Create the teams.
-		self.team1_id = db.add_team(self.team1_name, self.game, self.division,
-				self.team1_fingerprint)
-		self.team2_id = db.add_team(self.team2_name, self.game, self.division,
-				self.team2_fingerprint)
-		self.team3_name = 'team3_name'
-		self.team3_url = 'team3_url'
-		self.team3_fingerprint = 'team3_fingerprint'
-		self.team3_id = db.add_team(self.team3_name, self.game, self.division,
-				self.team3_url, self.team3_fingerprint)
-		self.team4_name = 'team4_name'
-		self.team4_url = 'team4_url'
-		self.team4_fingerprint = 'team4_fingerprint'
-		self.team4_id = db.add_team(self.team4_name, self.game, self.division,
-				self.team4_url, self.team4_fingerprint)
+		# Create the fifth team returned.
 		self.team5_name = 'team5_name'
 		self.team5_url = 'team5_url'
 		self.team5_fingerprint = 'team5_fingerprint'
 		self.team5_id = db.add_team(self.team5_name, self.game, self.division,
 				self.team5_url, self.team5_fingerprint)
+		# Create the second team returned.
+		self.team2_id = db.add_team(self.team2_name, self.game, self.division,
+				self.team2_fingerprint)
+		# Create the first team returned.
+		self.team1_id = db.add_team(self.team1_name, self.game, self.division,
+				self.team1_fingerprint)
+		# Create the fourth team returned.
+		self.team4_name = 'team4_name'
+		self.team4_url = 'team4_url'
+		self.team4_fingerprint = 'team4_fingerprint'
+		self.team4_id = db.add_team(self.team4_name, self.game, self.division,
+				self.team4_url, self.team4_fingerprint)
+		# Create the third team returned.
+		self.team3_name = 'team3_name'
+		self.team3_url = 'team3_url'
+		self.team3_fingerprint = 'team3_fingerprint'
+		self.team3_id = db.add_team(self.team3_name, self.game, self.division,
+				self.team3_url, self.team3_fingerprint)
 
 	def _assert_displayed_team_list(self, displayed_team_list, num_teams=0,
 			prev_name=None, prev_team_id=None, next_name=None, next_team_id=None):
@@ -565,21 +573,25 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.match_fingerprint0 = 'match_fingerprint0'
 		self.match_id0 = db.add_match(self.team1_id, self.team2_id, self.time0,
 				self.game, self.division, self.match_fingerprint0, now=self.now)
-		# Create the returned matches.
-		self.match_fingerprint2 = 'match_fingerprint2'
-		self.match_fingerprint3 = 'match_fingerprint3'
-		self.match_fingerprint4 = 'match_fingerprint4'
+		# Create the fifth match returned.
 		self.match_fingerprint5 = 'match_fingerprint5'
-		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time1,
-				self.game, self.division, self.match_fingerprint, now=self.now)
-		self.match_id2 = db.add_match(self.team1_id, self.team3_id, self.time2,
-				self.game, self.division, self.match_fingerprint2, now=self.now)
-		self.match_id3 = db.add_match(self.team1_id, self.team3_id, self.time3,
-				self.game, self.division, self.match_fingerprint3, now=self.now)
-		self.match_id4 = db.add_match(self.team1_id, self.team2_id, self.time4,
-				self.game, self.division, self.match_fingerprint4, now=self.now)
 		self.match_id5 = db.add_match(self.team1_id, self.team3_id, self.time5,
 				self.game, self.division, self.match_fingerprint5, now=self.now)
+		# Create the second match returned.
+		self.match_fingerprint2 = 'match_fingerprint2'
+		self.match_id2 = db.add_match(self.team1_id, self.team3_id, self.time2,
+				self.game, self.division, self.match_fingerprint2, now=self.now)
+		# Create the first match returned.
+		self.match_id1 = db.add_match(self.team1_id, self.team2_id, self.time1,
+				self.game, self.division, self.match_fingerprint, now=self.now)
+		# Create the fourth match returned.
+		self.match_fingerprint4 = 'match_fingerprint4'
+		self.match_id4 = db.add_match(self.team1_id, self.team2_id, self.time4,
+				self.game, self.division, self.match_fingerprint4, now=self.now)
+		# Create the third match returned.
+		self.match_fingerprint3 = 'match_fingerprint3'
+		self.match_id3 = db.add_match(self.team1_id, self.team3_id, self.time3,
+				self.game, self.division, self.match_fingerprint3, now=self.now)
 
 	def _test_get_displayed_calendar_pagination(self,
 			displayed_calendar, get_next_page, get_prev_page):

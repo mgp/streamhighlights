@@ -1067,7 +1067,7 @@ def _get_upcoming_matches_cutoff(now):
 	return now + _UPCOMING_MATCHES_CUTOFF
 
 # The default number of entities per page.
-_PAGE_LIMIT = 25
+_PAGE_LIMIT = 2
 
 def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		first_id=None):
@@ -1088,7 +1088,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		elif clicked_next:
 			query = query\
 					.filter(sa.or_(
-						sa.and_(col1 == next_col1, col2 > next_col2), col2 > next_col2))\
+						sa.and_(col1 == next_col1, col2 > next_col2), col1 > next_col1))\
 					.order_by(col1.asc(), col2.asc())
 		else:
 			# Show the first page.
