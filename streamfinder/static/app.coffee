@@ -50,7 +50,7 @@ enterStar = ->
 	starImg = $(this)
 	switch starImg.attr 'src'
 		when EMPTY then starImg.attr 'src', EMPTY_HOVER
-		when FULL then starImg.attr 'src', FULL_HOVER 
+		when FULL then starImg.attr 'src', FULL_HOVER
 	return
 
 leaveStar = ->
