@@ -1075,6 +1075,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		first_id = paginator.get_first_id()
 	if first_id is not None:
 		query = paginator.get_partial_list_query()
+		last_id = paginator.get_last_id()
 
 		# Add pagination to the query.
 		col1, col2 = paginator.get_order_by_columns()
@@ -1110,7 +1111,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 		first_item = items[0]
 		last_item = items[-1]
 		if not clicked_prev and not clicked_next:
-			if len(items) == page_limit:
+			if (len(items) == page_limit) and not paginator.has_id(last_id, last_item):
 				next_col1, next_col2 = paginator.get_pagination_values(last_item)
 		elif clicked_prev:
 			if (len(items) == page_limit) and not paginator.has_id(first_id, first_item):
@@ -1118,7 +1119,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 			# Came from the following page, so display a Next link.
 			next_col1, next_col2 = paginator.get_pagination_values(last_item)
 		elif clicked_next:
-			if len(items) == page_limit:
+			if (len(items) == page_limit) and not paginator.has_id(last_id, last_item):
 				next_col1, next_col2 = paginator.get_pagination_values(last_item)
 			# Came from the previous page, so display a Previous link.
 			prev_col1, prev_col2 = paginator.get_pagination_values(first_item)
@@ -1179,6 +1180,16 @@ class CalendarEntriesPaginator:
 		self.team_alias2 = team_alias2
 		self.now = now
 	
+	def get_last_id(self):
+		cutoff_time = _get_upcoming_matches_cutoff(self.now)
+		order_by_columns = (column.desc() for column in self.get_order_by_columns())
+		query = session.query(CalendarEntry.match_id)\
+				.filter(CalendarEntry.user_id == self.client_id)\
+				.filter(CalendarEntry.time > cutoff_time)\
+				.order_by(*order_by_columns)
+		calendar_entry = common_db.optional_one(query)
+		return calendar_entry.match_id
+
 	def get_partial_list_query(self):
 		return _get_calendar_entry_query(
 				self.client_id, self.team_alias1, self.team_alias2, self.now)
@@ -1303,7 +1314,7 @@ class _Paginator:
 	
 	def get_last_id(self):
 		query = self._get_id_query()
-		order_by_columns = tuple(column.desc() for column in self.get_order_by_columns())
+		order_by_columns = (column.desc() for column in self.get_order_by_columns())
 		query = query.order_by(*order_by_columns)
 		return self._get_id(query)
 

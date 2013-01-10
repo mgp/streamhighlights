@@ -195,6 +195,12 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 				self.streamer_name4)
 		self.url_by_id4, self.url_by_name4 = self._get_twitch_urls(
 				self.streamer_twitch_id4, self.streamer_name4)
+		# Create the sixth streamer returned.
+		self.streamer_name6 = 'streamer_name6'
+		self.streamer_twitch_id6, self.streamer_id6 = self._create_twitch_user(
+				self.streamer_name6)
+		self.url_by_id6, self.url_by_name6 = self._get_twitch_urls(
+				self.streamer_twitch_id6, self.streamer_name6)
 		# Create the third streamer returned.
 		self.streamer_name3 = 'streamer_name3'
 		self.streamer_twitch_id3, self.streamer_id3 = self._create_twitch_user(
@@ -242,13 +248,17 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 					url_by_name=self.url_by_name4)
 
 		def _assert_third_page():
-			self._assert_displayed_streamer_list(displayed_streamers, num_streams=1,
+			self._assert_displayed_streamer_list(displayed_streamers, num_streams=2,
 					prev_name=self.streamer_name5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_streamers.streamers[0],
 					self.streamer_id5, self.streamer_name5, self.url_by_id5,
 					num_stars=streamer_num_stars, is_starred=is_starred,
 					url_by_name=self.url_by_name5)
+			self._assert_displayed_streamer(displayed_streamers.streamers[1],
+					self.streamer_id6, self.streamer_name6, self.url_by_id6,
+					num_stars=streamer_num_stars, is_starred=is_starred,
+					url_by_name=self.url_by_name6)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -287,8 +297,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_starred_streamers_pagination(self):
 		# Add a streaming user that will not be starred.
-		streamer_name6 = 'streamer_name6'
-		streamer_twitch_id6, streamer_id6 = self._create_twitch_user(streamer_name6)
+		streamer_name7 = 'streamer_name7'
+		streamer_twitch_id7, streamer_id7 = self._create_twitch_user(streamer_name7)
 
 		# Create the client, who stars the other five streaming users.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -297,7 +307,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 				self.streamer_id2,
 				self.streamer_id3,
 				self.streamer_id4,
-				self.streamer_id5):
+				self.streamer_id5,
+				self.streamer_id6):
 			db.add_star_streamer(client_id, streamer_id)
 
 		def _get_next_page(displayed_streamers):
@@ -339,6 +350,8 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		db.add_stream_match(self.streamer_id4, match_id, now=streamer_added_time4)
 		streamer_added_time5 = self.now + timedelta(minutes=5)
 		db.add_stream_match(self.streamer_id5, match_id, now=streamer_added_time5)
+		streamer_added_time6 = self.now + timedelta(minutes=6)
+		db.add_stream_match(self.streamer_id6, match_id, now=streamer_added_time6)
 
 		def _get_next_page():
 			return db.get_displayed_match(client_id, match_id, page_limit=2,
@@ -354,7 +367,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 			self.assertEqual(2, len(displayed_match.streamers))
 			self._assert_displayed_match_details(displayed_match,
 					match_id, self.time, self.game, self.division, self.match_fingerprint,
-					num_streams=5,
+					num_streams=6,
 					next_time=streamer_added_time2, next_streamer_id=self.streamer_id2)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_match.streamers[0],
@@ -368,7 +381,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 			self.assertEqual(2, len(displayed_match.streamers))
 			self._assert_displayed_match_details(displayed_match,
 					match_id, self.time, self.game, self.division, self.match_fingerprint,
-					num_streams=5,
+					num_streams=6,
 					prev_time=streamer_added_time3, prev_streamer_id=self.streamer_id3,
 					next_time=streamer_added_time4, next_streamer_id=self.streamer_id4)
 			# Assert the partial list of paginated streamers.
@@ -380,15 +393,18 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 					url_by_name=self.url_by_name4)
 
 		def _assert_third_page():
-			self.assertEqual(1, len(displayed_match.streamers))
+			self.assertEqual(2, len(displayed_match.streamers))
 			self._assert_displayed_match_details(displayed_match,
 					match_id, self.time, self.game, self.division, self.match_fingerprint,
-					num_streams=5,
+					num_streams=6,
 					prev_time=streamer_added_time5, prev_streamer_id=self.streamer_id5)
 			# Assert the partial list of paginated streamers.
 			self._assert_displayed_streamer(displayed_match.streamers[0],
 					self.streamer_id5, self.streamer_name5, self.url_by_id5,
 					url_by_name=self.url_by_name5)
+			self._assert_displayed_streamer(displayed_match.streamers[1],
+					self.streamer_id6, self.streamer_name6, self.url_by_id6,
+					url_by_name=self.url_by_name6)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_match = db.get_displayed_match(client_id, match_id, page_limit=2)
@@ -429,6 +445,12 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 		self.team4_fingerprint = 'team4_fingerprint'
 		self.team4_id = db.add_team(self.team4_name, self.game, self.division,
 				self.team4_url, self.team4_fingerprint)
+		# Create the sixth team returned.
+		self.team6_name = 'team6_name'
+		self.team6_url = 'team6_url'
+		self.team6_fingerprint = 'team6_fingerprint'
+		self.team6_id = db.add_team(self.team6_name, self.game, self.division,
+				self.team6_url, self.team6_fingerprint)
 		# Create the third team returned.
 		self.team3_name = 'team3_name'
 		self.team3_url = 'team3_url'
@@ -472,11 +494,14 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 					is_starred=is_starred, game=self.game, division=self.division)
 
 		def _assert_third_page():
-			self._assert_displayed_team_list(displayed_teams, num_teams=1,
+			self._assert_displayed_team_list(displayed_teams, num_teams=2,
 					prev_name=self.team5_name, prev_team_id=self.team5_id)
 			# Assert the partial list of paginated teams.
 			self._assert_displayed_team(displayed_teams.teams[0],
 					self.team5_id, self.team5_name, num_stars=team_num_stars,
+					is_starred=is_starred, game=self.game, division=self.division)
+			self._assert_displayed_team(displayed_teams.teams[1],
+					self.team6_id, self.team6_name, num_stars=team_num_stars,
 					is_starred=is_starred, game=self.game, division=self.division)
 
 		# Assert that, clicking Next, the pages are correct.
@@ -515,16 +540,20 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_starred_teams_pagination(self):
 		# Add a team that will not be starred.
-		team6_name = 'team6_name'
-		team6_url = 'team6_url'
-		team6_fingerprint = 'team6_fingerprint'
-		team6_id = db.add_team(
-				team6_name, self.game, self.division, team6_url, team6_fingerprint)
+		team7_name = 'team7_name'
+		team7_url = 'team7_url'
+		team7_fingerprint = 'team7_fingerprint'
+		team7_id = db.add_team(
+				team7_name, self.game, self.division, team7_url, team7_fingerprint)
 
 		# Create the client, who stars the other five teams.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
-		for team_id in (
-				self.team1_id, self.team2_id, self.team3_id, self.team4_id, self.team5_id):
+		for team_id in (self.team1_id,
+				self.team2_id,
+				self.team3_id,
+				self.team4_id,
+				self.team5_id,
+				self.team6_id):
 			db.add_star_team(client_id, team_id)
 
 		def _get_next_page(displayed_teams):
@@ -567,6 +596,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.time3 = self.time2
 		self.time4 = self.time3 + timedelta(days=1)
 		self.time5 = self.time4 + timedelta(days=1)
+		self.time6 = self.time5 + timedelta(days=1)
 
 		# Create a match that is beyond the cutoff, and should not be returned.
 		self.time0 = db._get_upcoming_matches_cutoff(self.now) - timedelta(minutes=1)
@@ -588,6 +618,10 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		self.match_fingerprint4 = 'match_fingerprint4'
 		self.match_id4 = db.add_match(self.team1_id, self.team2_id, self.time4,
 				self.game, self.division, self.match_fingerprint4, now=self.now)
+		# Create the sixth match returned.
+		self.match_fingerprint6 = 'match_fingerprint6'
+		self.match_id6 = db.add_match(self.team1_id, self.team2_id, self.time6,
+				self.game, self.division, self.match_fingerprint6, now=self.now)
 		# Create the third match returned.
 		self.match_fingerprint3 = 'match_fingerprint3'
 		self.match_id3 = db.add_match(self.team1_id, self.team3_id, self.time3,
@@ -603,7 +637,6 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(next_match.team2, self.team2_id, self.team2_name)
 
 		def _assert_first_page():
-			self.assertEqual(2, len(displayed_calendar.matches))
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=2,
 					next_time=self.time2, next_match_id=self.match_id2)
@@ -621,7 +654,6 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
 
 		def _assert_second_page():
-			self.assertEqual(2, len(displayed_calendar.matches))
 			self._assert_displayed_calendar(displayed_calendar,
 					has_next_match=True, num_matches=2,
 					prev_time=self.time3, prev_match_id=self.match_id3,
@@ -640,9 +672,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
-			self.assertEqual(1, len(displayed_calendar.matches))
 			self._assert_displayed_calendar(displayed_calendar,
-					has_next_match=True, num_matches=1,
+					has_next_match=True, num_matches=2,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			_assert_next_match()
 			# Assert the partial list of paginated matches.
@@ -651,6 +682,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					self.match_id5, self.time5, num_streams=1, game=self.game, division=self.division)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_calendar.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id6, self.time6, num_streams=1, game=self.game, division=self.division)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -678,7 +714,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.match_id2,
 				self.match_id3,
 				self.match_id4,
-				self.match_id5):
+				self.match_id5,
+				self.match_id6):
 			db.add_stream_match(streamer_id, match_id)
 		# Star the streamer.
 		db.add_star_streamer(client_id, streamer_id)
@@ -704,9 +741,9 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_streamer_calendar_pagination(self):
 		# Add a match that will not be streamed.
-		match_fingerprint6 = 'match_fingerprint6'
-		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.division, match_fingerprint6, now=self.now)
+		match_fingerprint7 = 'match_fingerprint7'
+		match_id7 = db.add_match(self.team1_id, self.team2_id, self.time,
+				self.game, self.division, match_fingerprint7, now=self.now)
 
 		# Create the client, who streams the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -715,7 +752,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.match_id2,
 				self.match_id3,
 				self.match_id4,
-				self.match_id5):
+				self.match_id5,
+				self.match_id6):
 			db.add_stream_match(client_id, match_id)
 
 		def _get_next_page(displayed_calendar):
@@ -749,7 +787,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.match_id2,
 				self.match_id3,
 				self.match_id4,
-				self.match_id5):
+				self.match_id5,
+				self.match_id6):
 			db.add_stream_match(streamer_id, match_id)
 
 		def _get_next_page():
@@ -802,7 +841,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_third_page():
 			self._assert_displayed_streamer_details(displayed_streamer,
 					streamer_id, self.streamer_name, url_by_id,
-					url_by_name=url_by_name, num_matches=1,
+					url_by_name=url_by_name, num_matches=2,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
 			match = displayed_streamer.matches[0]
@@ -810,6 +849,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					self.match_id5, self.time5, num_streams=1, game=self.game, division=self.division)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_streamer.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id6, self.time6, num_streams=1, game=self.game, division=self.division)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_streamer = db.get_displayed_streamer(
@@ -878,13 +922,17 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 		def _assert_third_page():
 			self._assert_displayed_team_details(displayed_team,
 					self.team1_id, self.team1_name, self.game, self.division,
-					self.team1_fingerprint, num_matches=1,
+					self.team1_fingerprint, num_matches=2,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
 			match = displayed_team.matches[0]
 			self._assert_displayed_match(match, self.match_id5, self.time5)
 			self.assertIsNone(match.team1)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_team.matches[1]
+			self._assert_displayed_match(match, self.match_id6, self.time6)
+			self.assertIsNone(match.team1)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		displayed_team = db.get_displayed_team(
@@ -949,7 +997,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		def _assert_third_page():
-			self._assert_displayed_match_list(displayed_matches, num_matches=1,
+			self._assert_displayed_match_list(displayed_matches, num_matches=2,
 					prev_time=self.time5, prev_match_id=self.match_id5)
 			# Assert the partial list of paginated matches.
 			match = displayed_matches.matches[0]
@@ -958,6 +1006,12 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 					num_stars=match_num_stars, is_starred=is_starred)
 			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
 			self._assert_displayed_team(match.team2, self.team3_id, self.team3_name)
+			match = displayed_matches.matches[1]
+			self._assert_displayed_match(match,
+					self.match_id6, self.time6, game=self.game, division=self.division,
+					num_stars=match_num_stars, is_starred=is_starred)
+			self._assert_displayed_team(match.team1, self.team1_id, self.team1_name)
+			self._assert_displayed_team(match.team2, self.team2_id, self.team2_name)
 
 		# Assert that, clicking Next, the pages are correct.
 		_assert_first_page()
@@ -998,9 +1052,9 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_starred_matches_pagination(self):
 		# Add a match that will not be streamed.
-		match_fingerprint6 = 'match_fingerprint6'
-		match_id6 = db.add_match(self.team1_id, self.team2_id, self.time,
-				self.game, self.division, match_fingerprint6, now=self.now)
+		match_fingerprint7 = 'match_fingerprint7'
+		match_id7 = db.add_match(self.team1_id, self.team2_id, self.time,
+				self.game, self.division, match_fingerprint7, now=self.now)
 
 		# Create the client, who stars the other five matches.
 		client_steam_id, client_id = self._create_steam_user(self.client_name)
@@ -1009,7 +1063,8 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.match_id2,
 				self.match_id3,
 				self.match_id4,
-				self.match_id5):
+				self.match_id5,
+				self.match_id6):
 			db.add_star_match(client_id, match_id)
 
 		def _get_next_page(displayed_matches):
