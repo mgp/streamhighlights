@@ -192,6 +192,11 @@ def _get_readable_timedelta(dt, now=None):
 	else:
 		return _get_time_since(dt, now)
 
+_DATETIME_QUERY_PARAM_FORMAT = '%Y-%m-%dT%H:%M'
+
+def _get_datetime_query_param(datetime):
+	return datetime.strftime(_DATETIME_QUERY_PARAM_FORMAT)
+
 
 _DIVISION_SEPARATOR = '-'
 
@@ -235,6 +240,7 @@ jinja_env.filters['match_external_url'] = _get_match_external_url
 # Filters for rendering times.
 jinja_env.filters['readable_datetime'] = _get_readable_datetime
 jinja_env.filters['readable_timedelta'] = _get_readable_timedelta
+jinja_env.filters['datetime_query_param'] = _get_datetime_query_param
 
 # Filters for rendering leagues and divisions.
 jinja_env.filters['league_id'] = _get_league_id
@@ -304,8 +310,9 @@ def _get_datetime(args, key):
 	is missing, returns None.
 	"""
 	value = args.get(key)
-	# TODO
-	return value
+	if value is None:
+		return None
+	return datetime.strptime(value, _DATETIME_QUERY_PARAM_FORMAT)
 
 
 def _render_calendar(db_getter, template_name):

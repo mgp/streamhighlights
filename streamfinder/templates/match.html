@@ -45,7 +45,8 @@
 
 		{% set prev_query_params = ('prev_time', match.prev_time, 'prev_streamer_id', match.prev_streamer_id) %}
 		{% set next_query_params = ('next_time', match.next_time, 'next_streamer_id', match.next_streamer_id) %}
-		{{ macros.write_previous_next_pagination(prev_query_params, next_query_params) }}
+		{{ macros.write_previous_next_pagination(
+				prev_query_params, next_query_params, sort_by_time=True) }}
 	{% else %}
 		<h3 class="header">Nobody streaming so far :(</h3>
 	{% endif %}
