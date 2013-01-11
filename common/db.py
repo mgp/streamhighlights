@@ -97,15 +97,13 @@ class TwitchUser(_Base):
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'))
 	# Used to construct URL to user on Twitch.
 	name = sa.Column(sa.String, nullable=False)
-	access_token = sa.Column(sa.String)
 
 	def __repr__(self):
 		# Has backref: user.
-		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r, access_token=%r)' % (
+		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r)' % (
 				self.twitch_id,
 				self.user_id,
-				self.name,
-				self.access_token)
+				self.name)
 
 
 _USER_URL_SEPARATOR = ':'
@@ -177,7 +175,7 @@ def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 
 @close_session
 def twitch_user_logged_in(user_class, users_table,
-		twitch_id, name, display_name, logo, access_token,
+		twitch_id, name, display_name, logo,
 		user_class_extra_kwargs={}, now=None):
 	"""Called whenever a Twitch user has been authenticated and logged in.
 
@@ -220,7 +218,6 @@ def twitch_user_logged_in(user_class, users_table,
 
 	# Update the TwitchUser.
 	twitch_user.name = name
-	twitch_user.access_token = access_token
 	session.add(twitch_user)
 	session.commit()
 	return user_id

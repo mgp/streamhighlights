@@ -32,7 +32,7 @@ class DbTestCase(unittest.TestCase):
 		twitch_id = self._next_twitch_id
 		self._next_twitch_id += 1
 		display_name = name
-		user_id = db.twitch_user_logged_in(twitch_id, name, display_name, None, None)
+		user_id = db.twitch_user_logged_in(twitch_id, name, display_name, None)
 		return twitch_id, user_id
 
 	def _get_steam_user_url(self, steam_id):

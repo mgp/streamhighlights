@@ -1056,7 +1056,7 @@ def complete_log_in_twitch():
 	logo = response.json['logo']
 	
 	# Get the user's identifier and update the session so logged in.
-	user_id = db.twitch_user_logged_in(twitch_id, name, display_name, logo, None)
+	user_id = db.twitch_user_logged_in(twitch_id, name, display_name, logo)
 	return _finish_login(user_id, display_name, 'twitch')
 
 @app.route('/logout')
