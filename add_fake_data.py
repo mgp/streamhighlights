@@ -37,7 +37,12 @@ def _add_teams():
 			apocalypse_gaming_name, apocalypse_gaming_indexed_name, game, division,
 			apocalypse_gaming_fingerprint)
 
-	return (xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id)
+	bp_name = 'bp'
+	bp_indexed_name = views._get_indexed_name(bp_name)
+	bp_fingerprint = 'esea:69987'
+	bp_id = db.add_team(bp_name, bp_indexed_name, game, division, bp_fingerprint)
+
+	return (xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id, bp_id)
 
 def _add_matches(
 		xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id):
@@ -109,7 +114,7 @@ def _add_streamers(match_id1, match_id2, match_id3):
 def run():
 	_recreate_tables()
 
-	xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id = _add_teams()
+	xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id, bp_id = _add_teams()
 	print 'Team IDs: %s, %s, %s, %s' % (
 			xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id)
 
