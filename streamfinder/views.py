@@ -67,12 +67,9 @@ def _get_best_streamer_large_picture(streamer):
 	if streamer.image_url_large:
 		return _resize_large_picture(streamer, 150)
 
-_URL_SEPARATOR = '-'
-_PUNCTUATION_REGEX = re.compile(ur"\p{P}+")
-
 # http://en.wikipedia.org/wiki/Mapping_of_Unicode_characters#General_Category
 _CONNECTORS_REGEX = re.compile(ur"[\p{Pc}||\p{Pd}||\p{Zs}]", flags=re.V1)
-_LETTERS_REGEX = re.compile(ur"[\P{L}--[_]]+", flags=re.V1)
+_LETTERS_REGEX = re.compile(ur"[\P{L}--\p{N}--[_]]+", flags=re.V1)
 
 def _get_indexed_name(displayed_name):
 	s = _CONNECTORS_REGEX.sub("_", displayed_name)
@@ -81,6 +78,9 @@ def _get_indexed_name(displayed_name):
 
 def _url_format(s):
 	return _PUNCTUATION_REGEX.sub('', s.lower())
+
+_URL_SEPARATOR = '-'
+_PUNCTUATION_REGEX = re.compile(ur"\p{P}+")
 
 def _get_team_url_part(team):
 	parts = [str(team.team_id)]
