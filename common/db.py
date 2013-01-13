@@ -60,7 +60,8 @@ _Base = sa_ext_declarative.declarative_base()
 """
 class UserMixin(object):
 	id = sa.Column(sa.Integer, primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
+	display_name = sa.Column(sa.String, nullable=False)
+	indexed_name = sa.Column(sa.String, nullable=False)
 	image_url_small = sa.Column(sa.String)
 	image_url_large = sa.Column(sa.String)
 	created = sa.Column(sa.DateTime, nullable=False)
@@ -81,7 +82,6 @@ class SteamUser(_Base):
 	profile_url = sa.Column(sa.String)
 
 	def __repr__(self):
-		# Has backref: user.
 		return 'SteamUser(steam_id=%r, user_id=%r, profile_url=%r)' % (
 				self.steam_id,
 				self.user_id,
@@ -99,7 +99,6 @@ class TwitchUser(_Base):
 	name = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		# Has backref: user.
 		return 'TwitchUser(twitch_id=%r, user_id=%r, name=%r)' % (
 				self.twitch_id,
 				self.user_id,
@@ -175,14 +174,15 @@ def _remove_equal_url_by_name(user_class, users_table, url_by_name, user_id):
 
 @close_session
 def twitch_user_logged_in(user_class, users_table,
-		twitch_id, name, display_name, logo,
+		twitch_id, name, display_name, indexed_name, logo,
 		user_class_extra_kwargs={}, now=None):
 	"""Called whenever a Twitch user has been authenticated and logged in.
 
 	The following parameters are provided by the Twitch API:
 	* twitch_id: The user's unique numerical identifier by Twitch.
 	* name: The user's unique username on Twitch.
-	* display_name: A capitalized variant of the username.
+	* display_name: A variant of the username for displaying to users.
+	* indexed_name: A variant of display_name for lexicographic ordering.
 	* logo: The profile picture of the user on Twitch.
 	* access_token: The access token returned after authenticating the user on Twitch.
 	"""
@@ -193,7 +193,8 @@ def twitch_user_logged_in(user_class, users_table,
 				.join(user_class, TwitchUser.user_id == user_class.id)\
 				.filter(TwitchUser.twitch_id == twitch_id).one()
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, user.id)
-		user.name = display_name
+		user.display_name = display_name
+		user.indexed_name = indexed_name
 		user.image_url_large = logo
 		user.last_seen = now
 		user.url_by_name = url_by_name
@@ -204,7 +205,8 @@ def twitch_user_logged_in(user_class, users_table,
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		twitch_user = TwitchUser(twitch_id=twitch_id)
 		user = user_class(
-				name=display_name,
+				display_name=display_name,
+				indexed_name=indexed_name,
 				image_url_large=logo,
 				last_seen=now,
 				url_by_name=url_by_name,
@@ -224,13 +226,14 @@ def twitch_user_logged_in(user_class, users_table,
 
 @close_session
 def steam_user_logged_in(user_class, users_table,
-		steam_id, personaname, profile_url, avatar, avatar_full,
+		steam_id, personaname, indexed_name, profile_url, avatar, avatar_full,
 		user_class_extra_kwargs={}, now=None):
 	"""Called whenever a Steam user has been authenticated and logged in.
 
 	The following parameters are provided by the Steam Web API:
 	* steam_id: The user's unique 64-bit Steam identifier.
 	* personaname: The user's optional, but unique, display name on Steam.
+	* indexed_name: A variant of personaname for lexicographic ordering.
 	* profile_url: The unique URL of the user's Steam Community profile.
 	* avatar: The small picture on the user's Steam Community profile.
 	* avatar_full: The large picture on the user's Steam Community profile.
@@ -242,7 +245,8 @@ def steam_user_logged_in(user_class, users_table,
 				.join(user_class, SteamUser.user_id == user_class.id)\
 				.filter(SteamUser.steam_id == steam_id).one()
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, user.id)
-		user.name = personaname
+		user.display_name = personaname
+		user.indexed_name = indexed_name
 		user.image_url_small = avatar
 		user.image_url_large = avatar_full
 		user.last_seen = now
@@ -253,7 +257,9 @@ def steam_user_logged_in(user_class, users_table,
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
 		steam_user = SteamUser(steam_id=steam_id)
-		user = user_class(name=personaname,
+		user = user_class(
+				display_name=personaname,
+				indexed_name=indexed_name,
 				image_url_small=avatar,
 				image_url_large=avatar_full,
 				last_seen=now,

@@ -19,20 +19,22 @@ class DbTestCase(unittest.TestCase):
 		db.drop_all()
 		unittest.TestCase.tearDown(self)
 
-	def _create_steam_user(self, name):
+	def _create_steam_user(self, display_name, indexed_name):
 		"""Utility method for creating a Steam user."""
 		steam_id = self._next_steam_id
 		self._next_steam_id += 1
-		profile_url = 'http://steamcommunity.com/id/%s' % name
-		user_id = db.steam_user_logged_in(steam_id, name, profile_url, None, None)
+		profile_url = 'http://steamcommunity.com/id/%s' % display_name
+		user_id = db.steam_user_logged_in(
+				steam_id, display_name, indexed_name, profile_url, None, None)
 		return steam_id, user_id
 
-	def _create_twitch_user(self, name):
+	def _create_twitch_user(self, display_name, indexed_name):
 		"""Utility method for creating a Twitch user."""
 		twitch_id = self._next_twitch_id
 		self._next_twitch_id += 1
-		display_name = name
-		user_id = db.twitch_user_logged_in(twitch_id, name, display_name, None)
+		name = display_name
+		user_id = db.twitch_user_logged_in(
+				twitch_id, name, display_name, indexed_name, None)
 		return twitch_id, user_id
 
 	def _get_steam_user_url(self, steam_id):

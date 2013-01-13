@@ -63,16 +63,18 @@ class Team(common_db._Base):
 	__tablename__ = 'Teams'
 
 	id = sa.Column(sa.Integer, primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
+	display_name = sa.Column(sa.String, nullable=False)
+	indexed_name = sa.Column(sa.String, nullable=False)
 	game = sa.Column(sa.String, nullable=False)
 	division = sa.Column(sa.String, nullable=False)
 	num_stars = sa.Column(sa.Integer, default=0, nullable=False)
 	fingerprint = sa.Column(sa.String, nullable=False)
 
 	def __repr__(self):
-		return 'Team(id=%r, name=%r, game=%r, division=%r, num_stars=%r, fingerprint=%r)' % (
+		return 'Team(id=%r, display_name=%r, indexed_name=%r, game=%r, division=%r, num_stars=%r, fingerprint=%r)' % (
 				self.id,
-				self.name,
+				self.display_name,
+				self.indexed_name,
 				self.game,
 				self.division,
 				self.num_stars,
@@ -177,14 +179,14 @@ class StarredTeam(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
+	indexed_name = sa.Column(sa.String, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 
 	def __repr__(self):
-		return 'StarredTeam(user_id=%r, team_id=%r, name=%r, added=%r)' % (
+		return 'StarredTeam(user_id=%r, team_id=%r, indexed_name=%r, added=%r)' % (
 				self.user_id,
 				self.team_id,
-				self.name,
+				self.indexed_name,
 				self.added)
 
 
@@ -195,14 +197,14 @@ class StarredStreamer(common_db._Base):
 
 	user_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
 	streamer_id = sa.Column(sa.Integer, sa.ForeignKey('Users.id'), primary_key=True)
-	name = sa.Column(sa.String, nullable=False)
+	indexed_name = sa.Column(sa.String, nullable=False)
 	added = sa.Column(sa.DateTime, nullable=False)
 
 	def __repr__(self):
-		return 'StarredStreamer(user_id=%r, streamer_id=%r, name=%r, added=%r)' % (
+		return 'StarredStreamer(user_id=%r, streamer_id=%r, indexed_name=%r, added=%r)' % (
 				self.user_id,
 				self.streamer_id,
-				self.name,
+				self.indexed_name,
 				self.added)
 
 
@@ -366,13 +368,15 @@ def add_match(team1_id, team2_id, time, game, division, fingerprint, now=None):
 		raise common_db.DbException._chain()
 
 @close_session
-def add_team(name, game, division, fingerprint, now=None):
+def add_team(display_name, indexed_name, game, division, fingerprint, now=None):
 	"""Adds a team in the given game and division."""
 	try:
 		team = session.query(Team).filter(Team.fingerprint == fingerprint).one()
-		team.name = name
+		team.display_name = display_name
+		team.indexed_name = indexed_name
 	except sa_orm.exc.NoResultFound:
-		team = Team(name=name, game=game, division=division, fingerprint=fingerprint)
+		team = Team(display_name=display_name, indexed_name=indexed_name,
+				game=game, division=division, fingerprint=fingerprint)
 		session.add(team)
 
 	session.commit()
@@ -448,15 +452,15 @@ def add_star_team(client_id, team_id, now=None):
 	now = _get_now(now)
 
 	try:
-		# Get the name of the team.
-		team_name = session.query(Team.name)\
+		# Get the indexed name of the team.
+		team_indexed_name = session.query(Team.indexed_name)\
 				.filter(Team.id == team_id)\
 				.one()\
-				.name
+				.indexed_name
 		# Add the client's star for the team.
 		starred_team = StarredTeam(user_id=client_id,
 				team_id=team_id,
-				name=team_name,
+				indexed_name=team_indexed_name,
 				added=now)
 		session.add(starred_team)
 		session.flush()
@@ -514,15 +518,15 @@ def add_star_streamer(client_id, streamer_id, now=None):
 	now = _get_now(now)
 
 	try:
-		# Get the name of the streaming user.
-		streamer_name = session.query(User.name)\
+		# Get the indexed name of the streaming user.
+		streamer_indexed_name = session.query(User.indexed_name)\
 				.filter(User.id == streamer_id)\
 				.one()\
-				.name
+				.indexed_name
 		# Add the client's star for the streaming user.
 		starred_streamer = StarredStreamer(user_id=client_id,
 				streamer_id=streamer_id,
-				name=streamer_name,
+				indexed_name=streamer_indexed_name,
 				added=now)
 		session.add(starred_streamer)
 		session.flush()
@@ -1134,7 +1138,7 @@ def _paginate(paginator, prev_col1, prev_col2, next_col1, next_col2, page_limit,
 
 
 def _get_displayed_match_team(team):
-	return DisplayedTeam(team.id, team.name, team.num_stars, False)
+	return DisplayedTeam(team.id, team.display_name, team.num_stars, False)
 
 def _get_displayed_match(match, team1, team2, is_starred):
 	"""Returns a DisplayedMatch from the given match and teams."""
@@ -1411,7 +1415,7 @@ class _TeamsPaginator(_Paginator):
 	
 	def get_pagination_values(self, item):
 		team = item[0]
-		return (team.name, team.id)
+		return (team.indexed_name, team.id)
 
 	def has_id(self, queried_id, item):
 		team = item[0] 
@@ -1435,7 +1439,7 @@ class StarredTeamsPaginator(_TeamsPaginator):
 				.filter(StarredTeam.user_id == self.client_id)
 
 	def get_order_by_columns(self):
-		return (StarredTeam.name, StarredTeam.team_id)
+		return (StarredTeam.indexed_name, StarredTeam.team_id)
 
 	def execute_query(self, teams_query):
 		return tuple((team, True) for team_id, team in teams_query)
@@ -1461,7 +1465,7 @@ class AllTeamsPaginator(_TeamsPaginator):
 		return query
 	
 	def get_order_by_columns(self):
-		return (Team.name, Team.id)
+		return (Team.indexed_name, Team.id)
 
 	def execute_query(self, teams_query):
 		if self.client_id:
@@ -1477,7 +1481,7 @@ class _StreamersPaginator(_Paginator):
 	
 	def get_pagination_values(self, item):
 		streamer = item[0]
-		return (streamer.name, streamer.id)
+		return (streamer.indexed_name, streamer.id)
 	
 	def has_id(self, queried_id, item):
 		streamer = item[0]
@@ -1501,7 +1505,7 @@ class StarredStreamersPaginator(_StreamersPaginator):
 				.filter(StarredStreamer.user_id == self.client_id)
 	
 	def get_order_by_columns(self):
-		return (StarredStreamer.name, StarredStreamer.streamer_id)
+		return (StarredStreamer.indexed_name, StarredStreamer.streamer_id)
 
 	def execute_query(self, streamers_query):
 		return tuple((streamer, True) for streamer_id, streamer in streamers_query)
@@ -1527,7 +1531,7 @@ class AllStreamersPaginator(_StreamersPaginator):
 		return query.filter(User.can_stream == True)
 
 	def get_order_by_columns(self):
-		return (User.name, User.id)
+		return (User.indexed_name, User.id)
 	
 	def execute_query(self, streamers_query):
 		if self.client_id:
@@ -1572,7 +1576,7 @@ def get_all_matches(client_id,
 
 
 def _get_displayed_team(team, is_starred):
-	return DisplayedTeam(team.id, team.name, team.num_stars, is_starred,
+	return DisplayedTeam(team.id, team.display_name, team.num_stars, is_starred,
 			team.game, team.division)
 
 def _get_team_list(
@@ -1609,7 +1613,7 @@ def get_all_teams(client_id,
 def _get_displayed_streamer(streamer, is_starred):
 	"""Returns a DisplayedStreamer for the given streamer."""
 	return DisplayedStreamer(streamer.id,
-			streamer.name,
+			streamer.display_name,
 			streamer.num_stars,
 			is_starred,
 			streamer.image_url_small,
@@ -1757,7 +1761,7 @@ def get_displayed_match(client_id, match_id,
 
 def _get_displayed_team_match(match, team_id, opponent_team, is_starred):
 	opponent_team = DisplayedTeam(
-			opponent_team.id, opponent_team.name, opponent_team.num_stars, False)
+			opponent_team.id, opponent_team.display_name, opponent_team.num_stars, False)
 	if match.team1_id == team_id:
 		team1 = None
 		team2 = opponent_team
@@ -1855,7 +1859,7 @@ def get_displayed_team(client_id, team_id,
 	
 	# Return the displayed team.
 	return DisplayedTeamDetails(team_id,
-			team.name,
+			team.display_name,
 			team.num_stars,
 			is_starred,
 			team.game,
@@ -1942,7 +1946,7 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 	
 	# Return the displayed streaming user.
 	return DisplayedStreamerDetails(streamer.id,
-			streamer.name,
+			streamer.display_name,
 			streamer.num_stars,
 			is_starred,
 			streamer.image_url_small,
@@ -1995,15 +1999,17 @@ def get_displayed_streamer_by_twitch_name(client_id, twitch_name,
 			prev_time, prev_match_id, next_time, next_match_id, page_limit, now)
 
 
-def twitch_user_logged_in(twitch_id, name, display_name, logo, now=None):
+def twitch_user_logged_in(twitch_id, name, display_name, indexed_name, logo,
+		now=None):
 	user_class_extra_kwargs = {'can_stream': True}
 	return common_db.twitch_user_logged_in(
-			User, Users, twitch_id, name, display_name, logo,
+			User, Users, twitch_id, name, display_name, indexed_name, logo,
 			user_class_extra_kwargs=user_class_extra_kwargs, now=now)
 
 def steam_user_logged_in(
-		steam_id, personaname, profile_url, avatar, avatar_full, now=None):
+		steam_id, personaname, indexed_name, profile_url, avatar, avatar_full,
+		now=None):
 	return common_db.steam_user_logged_in(
-			User, Users, steam_id, personaname, profile_url, avatar, avatar_full,
+			User, Users, steam_id, personaname, indexed_name, profile_url, avatar, avatar_full,
 			now=now)
 
