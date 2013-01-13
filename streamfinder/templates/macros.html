@@ -96,8 +96,8 @@
 	<li>
 		<a href="{{ url_for('team_details', team_id=team|team_url_part) }}">
 			{{ write_small_game_icon(team.game) }}
-			{{ team.name }}
 			{{ write_star_with_count(team.is_starred, team.num_stars) }}
+			<span class="name">{{ team.name }}</span>
 		</a>
 	</li>
 {%- endmacro %}
@@ -115,26 +115,28 @@
 	</li>
 {%- endmacro %}
 
-{% macro write_pagination_part(title, query_params, sort_by_time) -%}
+{% macro write_pagination_part(query_params, sort_by_time) -%}
 	{% set value0, value1 = query_params[1], query_params[3] %}
 	{% if value0 or value1 %}
 		{% if sort_by_time %}
 			{% set value0 = value0|datetime_query_param %}
 		{% endif %}
 		{% set key0, key1 = query_params[0], query_params[2] %}
-		<a href="?{{ key0 }}={{ value0 }}&{{ key1 }}={{ value1 }}">{{ title }}</a>
+		<a class="direction" href="?{{ key0 }}={{ value0 }}&{{ key1 }}={{ value1 }}">{{ caller() }}</a>
 	{% else %}
-		<span class="disabled">{{ title }}</span>
+		<span class="direction">{{ caller() }}</span>
 	{% endif %}
 {%- endmacro %}
 
 {% macro write_pagination(
 		prev_title, prev_query_params, next_title, next_query_params, sort_by_time) -%}
 	<div id="pagination">
-		{% set full_prev_title = prev_title %}
-		{% set full_next_title = next_title %}
-		{{ write_pagination_part(full_prev_title, prev_query_params, sort_by_time) }}
-		{{ write_pagination_part(full_next_title, next_query_params, sort_by_time) }}
+		{% call write_pagination_part(prev_query_params, sort_by_time) %}
+			&laquo; {{ prev_title }}
+		{% endcall %}
+		{% call write_pagination_part(next_query_params, sort_by_time) %}
+			{{ next_title }} &raquo;
+		{% endcall %}
 	</div>
 {%- endmacro %}
 

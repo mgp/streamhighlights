@@ -143,7 +143,7 @@ $sidebar-width: 200px;
 	}
 	ol ol li {
 		margin-top: $padding / 2;
-		padding-left: 20px;
+		padding-left: 2 * $padding;
 	}
 }
 
@@ -239,7 +239,7 @@ img.league-logo {
 		float: left;
 	}
 	div.teams {
-		margin-left: 72px;
+		margin-left: 60px + $padding;
 		color: $medium-gray;
 		text-transform: none;
 
@@ -290,7 +290,7 @@ img.league-logo {
 }
 
 ul.data-list {
-	$data-list-vert-padding: 5px;
+	$data-list-vert-padding: $padding / 2;
 
 	margin-top: $data-list-vert-padding;
 	color: $medium-gray;
@@ -322,12 +322,20 @@ ul.data-list {
 }
 
 ul.team-list {
+	img.game-logo {
+		float: left;
+		margin-top: 2px;
+	}
+	span.name {
+		display: block;
+		margin-left: $padding + 28px;
+	}
 }
 
 ul.streamer-list {
 	img.picture {
-		margin-top: 4px;
 		float: left;
+		margin-top: 4px;
 	}
 	span.name {
 		display: block;
@@ -341,7 +349,7 @@ ul.match-list {
 		margin-top: 2px;
 
 		& + div {
-			margin-left: 40px;
+			margin-left: $padding + 28px;
 		}
 	}
 	div.teams {
@@ -352,6 +360,26 @@ ul.match-list {
 	}
 	div.datetime {
 		font-size: $small-font-size;
+	}
+}
+#pagination {
+	display: inline-block;
+
+	.direction {
+		display: block;
+		float: left;
+		text-transform: uppercase;
+		font-size: $small-font-size;
+		& + .direction {
+			margin-left: 2 * $padding;
+		}
+	}
+	a {
+		@extend %links;
+		color: $medium-gray;
+	}
+	span {
+		color: $light-gray;
 	}
 }
 
