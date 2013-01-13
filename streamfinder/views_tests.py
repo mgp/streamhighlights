@@ -1,8 +1,17 @@
+from datetime import datetime, timedelta
 import db
+import flask
+import pytz
 import unittest
 import views
+from views import app
 
 class ViewsTestCase(unittest.TestCase):
+	def setUp(self):
+		unittest.TestCase.setUp(self)
+
+		self.now = datetime(2013, 1, 5, 22, 30, 0)
+
 	def _get_displayed_team_details(self, team_id=None,
 			name=None, num_stars=None, is_starred=None, game=None, division=None,
 			fingerprint=None, matches=None,
@@ -56,8 +65,45 @@ class ViewsTestCase(unittest.TestCase):
 		self.assertEqual('http://play.esea.net/index.php?s=stats&d=match&id=123',
 				external_url)
 
-	def test_get_readable_datetime(self):
-		pass
+	def test_get_readable_datetime_localized(self):
+		with app.test_request_context('/'):
+			# Los Angeles is 8 hours behind UTC.
+			flask.g.time_zone = pytz.timezone('America/Los_Angeles')
+			# Assert the 24 hour format.
+			flask.g.time_format = '24_hour'
+			self.assertEqual('Sat Jan 05 14:30', views._get_readable_datetime(self.now))
+			# Assert the 24 hour format.
+			flask.g.time_format = '12_hour'
+			self.assertEqual('Sat Jan 05 02:30PM', views._get_readable_datetime(self.now))
+
+	def test_get_readable_datetime_utc(self):
+		with app.test_request_context('/'):
+			# No time zone assigned so displaying UTC.
+			flask.g.time_zone = None
+			# Assert the 24 hour format.
+			flask.g.time_format = '24_hour'
+			self.assertEqual('Sat Jan 05 22:30 UTC', views._get_readable_datetime(self.now))
+			# Assert the 12 hour format.
+			flask.g.time_format = '12_hour'
+			self.assertEqual('Sat Jan 05 10:30PM UTC', views._get_readable_datetime(self.now))
+
+	def _assert_time_between(self,
+			now, expected_days, expected_hours, expected_minutes):
+		td = timedelta(days=expected_days, hours=expected_hours, minutes=expected_minutes)
+		days, hours, minutes = views._get_time_between(now + td, now)
+		self.assertEqual(expected_days, days)
+		self.assertEqual(expected_hours, hours)
+		self.assertEqual(expected_minutes, minutes)
+
+	def test_get_time_between(self):
+		self._assert_time_between(self.now, 0, 0, 0)
+		self._assert_time_between(self.now, 0, 0, 5)
+		self._assert_time_between(self.now, 0, 5, 0)
+		self._assert_time_between(self.now, 0, 5, 5)
+		self._assert_time_between(self.now, 5, 0, 0)
+		self._assert_time_between(self.now, 5, 0, 5)
+		self._assert_time_between(self.now, 5, 5, 0)
+		self._assert_time_between(self.now, 5, 5, 5)
 
 	def _assert_time_between_string(self, days, hours, minutes, expected_string):
 		self.assertEqual(
