@@ -996,13 +996,14 @@ def complete_log_in_steam(response):
 		flask.abort(requests.codes.server_error)
 	player = response.json['response']['players'][0]
 	personaname = player['personaname']
+	indexed_name = _get_indexed_name(personaname)
 	profile_url = player.get('profileurl', None)
 	avatar = player.get('avatar', None)
 	avatar_full = player.get('avatarfull', None)
 
 	# Get the user's identifier and update the session so logged in.
 	user_id = db.steam_user_logged_in(
-			steam_id, personaname, profile_url, avatar, avatar_full)
+			steam_id, personaname, indexed_name, profile_url, avatar, avatar_full)
 	return _finish_login(user_id, personaname, 'steam')
 
 
@@ -1065,10 +1066,12 @@ def complete_log_in_twitch():
 	twitch_id = response.json['_id']
 	name = response.json['name']
 	display_name = response.json['display_name']
+	indexed_name = _get_indexed_name(display_name)
 	logo = response.json['logo']
 	
 	# Get the user's identifier and update the session so logged in.
-	user_id = db.twitch_user_logged_in(twitch_id, name, display_name, logo)
+	user_id = db.twitch_user_logged_in(
+			twitch_id, name, display_name, indexed_name, logo)
 	return _finish_login(user_id, display_name, 'twitch')
 
 @app.route('/logout')
