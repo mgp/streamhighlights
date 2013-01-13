@@ -72,7 +72,8 @@ _CONNECTORS_REGEX = re.compile(ur"[\p{Pc}||\p{Pd}||\p{Zs}]", flags=re.V1)
 _LETTERS_REGEX = re.compile(ur"[\P{L}--\p{N}--[_]]+", flags=re.V1)
 
 def _get_indexed_name(displayed_name):
-	s = _CONNECTORS_REGEX.sub("_", displayed_name)
+	s = displayed_name.lower()
+	s = _CONNECTORS_REGEX.sub("_", s)
 	s = _LETTERS_REGEX.sub("", s)
 	return s
 

@@ -232,6 +232,6 @@ class ViewsTestCase(unittest.TestCase):
 		self.assertEqual(expected_indexed_name, views._get_indexed_name(displayed_name))
 
 		displayed_name = 'a  b--c__D E-F_0+1)\'"2('
-		expected_indexed_name = 'a__b__c__D_E_F_012'
+		expected_indexed_name = 'a__b__c__d_e_f_012'
 		self.assertEqual(expected_indexed_name, views._get_indexed_name(displayed_name))
 
