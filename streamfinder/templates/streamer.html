@@ -5,7 +5,10 @@
 
 {% block content %}
 	<div id="streamer" class="main-data clearfix">
-		<img class="picture" src="{{ streamer|best_streamer_large_picture }}" />
+		{% set picture_src = streamer|best_streamer_large_picture %}
+		{% if picture_src %}
+			<img class="picture" src="{{ picture_src }}" />
+		{% endif %}
 		<h3>
 			{{ streamer.name }}
 			{{ macros.write_large_external_link(streamer|user_external_url) }}

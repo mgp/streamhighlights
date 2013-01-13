@@ -325,6 +325,14 @@ ul.team-list {
 }
 
 ul.streamer-list {
+	img.picture {
+		margin-top: 4px;
+		float: left;
+	}
+	span.name {
+		display: block;
+		margin-left: $padding + 28px;
+	}
 }
 
 ul.match-list {

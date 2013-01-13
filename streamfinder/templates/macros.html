@@ -105,9 +105,12 @@
 {% macro write_streamer_list_element(streamer) -%}
 	<li>
 		<a href="{{ streamer|best_user_url }}">
-			<img src="{{ streamer|best_streamer_small_picture }}" />
-			{{ streamer.name }}
+			{% set picture_src = streamer|best_streamer_small_picture %}
+			{% if picture_src %}
+				<img class="picture" src="{{ picture_src }}" />
+			{% endif %}
 			{{ write_star_with_count(streamer.is_starred, streamer.num_stars) }}
+			<span class="name">{{ streamer.name }}</span>
 		</a>
 	</li>
 {%- endmacro %}
