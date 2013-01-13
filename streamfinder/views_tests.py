@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import db
 import flask
 import pytz
+import regex as re
 import unittest
 import views
 
@@ -222,4 +223,15 @@ class ViewsTestCase(unittest.TestCase):
 		self.assertEqual('UTC-00:30', views._get_displayed_offset(-30))
 		self.assertEqual('UTC-01:00', views._get_displayed_offset(-60))
 		self.assertEqual('UTC-01:30', views._get_displayed_offset(-90))
+
+	def test_get_indexed_name(self):
+		self.assertEqual('', views._get_indexed_name(''))
+
+		displayed_name = '  __--'
+		expected_indexed_name = '______'
+		self.assertEqual(expected_indexed_name, views._get_indexed_name(displayed_name))
+
+		displayed_name = 'a  b--c__d e-f_g+h)\'"i('
+		expected_indexed_name = 'a__b__c__d_e_f_ghi'
+		self.assertEqual(expected_indexed_name, views._get_indexed_name(displayed_name))
 
