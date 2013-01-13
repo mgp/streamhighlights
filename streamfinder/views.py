@@ -93,16 +93,16 @@ def _get_team_match_url_part(match, team):
 		return _get_match_url_part_team_names(
 				match.match_id, team.name, match.team2.name)
 
+def _get_match_url_part(match):
+	return _get_match_url_part_team_names(
+			match.match_id, match.team1.name,  match.team2.name)
+
 _TEAM_URL_SEPARATOR = ':'
 
 def _get_team_external_url(team):
 	prefix, remainder = team.fingerprint.split(_TEAM_URL_SEPARATOR, 1)
 	if prefix == 'esea':
 		return 'http://play.esea.net/teams/%s' % remainder
-
-def _get_match_url_part(match):
-	return _get_match_url_part_team_names(
-			match.match_id, match.team1.name,  match.team2.name)
 
 _MATCH_URL_SEPARATOR = ':'
 
@@ -173,24 +173,24 @@ def _get_time_between_string(days, hours, minutes):
 
 def _get_time_until(dt, now):
 	days, hours, minutes = _get_time_between(dt, now)
-
-	if not days and not hours and not minutes:
-		return 'starting now'
-	else:
-		return 'starting in %s' % _get_time_between_string(days, hours, minutes)
+	return 'starting in %s' % _get_time_between_string(days, hours, minutes)
 
 def _get_time_since(dt, now):
 	days, hours, minutes = _get_time_between(now, dt)
 	return 'started %s ago' % _get_time_between_string(days, hours, minutes)
 
+_ONE_MINUTE = timedelta(minutes=1)
+
 def _get_readable_timedelta(dt, now=None):
 	"""Returns the time until or time since the given datetime as a string."""
 	if now is None:
 		now = datetime.utcnow().replace(microsecond=0)
-	if dt > now:
+	if dt >= now + _ONE_MINUTE:
 		return _get_time_until(dt, now)
-	else:
+	elif dt <= now - _ONE_MINUTE:
 		return _get_time_since(dt, now)
+	else:
+		return 'starting now'
 
 _DATETIME_QUERY_PARAM_FORMAT = '%Y-%m-%dT%H:%M'
 
@@ -779,8 +779,10 @@ def _get_displayed_offset(offset_minutes):
 	if offset_minutes < 0:
 		offset_prefix = 'UTC-'
 		offset_minutes = abs(offset_minutes)
-	else:
+	elif offset_minutes > 0:
 		offset_prefix = 'UTC+'
+	else:
+		return 'UTC'
 	return '%s%02d:%02d' % (offset_prefix, offset_minutes / 60, offset_minutes % 60)
 
 def _get_displayed_offset_map(now, offset_minutes_set):
