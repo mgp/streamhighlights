@@ -161,12 +161,12 @@ def _get_time_between_string(days, hours, minutes):
 	# Append the hours if needed.
 	if hours > 1:
 		parts.append('%s hours' % hours)
-	else:
+	elif hours:
 		parts.append('1 hour')
 	# Append the minutes if needed.
 	if minutes > 1:
 		parts.append('%s minutes' % minutes)
-	else:
+	elif minutes:
 		parts.append('1 minute')
 
 	return ', '.join(parts)
