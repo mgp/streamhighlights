@@ -13,7 +13,7 @@
 			{{ streamer.name }}
 			{{ macros.write_large_external_link(streamer|user_external_url) }}
 		</h3>
-		{{ macros.write_star_with_count(streamer.is_starred, streamer.num_stars) }}
+		{{ macros.write_star_with_count(streamer.is_starred, streamer.num_stars, logged_in=g.logged_in) }}
 	</div>
 
 	{% if streamer.matches %}

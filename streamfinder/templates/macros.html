@@ -37,7 +37,7 @@
 	x<span>{{ count }}</span>
 {%- endmacro %}
 
-{% macro write_star_with_count(is_starred, num_stars) -%}
+{% macro write_star_with_count(is_starred, num_stars, logged_in=False) -%}
 	{% if is_starred %}
 		{% set starImgSrc = url_for('static', filename='star-full-dark.png') %}
 		{% set starDivClass = "counts selected" %}
@@ -47,7 +47,7 @@
 	{% endif %}
 
 	<div class="{{ starDivClass }}">
-		<img src="{{ starImgSrc }}" />{{ write_count(num_stars) }}
+		<img src="{{ starImgSrc }}"{% if logged_in %} class="togglable"{% endif %} />{{ write_count(num_stars) }}
 	</div>
 {%- endmacro %}
 

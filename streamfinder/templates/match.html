@@ -22,7 +22,7 @@
 			</div>
 		</h3>
 
-		{{ macros.write_star_with_count(match.is_starred, match.num_stars) }}
+		{{ macros.write_star_with_count(match.is_starred, match.num_stars, logged_in=g.logged_in) }}
 		<div class="datetime">{{ match.time|readable_datetime }}</div>
 		<div class="division">
 			{{ macros.write_division(match.game, match.division, True) }}
@@ -51,8 +51,10 @@
 		<h3 class="header">Nobody streaming so far :(</h3>
 	{% endif %}
 
-	<script>
-		$.addStarRollover($("#match div.counts img"))
-	</script>
+	{% if g.logged_in %}
+		<script>
+			$.addStarRollover($("#match div.counts img"))
+		</script>
+	{% endif %}
 {% endblock content %}
 
