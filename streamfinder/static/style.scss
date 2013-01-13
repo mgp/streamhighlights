@@ -243,7 +243,7 @@ img.league-logo {
 		color: $medium-gray;
 		text-transform: none;
 
-		.team-name {
+		.name {
 			text-transform: uppercase;
 			color: $dark-gray;
 		}
@@ -346,7 +346,7 @@ ul.match-list {
 	}
 	div.teams {
 		text-transform: none;
-		span.team-name {
+		span.name {
 			text-transform: uppercase;
 		}
 	}
