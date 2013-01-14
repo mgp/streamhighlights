@@ -547,6 +547,18 @@ def twitch_user_by_id(twitch_id):
 	except common_db.DbException:
 		flask.abort(requests.codes.not_found)
 
+@app.route('/users/id/<streamer_id>', methods=['POST'])
+@login_required
+def update_streamer(streamer_id):
+	starred = flask.request.form.get('starred', None)
+	if starred is not None:
+		if starred == 'true':
+			db.add_star_streamer(flask.g.client_id, streamer_id)
+		else:
+			db.remove_star_streamer(flask.g.client_id, streamer_id)
+		return flask.jsonify(starred=starred)
+	flask.abort(requests.codes.server_error)
+
 
 _TIME_FORMAT_TO_VALUE_MAP = {
 		'12 hour': '12_hour',

@@ -31,12 +31,10 @@ toggleStarFailed = (starImg) ->
 	requestInProgress = false
 	return
 
-toggleStar = (starImg, starred) ->
-	# Strip the query string, see http://stackoverflow.com/a/5817566/400717
-	url = [location.protocol, '//', location.host, location.pathname].join('')
+toggleStar = (starImg, postUrl, starred) ->
 	settings =
 		type: 'POST'
-		url: url
+		url: postUrl
 		data:
 			starred: starred
 		success: toggleStarSucceeded
@@ -60,25 +58,28 @@ leaveStar = ->
 		when EMPTY_HOVER then starImg.attr 'src', EMPTY
 	return
 
-clickStar = ->
-	return if requestInProgress
-	requestInProgress = true
-	starImg = $(this)
-	switch starImg.attr 'src'
-		when EMPTY_HOVER, EMPTY
-			toggleStar starImg, true
-			starImg.attr 'src', FULL
-			adjustCount starImg, +1
-		when FULL_HOVER, FULL
-			toggleStar starImg, false
-			starImg.attr 'src', EMPTY
-			adjustCount starImg, -1
-	return
+clickStar = (postUrl) ->
+	return ->
+		return if requestInProgress
+		requestInProgress = true
+		starImg = $(this)
+		switch starImg.attr 'src'
+			when EMPTY_HOVER, EMPTY
+				toggleStar starImg, postUrl, true
+				starImg.attr 'src', FULL
+				adjustCount starImg, +1
+			when FULL_HOVER, FULL
+				toggleStar starImg, postUrl, false
+				starImg.attr 'src', EMPTY
+				adjustCount starImg, -1
+		return
 
-$.addStarRollover = (starImg) ->
+$.addStarRollover = (starImg, postUrl) ->
+	# Strip the query string, see http://stackoverflow.com/a/5817566/400717
+	postUrl ?= [location.protocol, '//', location.host, location.pathname].join('')
 	starImg
 		.mouseenter(enterStar)
 		.mouseleave(leaveStar)
-		.click(clickStar)
+		.click(clickStar postUrl)
 	return
 

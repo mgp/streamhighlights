@@ -30,5 +30,12 @@
 	{% else %}
 		<h3 class="header">No upcoming streamed matches</h3>
 	{% endif %}
+
+	{% if g.logged_in %}
+		<script>
+			{% set post_url = url_for("update_streamer", streamer_id=streamer.streamer_id) %}
+			$.addStarRollover($("#streamer div.counts img"), "{{ post_url }}")
+		</script>
+	{% endif %}
 {% endblock content %}
 
