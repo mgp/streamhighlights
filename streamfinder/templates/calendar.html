@@ -19,14 +19,14 @@
 
 			<div class="datetime">{{ next_match.time|readable_datetime }}</div>
 			<div class="division">
-				{{ macros.write_division(next_match.game, next_match.division, False) }}
+				{{ macros.write_division(next_match.game, next_match.division, false) }}
 			</div>
 		</a>
 
 		<h3 class="header">Upcoming streamed matches:</h2>
 		<ul class="data-list match-list">
 		{% for match in calendar.matches %}
-			{{ macros.write_match_list_element(match, False) }}
+			{{ macros.write_match_list_element(match, false) }}
 		{% endfor %}
 		</ul>
 

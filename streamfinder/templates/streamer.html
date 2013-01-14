@@ -20,7 +20,7 @@
 		<h3 class="header">Upcoming streamed matches:</h3>
 		<ul class="data-list match-list">
 		{% for match in streamer.matches %}
-			{{ macros.write_match_list_element(match, True) }}
+			{{ macros.write_match_list_element(match, true) }}
 		{% endfor %}
 		</ul>
 

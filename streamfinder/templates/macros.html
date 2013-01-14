@@ -41,7 +41,7 @@
 	x<span>{{ count }}</span>
 {%- endmacro %}
 
-{% macro write_star_with_count(is_starred, num_stars, logged_in=False) -%}
+{% macro write_star_with_count(is_starred, num_stars, logged_in=false) -%}
 	{% if is_starred %}
 		{% set starImgSrc = url_for('static', filename='star-full-dark.png') %}
 		{% set starDivClass = "counts selected" %}
@@ -70,9 +70,7 @@
 	{% if league_id %}
 		<img class="league-logo" src="{{ url_for('static', filename='%s.png'|format(league_id)) }}" />
 		{{ division|division_name }}
-		{% if should_write_external_link %}
-			{{ write_small_external_link(division|division_external_url) }}
-		{% endif %}
+		{{ write_small_external_link(division|division_external_url) if should_write_external_link }}
 	{% endif %}
 {%- endmacro %}
 
@@ -80,9 +78,7 @@
 {% macro write_match_list_element(match, should_write_star_with_count) -%}
 	<li>
 		<a href="{{ url_for('match_details', match_id=match|match_url_part) }}">
-			{% if should_write_star_with_count %}
-				{{ write_star_with_count(match.is_starred, match.num_stars) }}
-			{% endif %}
+			{{ write_star_with_count(match.is_starred, match.num_stars) if should_write_star_with_count }}
 			{{ write_small_game_icon(match.game) }}
 			<div>
 				<div class="teams">
@@ -146,13 +142,13 @@
 {%- endmacro %}
 
 {% macro write_previous_next_pagination(
-		prev_query_params, next_query_params, sort_by_time=False) -%}
+		prev_query_params, next_query_params, sort_by_time=false) -%}
 	{{ write_pagination(
 			'Previous', prev_query_params, 'Next', next_query_params, sort_by_time) }}
 {%- endmacro %}
 
 {% macro write_earlier_later_pagination(
-		prev_query_params, next_query_params, sort_by_time=True) -%}
+		prev_query_params, next_query_params, sort_by_time=true) -%}
 	{{ write_pagination(
 			'Earlier', prev_query_params, 'Later', next_query_params, sort_by_time) }}
 {%- endmacro %}
