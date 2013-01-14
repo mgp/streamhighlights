@@ -29,7 +29,7 @@ $large-font-size: 60pt;
 	}
 }
 
-$padding: 10px;
+$spacing: 10px;
 $site-width: 1000px;
 
 body {
@@ -39,7 +39,7 @@ body {
 
 #header {
 	width: $site-width;
-	margin: $padding auto;
+	margin: $spacing auto;
 	text-transform: uppercase;
 	color: $medium-gray;
 
@@ -63,7 +63,7 @@ body {
 		display: inline;
 
 		& + li {
-			margin-left: $padding;
+			margin-left: $spacing;
 		}
 	}
 }
@@ -78,7 +78,7 @@ body {
 
 		& > li {
 			display: inline;
-			margin-left: $padding;
+			margin-left: $spacing;
 
 			& > a {
 				@extend %links;
@@ -88,7 +88,7 @@ body {
 	}
 }
 #client-name {
-	margin-right: $padding;
+	margin-right: $spacing;
 }
 
 #site {
@@ -99,12 +99,13 @@ body {
 		margin: 0 auto;
 		position: relative;
 		min-height: 415px;
+		padding: $spacing 0;
 	}
 }
 
 #footer {
 	width: $site-width;
-	margin: $padding auto;
+	margin: $spacing auto;
 	font-size: $small-font-size;
 	text-transform: uppercase;
 	text-align: right;
@@ -113,7 +114,7 @@ body {
 		display: inline;
 
 		& + li {
-			margin-left: $padding;
+			margin-left: $spacing;
 		}
 		& > a {
 			@extend %links;
@@ -141,11 +142,11 @@ $sidebar-width: 200px;
 		color: $dark-gray;
 	}
 	& > ol > li + li {
-		margin-top: $padding;	
+		margin-top: $spacing;	
 	}
 	ol ol li {
-		margin-top: $padding / 2;
-		padding-left: 2 * $padding;
+		margin-top: $spacing / 2;
+		margin-left: 2 * $spacing;
 	}
 }
 
@@ -158,6 +159,7 @@ $sidebar-width: 200px;
 	color: $dark-gray;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
+	margin-bottom: $spacing / 2;
 }
 div.counts {
 	text-transform: none;
@@ -175,8 +177,7 @@ img.league-logo {
 
 	border-top: $border;
 	border-bottom: $border;
-	padding: $padding;
-	margin: (2 * $padding) 0;
+	padding: $spacing;
 	background-color: $light-gray;
 	color: $medium-gray;
 }
@@ -184,6 +185,7 @@ img.league-logo {
 	@extend %bordered-data;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
+	margin-bottom: 2 * $spacing;
 
 	& > div {
 		margin-top: round($small-font-size / 4);
@@ -218,7 +220,7 @@ img.league-logo {
 		float: left;
 	}
 	div.teams {
-		margin-left: 60px + $padding;
+		margin-left: 60px + $spacing;
 		color: $medium-gray;
 		text-transform: none;
 
@@ -271,7 +273,7 @@ img.league-logo {
 		float: left;
 	}
 	& > div {
-		margin-left: 300px + (2 * $padding);
+		margin-left: 300px + (2 * $spacing);
 
 		a {
 			color: $dark-gray;
@@ -285,10 +287,10 @@ img.league-logo {
 				@extend %links;
 			}
 			li {
-				margin-top: $padding;
+				margin-top: $spacing;
 			}
 			img {
-				padding-right: $padding / 2;
+				margin-right: $spacing / 2;
 			}
 		}
 	}
@@ -296,14 +298,14 @@ img.league-logo {
 #privacy {
 	ul {
 		list-style-type: square;
-		margin-left: 3 * $padding;
+		margin-left: 3 * $spacing;
 	}
 }
 
 ul.data-list {
-	$data-list-vert-padding: $padding / 2;
+	$data-list-vert-spacing: $spacing / 2;
 
-	margin-top: $data-list-vert-padding;
+	margin-top: $data-list-vert-spacing;
 	color: $medium-gray;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
@@ -318,7 +320,7 @@ ul.data-list {
 		}
 		a {
 			display: block;
-			padding: $data-list-vert-padding $padding;
+			padding: $data-list-vert-spacing $spacing;
 			text-decoration: none;
 			color: $medium-gray;
 
@@ -339,7 +341,7 @@ ul.team-list {
 	}
 	span.name {
 		display: block;
-		margin-left: $padding + 28px;
+		margin-left: $spacing + 28px;
 	}
 }
 ul.streamer-list {
@@ -349,7 +351,7 @@ ul.streamer-list {
 	}
 	span.name {
 		display: block;
-		margin-left: $padding + 28px;
+		margin-left: $spacing + 28px;
 	}
 }
 ul.match-list {
@@ -358,7 +360,7 @@ ul.match-list {
 		margin-top: 2px;
 
 		& + div {
-			margin-left: $padding + 28px;
+			margin-left: $spacing + 28px;
 		}
 	}
 	div.teams {
@@ -374,6 +376,7 @@ ul.match-list {
 
 #pagination {
 	display: inline-block;
+	margin-top: $spacing;
 
 	.direction {
 		display: block;
@@ -382,7 +385,7 @@ ul.match-list {
 		font-size: $small-font-size;
 
 		& + .direction {
-			margin-left: 2 * $padding;
+			margin-left: 2 * $spacing;
 		}
 	}
 	a {
@@ -451,14 +454,14 @@ $save-settings-failure-background-color: #fcf27a;
 	color: $dark-gray;
 }
 %settings-message {
-	width: $settings-width - $padding;
-	padding: $padding / 2;
+	width: $settings-width - $spacing;
+	padding: $spacing / 2;
 }
 %save-settings-status {
 	@extend %settings-block;
 	@extend %settings-message;
 	font-size: $medium-font-size;
-	margin-bottom: 2 * $padding;
+	margin-bottom: 2 * $spacing;
 }
 div.save-settings-success {
 	@extend %save-settings-status;
@@ -480,7 +483,7 @@ div.setting {
 		width: $settings-width;
 	}
 	& + div.setting {
-		margin-top: (2 * $padding);
+		margin-top: (2 * $spacing);
 	}
 	ul.errors {
 		@extend %settings-block;
@@ -489,7 +492,7 @@ div.setting {
 		li {
 			@extend %settings-message;
 			background-color: $save-settings-failure-background-color;
-			margin-top: $padding / 2;
+			margin-top: $spacing / 2;
 		}
 	}
 }
