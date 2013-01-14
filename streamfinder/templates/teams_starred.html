@@ -6,3 +6,12 @@
 {% block found_header %}{{ found_header_value }}{% endblock found_header %}
 {% block missing_header %}No starred teams found :({% endblock missing_header %}
 
+{% block missing %}
+	{{ super() }}
+
+	{% call macros.write_star_explanation("teams", g.logged_in) %}
+		<li>Browse <a href="{{ url_for('all_teams') }}">all teams</a> and star any teams whose upcoming matches you don't want to miss.</li>
+		<li>If a team you starred is playing in an upcoming match that is being streamed, then that match appears on <a href="{{ url_for('viewer_calendar') }}">your calendar</a>.</li>
+	{% endcall %}
+{% endblock missing %}
+

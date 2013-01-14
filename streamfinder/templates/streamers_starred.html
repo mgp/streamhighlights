@@ -6,3 +6,12 @@
 {% block found_header %}{{ found_header_value }}{% endblock found_header %}
 {% block missing_header %}No starred streamers found :({% endblock missing_header %}
 
+{% block missing %}
+	{{ super() }}
+
+	{% call macros.write_star_explanation("streamers", g.logged_in) %}
+		<li>Browse <a href="{{ url_for('all_streamers') }}">all streamers</a> and star any streamers whose upcoming streams you don't want to miss.</li>
+		<li>If a streamer you starred is streaming an upcoming match, then that match appears on <a href="{{ url_for('viewer_calendar') }}">your calendar</a>.</li>
+	{% endcall %}
+{% endblock missing %}
+

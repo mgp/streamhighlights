@@ -1,7 +1,7 @@
 {% extends "layout.html" %}
 
 {% block head %}
-	<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Vollkorn">
+	{{ macros.write_font_stylesheet() }}
 {% endblock head %}
 
 {% block page_name %}Terms Of Service{% endblock page_name %}

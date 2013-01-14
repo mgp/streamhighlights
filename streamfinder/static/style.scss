@@ -199,18 +199,32 @@ img.league-logo {
 		cursor: pointer;
 	}
 }
-.footer-data {
+%text-data {
 	@extend %bordered-data;
 	color: $dark-gray;
 	font-family: 'Vollkorn', serif;
 	font-size: 18pt;
 	line-height: 120%;
 
+	a {
+		color: $dark-gray;
+	}
 	h3 {
 		font-family: 'LeagueGothic';
 		font-size: $medium-font-size;
 		text-transform: uppercase;
 		line-height: 1;
+	}
+}
+.footer-data {
+	@extend %text-data;
+}
+.explanation {
+	@extend %text-data;
+	
+	ol {
+		list-style-type: decimal;
+		margin-left: 3 * $spacing;
 	}
 }
 
@@ -275,9 +289,6 @@ img.league-logo {
 	& > div {
 		margin-left: 300px + (2 * $spacing);
 
-		a {
-			color: $dark-gray;
-		}
 		ul {
 			font-family: 'LeagueGothic';
 			font-size: $small-font-size;

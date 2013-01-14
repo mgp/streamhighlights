@@ -1,3 +1,7 @@
+{% macro write_font_stylesheet() -%}
+	<link rel="stylesheet" type="text/css" href="http://fonts.googleapis.com/css?family=Vollkorn">
+{%- endmacro %}
+
 {% macro write_links(links) -%}
 	{% for page_name, text in links %}
 		<li{% if page_name == selected_page %} class="selected"{% endif %}>
@@ -115,6 +119,7 @@
 	</li>
 {%- endmacro %}
 
+
 {% macro write_pagination_part(query_params, sort_by_time) -%}
 	{% set value0, value1 = query_params[1], query_params[3] %}
 	{% if value0 or value1 %}
@@ -150,5 +155,19 @@
 		prev_query_params, next_query_params, sort_by_time=True) -%}
 	{{ write_pagination(
 			'Earlier', prev_query_params, 'Later', next_query_params, sort_by_time) }}
+{%- endmacro %}
+
+
+{% macro write_star_explanation(starred_type, logged_in) -%}
+	<div class="explanation">
+		<h3>Why star {{ starred_type }}?</h3>
+		<p>Here's how it works:</p>
+		<ol>
+			{% if not logged_in %}
+				<li>Log in <a href="{{ url_for('log_in_steam') }}">using Steam</a> or <a href="{{ url_for('log_in_twitch') }}">using Twitch</a>.</li>
+			{% endif %}
+			{{ caller() }}
+		</ol>
+	</div>
 {%- endmacro %}
 

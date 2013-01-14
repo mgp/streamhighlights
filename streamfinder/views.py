@@ -401,17 +401,17 @@ def _render_streamers_list(db_getter, template_name):
 
 
 @app.route('/starred/matches')
-@login_required
+@login_optional
 def starred_matches():
 	return _render_matches_list(db.get_starred_matches, 'matches_starred.html')
 
 @app.route('/starred/teams')
-@login_required
+@login_optional
 def starred_teams():
 	return _render_teams_list(db.get_starred_teams, 'teams_starred.html')
 
 @app.route('/starred/streamers')
-@login_required
+@login_optional
 def starred_streamers():
 	return _render_streamers_list(db.get_starred_streamers, 'streamers_starred.html')
 
