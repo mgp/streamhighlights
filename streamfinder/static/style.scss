@@ -69,7 +69,6 @@ body {
 }
 #client-options {
 	float: right;
-
 	font-family: 'LeagueGothic', arial, sans-serif;
 	font-size: $small-font-size;
 	text-transform: uppercase;
@@ -77,6 +76,7 @@ body {
 
 	ul {
 		display: inline;
+
 		& > li {
 			display: inline;
 			margin-left: $padding;
@@ -101,6 +101,7 @@ body {
 		font-family: 'LeagueGothic', arial, sans-serif;
 	}
 }
+
 #footer {
 	width: $site-width;
 	margin: $padding auto;
@@ -152,40 +153,6 @@ $sidebar-width: 200px;
 	margin-left: $sidebar-width;
 }
 
-#about {
-	& > img {
-		float: left;
-	}
-	& > div {
-		margin-left: 300px + (2 * $padding);
-
-		a {
-			color: $dark-gray;
-		}
-		ul {
-			font-family: 'LeagueGothic';
-			font-size: $small-font-size;
-			text-transform: uppercase;
-
-			a {
-				@extend %links;
-			}
-			li {
-				margin-top: $padding;
-			}
-			img {
-				padding-right: $padding / 2;
-			}
-		}
-	}
-}
-#privacy {
-	ul {
-		list-style-type: square;
-		margin-left: 3 * $padding;
-	}
-}
-
 .header {
 	color: $dark-gray;
 	font-size: $medium-font-size;
@@ -193,6 +160,7 @@ $sidebar-width: 200px;
 }
 div.counts {
 	text-transform: none;
+
 	&.selected {
 		color: $dark-gray;
 	}
@@ -265,6 +233,7 @@ img.league-logo {
 }
 #match {
 	@extend %match-main-data;
+
 	div.counts {
 		float: right;
 	}
@@ -282,7 +251,6 @@ img.league-logo {
 		background-color: $light-gray;
 	}
 }
-
 #team {
 	img.external-link {
 		margin-top: -3px;
@@ -291,10 +259,43 @@ img.league-logo {
 		float: right;
 	}
 }
-
 #streamer {
 	img.picture {
 		float: right;
+	}
+}
+
+#about {
+	& > img {
+		float: left;
+	}
+	& > div {
+		margin-left: 300px + (2 * $padding);
+
+		a {
+			color: $dark-gray;
+		}
+		ul {
+			font-family: 'LeagueGothic';
+			font-size: $small-font-size;
+			text-transform: uppercase;
+
+			a {
+				@extend %links;
+			}
+			li {
+				margin-top: $padding;
+			}
+			img {
+				padding-right: $padding / 2;
+			}
+		}
+	}
+}
+#privacy {
+	ul {
+		list-style-type: square;
+		margin-left: 3 * $padding;
 	}
 }
 
@@ -340,7 +341,6 @@ ul.team-list {
 		margin-left: $padding + 28px;
 	}
 }
-
 ul.streamer-list {
 	img.picture {
 		float: left;
@@ -351,7 +351,6 @@ ul.streamer-list {
 		margin-left: $padding + 28px;
 	}
 }
-
 ul.match-list {
 	img.game-logo {
 		float: left;
@@ -371,6 +370,7 @@ ul.match-list {
 		font-size: $small-font-size;
 	}
 }
+
 #pagination {
 	display: inline-block;
 
@@ -379,6 +379,7 @@ ul.match-list {
 		float: left;
 		text-transform: uppercase;
 		font-size: $small-font-size;
+
 		& + .direction {
 			margin-left: 2 * $padding;
 		}
@@ -469,6 +470,7 @@ div.save-settings-failure {
 
 div.setting {
 	text-transform: uppercase;
+
 	h2 {
 		color: $dark-gray;
 		font-size: $medium-font-size;
@@ -482,6 +484,7 @@ div.setting {
 	ul.errors {
 		@extend %settings-block;
 		font-size: $small-font-size;
+
 		li {
 			@extend %settings-message;
 			background-color: $save-settings-failure-background-color;
