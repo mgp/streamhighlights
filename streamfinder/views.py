@@ -952,7 +952,7 @@ def internal_server_error(e):
 	return flask.render_template('error_500.html'), 500
 
 
-def _finish_login(client_id, client_name, auth):
+def _finish_login(client_id, client_name, auth, new_user):
 	settings = db.get_settings(client_id)
 	client = {
 		'id': client_id,
@@ -965,6 +965,10 @@ def _finish_login(client_id, client_name, auth):
 	flask.session['client'] = client
 	# Default session lifetime is 31 days.
 	flask.session.permanent = True
+
+	# If a new user, redirect to the settings page.
+	if new_user:
+		return flask.redirect(flask.url_for('get_settings'))
 
 	# Redirect to the URL that the user came from.
 	next_url = flask.session.pop('next_url', None)
@@ -1014,9 +1018,9 @@ def complete_log_in_steam(response):
 	avatar_full = player.get('avatarfull', None)
 
 	# Get the user's identifier and update the session so logged in.
-	user_id = db.steam_user_logged_in(
+	user_id, new_user = db.steam_user_logged_in(
 			steam_id, personaname, indexed_name, profile_url, avatar, avatar_full)
-	return _finish_login(user_id, personaname, 'steam')
+	return _finish_login(user_id, personaname, 'steam', new_user)
 
 
 _TWITCH_CLIENT_ID = 'd2wc1690jmvteanst3guuwu0wbcg2by'
@@ -1082,9 +1086,9 @@ def complete_log_in_twitch():
 	logo = response.json['logo']
 	
 	# Get the user's identifier and update the session so logged in.
-	user_id = db.twitch_user_logged_in(
+	user_id, new_user = db.twitch_user_logged_in(
 			twitch_id, name, display_name, indexed_name, logo)
-	return _finish_login(user_id, display_name, 'twitch')
+	return _finish_login(user_id, display_name, 'twitch', new_user)
 
 @app.route('/logout')
 def logout():

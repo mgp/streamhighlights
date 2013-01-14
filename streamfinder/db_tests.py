@@ -179,40 +179,40 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		# Create the fifth streamer returned.
 		self.streamer_name5 = 'streamer_name5'
 		self.streamer_indexed_name5 = 'streamer_indexed_name5'
-		self.streamer_twitch_id5, self.streamer_id5 = self._create_twitch_user(
+		self.streamer_twitch_id5, self.streamer_id5, new_user = self._create_twitch_user(
 				self.streamer_name5, self.streamer_indexed_name5)
 		self.url_by_id5, self.url_by_name5 = self._get_twitch_urls(
 				self.streamer_twitch_id5, self.streamer_name5)
 		# Create the second streamer returned.
 		self.streamer_name2 = 'streamer_name2'
 		self.streamer_indexed_name2 = 'streamer_indexed_name2'
-		self.streamer_twitch_id2, self.streamer_id2 = self._create_twitch_user(
+		self.streamer_twitch_id2, self.streamer_id2, new_user = self._create_twitch_user(
 				self.streamer_name2, self.streamer_indexed_name2)
 		self.url_by_id2, self.url_by_name2 = self._get_twitch_urls(
 				self.streamer_twitch_id2, self.streamer_name2)
 		# Create the first streamer returned.
-		self.streamer_twitch_id1, self.streamer_id1 = self._create_twitch_user(
+		self.streamer_twitch_id1, self.streamer_id1, new_user = self._create_twitch_user(
 				self.streamer_name, self.streamer_indexed_name)
 		self.url_by_id1, self.url_by_name1 = self._get_twitch_urls(
 				self.streamer_twitch_id1, self.streamer_name)
 		# Create the fourth streamer returned.
 		self.streamer_name4 = 'streamer_name4'
 		self.streamer_indexed_name4 = 'streamer_indexed_name4'
-		self.streamer_twitch_id4, self.streamer_id4 = self._create_twitch_user(
+		self.streamer_twitch_id4, self.streamer_id4, new_user = self._create_twitch_user(
 				self.streamer_name4, self.streamer_indexed_name4)
 		self.url_by_id4, self.url_by_name4 = self._get_twitch_urls(
 				self.streamer_twitch_id4, self.streamer_name4)
 		# Create the sixth streamer returned.
 		self.streamer_name6 = 'streamer_name6'
 		self.streamer_indexed_name6 = 'streamer_indexed_name6'
-		self.streamer_twitch_id6, self.streamer_id6 = self._create_twitch_user(
+		self.streamer_twitch_id6, self.streamer_id6, new_user = self._create_twitch_user(
 				self.streamer_name6, self.streamer_indexed_name6)
 		self.url_by_id6, self.url_by_name6 = self._get_twitch_urls(
 				self.streamer_twitch_id6, self.streamer_name6)
 		# Create the third streamer returned.
 		self.streamer_name3 = 'streamer_name3'
 		self.streamer_indexed_name3 = 'streamer_indexed_name3'
-		self.streamer_twitch_id3, self.streamer_id3 = self._create_twitch_user(
+		self.streamer_twitch_id3, self.streamer_id3, new_user = self._create_twitch_user(
 				self.streamer_name3, self.streamer_indexed_name3)
 		self.url_by_id3, self.url_by_name3 = self._get_twitch_urls(
 				self.streamer_twitch_id3, self.streamer_name3)
@@ -286,7 +286,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_all_streamers_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		def _get_next_page(displayed_streamers):
@@ -309,11 +309,11 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 		# Add a streaming user that will not be starred.
 		streamer_name7 = 'streamer_name7'
 		streamer_indexed_name7 = 'streamer_indexed_name7'
-		streamer_twitch_id7, streamer_id7 = self._create_twitch_user(
+		streamer_twitch_id7, streamer_id7, new_user = self._create_twitch_user(
 				streamer_name7, streamer_indexed_name7)
 
 		# Create the client, who stars the other five streaming users.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		for streamer_id in (
 				self.streamer_id1,
@@ -343,7 +343,7 @@ class StreamerPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_match_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the match.
 		team1_id = db.add_team(
@@ -547,7 +547,7 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_all_teams_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		def _get_next_page(displayed_teams):
@@ -576,7 +576,7 @@ class TeamPaginationTestCase(AbstractFinderDbTestCase):
 				team7_fingerprint)
 
 		# Create the client, who stars the other five teams.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		for team_id in (self.team1_id,
 				self.team2_id,
@@ -739,11 +739,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_viewer_calendar_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Create the streaming user, who streams all matches.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		for match_id in (self.match_id0,
 				self.match_id1,
@@ -782,7 +782,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.game, self.division, match_fingerprint7, now=self.now)
 
 		# Create the client, who streams the other five matches.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		for match_id in (self.match_id0,
 				self.match_id1,
@@ -814,11 +814,11 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_streamer_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Create the streaming user, who streams all matches.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 		for match_id in (self.match_id0,
@@ -913,7 +913,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_displayed_team_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		def _get_next_page():
@@ -1070,7 +1070,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_get_all_matches_pagination(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		def _get_next_page(displayed_matches):
@@ -1098,7 +1098,7 @@ class MatchPaginationTestCase(AbstractFinderDbTestCase):
 				self.game, self.division, match_fingerprint7, now=self.now)
 
 		# Create the client, who stars the other five matches.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		for match_id in (self.match_id0,
 				self.match_id1,
@@ -1136,7 +1136,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.team1_name, self.team1_indexed_name, self.game, self.division,
 				self.team1_fingerprint)
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1165,7 +1165,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	def test_add_match_star_unknown_match(self):
 		missing_match_id = 99
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1188,7 +1188,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	def test_add_team_star_unknown_team(self):
 		missing_team_id = 99
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1199,7 +1199,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	def test_add_streamer_star_unknown_client(self):
 		missing_client_id = 99
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1210,7 +1210,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	def test_add_streamer_star_unknown_team(self):
 		missing_streamer_id = 99
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1220,7 +1220,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		"""Test that fails to return a match because the match identifier is unknown."""
 		missing_match_id = 99
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1230,7 +1230,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		"""Test that fails to return a team because the team identifier is unknown."""
 		missing_team_id = 99
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		with self.assertRaises(common_db.DbException):
@@ -1244,7 +1244,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		missing_twitch_id = 199
 		missing_twitch_name = 'missing_twitch_name'
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Fail to return by user identifier.
@@ -1261,7 +1261,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_match_star_not_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the match.
 		team1_id = db.add_team(
@@ -1326,7 +1326,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_match_star_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the match.
 		team1_id = db.add_team(
@@ -1339,7 +1339,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.match_fingerprint, now=self.now)
 
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 		# Stream the match.
@@ -1383,7 +1383,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_team_star_not_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the match.
 		team1_id = db.add_team(
@@ -1458,7 +1458,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_team_star_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the match.
 		team1_id = db.add_team(
@@ -1471,7 +1471,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				self.match_fingerprint, now=self.now)
 
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		# Stream the match.
 		db.add_stream_match(streamer_id, match_id)
@@ -1515,10 +1515,10 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_streamer_star_not_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 
@@ -1571,10 +1571,10 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_streamer_star_casted(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id, url_by_name = self._get_steam_urls(streamer_steam_id, self.streamer_name)
 		# Create the match.
@@ -1717,7 +1717,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_multi_stars_then_stream(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Create the match.
@@ -1730,7 +1730,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
 				self.match_fingerprint, now=self.now)
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 
 		# Add a star for the match.
@@ -1753,7 +1753,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_stream_then_add_multi_stars(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Create the match.
@@ -1766,7 +1766,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		match_id = db.add_match(team1_id, team2_id, self.time, self.game, self.division,
 				self.match_fingerprint, now=self.now)
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 
 		# Stream the match.
@@ -1788,7 +1788,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_add_remove_multi_streamers(self):
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 
 		# Create the match.
@@ -1804,12 +1804,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		db.add_star_match(client_id, match_id, now=self.now)
 
 		# Create the first streaming user.
-		streamer_steam_id1, streamer_id1 = self._create_steam_user(
+		streamer_steam_id1, streamer_id1, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		# Create the second streaming user.
 		streamer_name2 = 'streamer_name2'
 		streamer_indexed_name2 = 'streamer_indexed_name2'
-		streamer_steam_id2, streamer_id2 = self._create_steam_user(
+		streamer_steam_id2, streamer_id2, new_user = self._create_steam_user(
 				streamer_name2, streamer_indexed_name2)
 
 		# The first streamer streams the match.
@@ -1865,7 +1865,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		updated_division = 'updated_division'
 
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the team.
 		team_id = db.add_team(
@@ -1890,7 +1890,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		updated_division = 'updated_division'
 
 		# Create the client.
-		client_steam_id, client_id = self._create_steam_user(
+		client_steam_id, client_id, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the teams.
 		team1_id = db.add_team(
@@ -1917,12 +1917,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_client_stars_matches(self):
 		# Create the first client.
-		client_steam_id1, client_id1 = self._create_steam_user(
+		client_steam_id1, client_id1, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the second client.
 		client_name2 = 'client_name2'
 		client_indexed_name2 = 'client_indexed_name2'
-		client_steam_id2, client_id2 = self._create_steam_user(
+		client_steam_id2, client_id2, new_user = self._create_steam_user(
 				client_name2, client_indexed_name2)
 
 		# Create the teams.
@@ -1942,7 +1942,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				match_fingerprint2, now=self.now)
 
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		# Stream both matches.
 		db.add_stream_match(streamer_id, match_id1)
@@ -2007,12 +2007,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_client_stars_teams(self):
 		# Create the first client.
-		client_steam_id1, client_id1 = self._create_steam_user(
+		client_steam_id1, client_id1, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the second client.
 		client_name2 = 'client_name2'
 		client_indexed_name2 = 'client_indexed_name2'
-		client_steam_id2, client_id2 = self._create_steam_user(
+		client_steam_id2, client_id2, new_user = self._create_steam_user(
 				client_name2, client_indexed_name2)
 
 		# Create the teams.
@@ -2040,7 +2040,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				match_fingerprint2, now=self.now)
 
 		# Create the streaming user.
-		streamer_steam_id, streamer_id = self._create_steam_user(
+		streamer_steam_id, streamer_id, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		# Stream both matches.
 		db.add_stream_match(streamer_id, match_id1)
@@ -2099,12 +2099,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_client_stars_streamers(self):
 		# Create the first client.
-		client_steam_id1, client_id1 = self._create_steam_user(
+		client_steam_id1, client_id1, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the second client.
 		client_name2 = 'client_name2'
 		client_indexed_name2 = 'client_indexed_name2'
-		client_steam_id2, client_id2 = self._create_steam_user(
+		client_steam_id2, client_id2, new_user = self._create_steam_user(
 				client_name2, client_indexed_name2)
 
 		# Create the teams.
@@ -2124,7 +2124,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				match_fingerprint2, now=self.now)
 
 		# Create the first streaming user and stream the first match.
-		streamer_steam_id1, streamer_id1 = self._create_steam_user(
+		streamer_steam_id1, streamer_id1, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id1, url_by_name1 = self._get_steam_urls(
 				streamer_steam_id1, self.streamer_name)
@@ -2132,7 +2132,7 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		# Create the second streaming user and stream the second match.
 		streamer_name2 = 'streamer_name2'
 		streamer_indexed_name2 = 'streamer_indexed_name2'
-		streamer_steam_id2, streamer_id2 = self._create_steam_user(
+		streamer_steam_id2, streamer_id2, new_user = self._create_steam_user(
 				streamer_name2, streamer_indexed_name2)
 		url_by_id2, url_by_name2 = self._get_steam_urls(streamer_steam_id2, streamer_name2)
 		db.add_stream_match(streamer_id2, match_id2)
@@ -2192,12 +2192,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 	"""
 	def test_client_streams_matches(self):
 		# Create the first client.
-		client_steam_id1, client_id1 = self._create_steam_user(
+		client_steam_id1, client_id1, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the second client.
 		client_name2 = 'client_name2'
 		client_indexed_name2 = 'client_indexed_name2'
-		client_steam_id2, client_id2 = self._create_steam_user(
+		client_steam_id2, client_id2, new_user = self._create_steam_user(
 				client_name2, client_indexed_name2)
 
 		# Create the teams.
@@ -2217,14 +2217,14 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 				match_fingerprint2, now=self.now)
 
 		# Create the first streaming user.
-		streamer_steam_id1, streamer_id1 = self._create_steam_user(
+		streamer_steam_id1, streamer_id1, new_user = self._create_steam_user(
 				self.streamer_name, self.streamer_indexed_name)
 		url_by_id1, url_by_name1 = self._get_steam_urls(
 				streamer_steam_id1, self.streamer_name)
 		# Create the second streaming user.
 		streamer_name2 = 'streamer_name2'
 		streamer_indexed_name2 = 'streamer_indexed_name2'
-		streamer_steam_id2, streamer_id2 = self._create_steam_user(
+		streamer_steam_id2, streamer_id2, new_user = self._create_steam_user(
 				streamer_name2, streamer_indexed_name2)
 		url_by_id2, url_by_name2 = self._get_steam_urls(streamer_steam_id2, streamer_name2)
 		# The first streamer streams the first match.
@@ -2285,12 +2285,12 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 
 	def test_settings(self):
 		# Create the first client.
-		client_steam_id1, client_id1 = self._create_steam_user(
+		client_steam_id1, client_id1, new_user = self._create_steam_user(
 				self.client_name, self.client_indexed_name)
 		# Create the second client.
 		client_name2 = 'client_name2'
 		client_indexed_name2 = 'client_indexed_name2'
-		client_steam_id2, client_id2 = self._create_steam_user(
+		client_steam_id2, client_id2, new_user = self._create_steam_user(
 				client_name2, client_indexed_name2)
 
 		self.assertEqual('24_hour', db._DEFAULT_SETTINGS_TIME_FORMAT)
@@ -2330,4 +2330,35 @@ class FinderDbTestCase(AbstractFinderDbTestCase):
 		self.assertEqual(time_format, settings.time_format)
 		self.assertIsNone(settings.country)
 		self.assertIsNone(settings.time_zone)
+
+	def test_steam_user_logged_in(self):
+		# Log in once through Steam, and assert that the user is new.
+		client_steam_id, client_id, new_user = self._create_steam_user(
+				self.client_name, self.client_indexed_name)
+		self.assertIsNotNone(client_steam_id)
+		self.assertIsNotNone(client_id)
+		self.assertTrue(new_user)
+
+		# Log in again through Steam, and assert that the user is not new, but updated.
+		profile_url = self._get_profile_url(self.client_name)
+		updated_client_id, new_user = db.steam_user_logged_in(
+				client_steam_id, self.client_name, self.client_indexed_name, profile_url,
+				None, None)
+		self.assertEqual(client_id, updated_client_id)
+		self.assertFalse(new_user)
+
+	def test_twitch_user_logged_in(self):
+		# Log in once through Twitch, and assert that the user is new.
+		client_twitch_id, client_id, new_user = self._create_twitch_user(
+				self.client_name, self.client_indexed_name)
+		self.assertIsNotNone(client_twitch_id)
+		self.assertIsNotNone(client_id)
+		self.assertTrue(new_user)
+
+		# Log in again through Twitch, and assert that the user is not new, but updated.
+		name = self.client_name
+		updated_client_id, new_user = db.twitch_user_logged_in(
+				client_twitch_id, name, self.client_name, self.client_indexed_name, None)
+		self.assertEqual(client_id, updated_client_id)
+		self.assertFalse(new_user)
 

@@ -87,7 +87,7 @@ def _add_streamers(match_id1, match_id2, match_id3):
 	streamer1_display_name = 'Seanbud'
 	streamer1_indexed_name = views._get_indexed_name(streamer1_display_name)
 	streamer1_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/seanbud-profile_image-8feca52a40c892ad-300x300.jpeg'
-	user_id1 = db.twitch_user_logged_in(streamer1_twitch_id,
+	user_id1, new_user = db.twitch_user_logged_in(streamer1_twitch_id,
 			streamer1_name, streamer1_display_name, streamer1_indexed_name, streamer1_logo, None)
 	db.add_stream_match(user_id1, match_id1)
 	db.add_stream_match(user_id1, match_id2)
@@ -97,7 +97,7 @@ def _add_streamers(match_id1, match_id2, match_id3):
 	streamer2_display_name = 'Thatguytagg'
 	streamer2_indexed_name = views._get_indexed_name(streamer2_display_name)
 	streamer2_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/thatguytagg-profile_image-c6841baa66e80f1e-300x300.jpeg'
-	user_id2 = db.twitch_user_logged_in(streamer2_twitch_id,
+	user_id2, new_user = db.twitch_user_logged_in(streamer2_twitch_id,
 			streamer2_name, streamer2_display_name, streamer2_indexed_name, streamer2_logo, None)
 	db.add_stream_match(user_id2, match_id2)
 
@@ -106,7 +106,7 @@ def _add_streamers(match_id1, match_id2, match_id3):
 	streamer3_display_name = 'stabbystabby'
 	streamer3_indexed_name = views._get_indexed_name(streamer3_display_name)
 	streamer3_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/stabbystabby-profile_image-1c2ef7de2c68e389-300x300.png'
-	user_id3 = db.twitch_user_logged_in(streamer3_twitch_id,
+	user_id3, new_user = db.twitch_user_logged_in(streamer3_twitch_id,
 			streamer3_name, streamer3_display_name, streamer3_indexed_name, streamer3_logo, None)
 
 	return user_id1, user_id2, user_id3

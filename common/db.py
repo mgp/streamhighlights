@@ -200,6 +200,7 @@ def twitch_user_logged_in(user_class, users_table,
 		user.url_by_name = url_by_name
 		session.add(user)
 		user_id = user.id
+		new_user = False
 
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
@@ -217,12 +218,13 @@ def twitch_user_logged_in(user_class, users_table,
 		session.flush()
 		user_id = user.id
 		twitch_user.user_id = user_id
+		new_user = True
 
 	# Update the TwitchUser.
 	twitch_user.name = name
 	session.add(twitch_user)
 	session.commit()
-	return user_id
+	return user_id, new_user
 
 @close_session
 def steam_user_logged_in(user_class, users_table,
@@ -253,6 +255,7 @@ def steam_user_logged_in(user_class, users_table,
 		user.url_by_name = url_by_name
 		session.add(user)
 		user_id = user.id
+		new_user = False
 		
 	except sa_orm.exc.NoResultFound:
 		_remove_equal_url_by_name(user_class, users_table, url_by_name, None)
@@ -271,12 +274,13 @@ def steam_user_logged_in(user_class, users_table,
 		session.flush()
 		user_id = user.id
 		steam_user.user_id = user_id
+		new_user = True
 	
 	# Update the SteamUser.
 	steam_user.profile_url = profile_url
 	session.add(steam_user)
 	session.commit()
-	return user_id
+	return user_id, new_user
 
 
 def _get_now(now):

@@ -22,17 +22,17 @@ class DbTestCase(unittest.TestCase):
 		"""Utility method for creating a Steam user."""
 		steam_id = self._next_steam_id
 		self._next_steam_id += 1
-		user_id = db.steam_user_logged_in(
+		user_id, new_user = db.steam_user_logged_in(
 				steam_id, display_name, indexed_name, None, None, None)
-		return steam_id, user_id
+		return steam_id, user_id, new_user
 
 	def _create_twitch_user(self, display_name, indexed_name):
 		"""Utility method for creating a Twitch user."""
 		twitch_id = self._next_twitch_id
 		self._next_twitch_id += 1
-		user_id = db.twitch_user_logged_in(
+		user_id, new_user = db.twitch_user_logged_in(
 				twitch_id, display_name, indexed_name, None, None, None)
-		return twitch_id, user_id
+		return twitch_id, user_id, new_user
 
 	"""Utility method to create a URL for a user given its Steam identifier.
 	"""
