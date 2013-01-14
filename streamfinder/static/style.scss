@@ -158,38 +158,31 @@ $sidebar-width: 200px;
 	}
 	& > div {
 		margin-left: 300px + (2 * $padding);
-		color: $dark-gray;
 
-		// Hack to override main-data until properly refactored.
-		text-transform: None;
-
-		h3 {
-			font-size: $medium-font-size;
-			text-transform: uppercase;
-		}
 		a {
 			color: $dark-gray;
 		}
-		p {
-			font-family: 'Vollkorn', serif;
-			font-size: 18pt;
-			line-height: 120%;
-		}
 		ul {
-			text-transform: uppercase;
+			font-family: 'LeagueGothic';
 			font-size: $small-font-size;
-			margin-top: 2 * $padding;
+			text-transform: uppercase;
 
 			a {
 				@extend %links;
 			}
-			li + li {
+			li {
 				margin-top: $padding;
 			}
 			img {
 				padding-right: $padding / 2;
 			}
 		}
+	}
+}
+#privacy {
+	ul {
+		list-style-type: square;
+		margin-left: 3 * $padding;
 	}
 }
 
@@ -208,7 +201,7 @@ img.league-logo {
 	margin-bottom: -2px;
 }
 
-.main-data {
+%bordered-data {
 	$border: 2px solid $medium-gray;
 
 	border-top: $border;
@@ -217,11 +210,14 @@ img.league-logo {
 	margin: (2 * $padding) 0;
 	background-color: $light-gray;
 	color: $medium-gray;
+}
+.main-data {
+	@extend %bordered-data;
 	font-size: $medium-font-size;
 	text-transform: uppercase;
 
 	& > div {
-		margin-top: round($small-font-size / 6);
+		margin-top: round($small-font-size / 4);
 	}
 	h3 {
 		color: $dark-gray;
@@ -230,6 +226,20 @@ img.league-logo {
 	}
 	div.counts img.togglable {
 		cursor: pointer;
+	}
+}
+.footer-data {
+	@extend %bordered-data;
+	color: $dark-gray;
+	font-family: 'Vollkorn', serif;
+	font-size: 18pt;
+	line-height: 120%;
+
+	h3 {
+		font-family: 'LeagueGothic';
+		font-size: $medium-font-size;
+		text-transform: uppercase;
+		line-height: 1;
 	}
 }
 
@@ -253,7 +263,6 @@ img.league-logo {
 		}
 	}
 }
-
 #match {
 	@extend %match-main-data;
 	div.counts {
