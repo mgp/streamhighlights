@@ -34,12 +34,12 @@ $site-width: 1000px;
 
 body {
 	background-color: $light-gray;
+	font-family: 'LeagueGothic', arial, sans-serif;
 }
 
 #header {
 	width: $site-width;
 	margin: $padding auto;
-	font-family: 'LeagueGothic', arial, sans-serif;
 	text-transform: uppercase;
 	color: $medium-gray;
 
@@ -69,7 +69,6 @@ body {
 }
 #client-options {
 	float: right;
-	font-family: 'LeagueGothic', arial, sans-serif;
 	font-size: $small-font-size;
 	text-transform: uppercase;
 	text-align: right;
@@ -98,14 +97,12 @@ body {
 	& > div {
 		width: $site-width;
 		margin: 0 auto;
-		font-family: 'LeagueGothic', arial, sans-serif;
 	}
 }
 
 #footer {
 	width: $site-width;
 	margin: $padding auto;
-	font-family: 'LeagueGothic', arial, sans-serif;
 	font-size: $small-font-size;
 	text-transform: uppercase;
 	text-align: right;
