@@ -325,7 +325,7 @@ def _get_datetime(args, key):
 	return datetime.strptime(value, _DATETIME_QUERY_PARAM_FORMAT)
 
 
-def _render_calendar(db_getter, template_name):
+def _render_guide(db_getter, template_name):
 	args = flask.request.args
 	prev_time = _get_datetime(args, 'prev_time')
 	prev_match_id = _get_int(args, 'prev_match_id')
@@ -337,15 +337,15 @@ def _render_calendar(db_getter, template_name):
 	assert calendar is not None
 	return flask.render_template(template_name, calendar=calendar)
 
-@app.route('/calendar/viewer')
+@app.route('/guide/viewer')
 @login_optional
-def viewer_calendar():
-	return _render_calendar(db.get_displayed_viewer_calendar, 'calendar_viewer.html')
+def viewer_guide():
+	return _render_guide(db.get_displayed_viewer_calendar, 'calendar_viewer.html')
 
-@app.route('/calendar/streamer')
+@app.route('/guide/streamer')
 @login_required
-def streamer_calendar():
-	return _render_calendar(db.get_displayed_streamer_calendar, 'calendar_streamer.html')
+def streamer_guide():
+	return _render_guide(db.get_displayed_streamer_calendar, 'calendar_streamer.html')
 
 
 def _render_matches_list(db_getter, template_name):

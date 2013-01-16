@@ -11,7 +11,7 @@
 
 	{% call macros.write_star_explanation("streamers", g.logged_in) %}
 		<li>{{ macros.write_star_streamers_reason() }}</li>
-		<li>{{ macros.write_star_streamers_effect() }}, then that match appears on <a href="{{ url_for('viewer_calendar') }}">your calendar</a>.</li>
+		<li>{{ macros.write_star_streamers_effect() }}, then that match appears on <a href="{{ url_for('viewer_guide') }}">your guide</a>.</li>
 	{% endcall %}
 {% endblock missing %}
 

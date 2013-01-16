@@ -12,7 +12,7 @@
 		{% assets "all_css" %}
 			<link rel="stylesheet" href="{{ ASSET_URL }}" />
 		{% endassets %}
-		<title>{% block title %}{% block page_name %}{% endblock page_name %} - Stream Calendars{% endblock title %}</title>
+		<title>{% block title %}{% block page_name %}{% endblock page_name %} - Match Stream Guide{% endblock title %}</title>
 	</head>
 	<body>
 		<div id="header" class="clearfix">
@@ -48,13 +48,13 @@
 				</ul>
 			{% endif %}
 
-			<h1><a href="{{ url_for('home') }}">Stream Finder</a></h1>
+			<h1><a href="{{ url_for('home') }}">Match Stream Guide</a></h1>
 		</div>
 		<div id="site" class="clearfix">
 			<div>
 				<div id="sidebar">
 					<ol>
-						<li><a href="{{ url_for('viewer_calendar') }}">Calendar</a></li>
+						<li><a href="{{ url_for('viewer_guide') }}">Your Guide</a></li>
 						<li><h3>Browse All</h3>
 							<ol>
 								<li><a href="{{ url_for('all_matches') }}">Matches</a></li>
