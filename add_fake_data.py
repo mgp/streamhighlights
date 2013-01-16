@@ -1,3 +1,4 @@
+import collections
 from datetime import datetime, timedelta
 from streamfinder import db, views
 import pytz
@@ -6,46 +7,33 @@ def _recreate_tables():
 	db.drop_all()
 	db.create_all()
 
-game = 'tf2'
-division = 'esea-s13-invite'
+_TF2_GAME = 'tf2'
+_TF2_INVITE_DIVISION = 'esea-s13-invite'
+
+_EseaTeam = collections.namedtuple('EseaTeam', ['name', 'fingerprint'])
+
+_ESEA_TF2_INVITE_TEAMS = [
+	_EseaTeam('bp', 'esea:69987'),
+	_EseaTeam('Classic Mixup', 'esea:51672'),
+	_EseaTeam('Fully Torqued-', 'esea:69988'),
+	_EseaTeam('The Chess Club', 'esea:65380'),
+	_EseaTeam('Apocalypse Gaming', 'esea:56950'),
+	_EseaTeam('Dont Trip', 'esea:32376'),
+	_EseaTeam('Xensity', 'esea:51134'),
+	_EseaTeam('Vector Gaming', 'esea:50903'),
+]
 
 def _add_teams():
-	xensity_name = 'Xensity'
-	xensity_indexed_name = views._get_indexed_name(xensity_name)
-	xensity_fingerprint = 'esea:51134'
-	xensity_id = db.add_team(
-			xensity_name, xensity_indexed_name, game, division, xensity_fingerprint)
-
-	classic_mixup_name = 'Classic Mixup'
-	classic_mixup_indexed_name = views._get_indexed_name(classic_mixup_name)
-	classic_mixup_fingerprint = 'esea:51672'
-	classic_mixup_id = db.add_team(
-			classic_mixup_name, classic_mixup_indexed_name, game, division,
-			classic_mixup_fingerprint)
-
-	laser_beams_name = 'LASER BEAMS'
-	laser_beams_indexed_name = views._get_indexed_name(laser_beams_name)
-	laser_beams_fingerprint = 'esea:69988'
-	laser_beams_id = db.add_team(
-			laser_beams_name, laser_beams_indexed_name, game, division,
-			laser_beams_fingerprint)
-
-	apocalypse_gaming_name = 'Apocalypse Gaming'
-	apocalypse_gaming_indexed_name = views._get_indexed_name(apocalypse_gaming_name)
-	apocalypse_gaming_fingerprint = 'esea:56950'
-	apocalypse_gaming_id = db.add_team(
-			apocalypse_gaming_name, apocalypse_gaming_indexed_name, game, division,
-			apocalypse_gaming_fingerprint)
-
-	bp_name = 'bp'
-	bp_indexed_name = views._get_indexed_name(bp_name)
-	bp_fingerprint = 'esea:69987'
-	bp_id = db.add_team(bp_name, bp_indexed_name, game, division, bp_fingerprint)
-
-	return (xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id, bp_id)
+	team_ids = []
+	for name, fingerprint in _ESEA_TF2_INVITE_TEAMS:
+		indexed_name = views._get_indexed_name(name)
+		team_id = db.add_team(
+				name, indexed_name, _TF2_GAME, _TF2_INVITE_DIVISION, fingerprint)
+		team_ids.append(team_id)
+	return team_ids
 
 def _add_matches(
-		xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id):
+		xensity_id, classic_mixup_id, fully_torqued_id, apocalypse_gaming_id):
 	eastern_tz = pytz.timezone('US/Eastern')
 	now = eastern_tz.localize(datetime.utcnow())
 
@@ -72,7 +60,7 @@ def _add_matches(
 	match3_time = now + timedelta(days=5)
 	match3_time = match3_time.replace(hour=20, minute=30, second=0, microsecond=0)
 	match3_fingerprint = 'esea:3085090'
-	match_id3 = db.add_match(laser_beams_id,
+	match_id3 = db.add_match(fully_torqued_id,
 			xensity_id,
 			match3_time.astimezone(pytz.utc).replace(tzinfo=None),
 			game,
@@ -81,49 +69,40 @@ def _add_matches(
 
 	return match_id1, match_id2, match_id3
 
-def _add_streamers(match_id1, match_id2, match_id3):
-	streamer1_twitch_id = 21605834
-	streamer1_name = 'seanbud'
-	streamer1_display_name = 'Seanbud'
-	streamer1_indexed_name = views._get_indexed_name(streamer1_display_name)
-	streamer1_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/seanbud-profile_image-8feca52a40c892ad-300x300.jpeg'
-	user_id1, new_user = db.twitch_user_logged_in(streamer1_twitch_id,
-			streamer1_name, streamer1_display_name, streamer1_indexed_name, streamer1_logo, None)
-	db.add_stream_match(user_id1, match_id1)
-	db.add_stream_match(user_id1, match_id2)
+_TwitchStreamer = collections.namedtuple(
+		'TwitchStreamer', ['id', 'name', 'display_name', 'logo'])
 
-	streamer2_twitch_id = 25367903
-	streamer2_name = 'thatguytagg'
-	streamer2_display_name = 'Thatguytagg'
-	streamer2_indexed_name = views._get_indexed_name(streamer2_display_name)
-	streamer2_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/thatguytagg-profile_image-c6841baa66e80f1e-300x300.jpeg'
-	user_id2, new_user = db.twitch_user_logged_in(streamer2_twitch_id,
-			streamer2_name, streamer2_display_name, streamer2_indexed_name, streamer2_logo, None)
-	db.add_stream_match(user_id2, match_id2)
+_TWITCH_TF2_STREAMERS = [
+	_TwitchStreamer(37846210, 'teamfortresstv', 'TeamFortressTV', None),
+	_TwitchStreamer(22097899, 'Bl4nk', 'blank', None),
+	_TwitchStreamer(22129289, 'misterslin', 'MR SLIN', 
+			'http://static-cdn.jtvnw.net/jtv_user_pictures/misterslin-profile_image-a33d9bf4cdc93d14-300x300.jpeg'),
+]
 
-	streamer3_twitch_id = 27541787
-	streamer3_name = 'stabbystabby'
-	streamer3_display_name = 'stabbystabby'
-	streamer3_indexed_name = views._get_indexed_name(streamer3_display_name)
-	streamer3_logo = 'http://static-cdn.jtvnw.net/jtv_user_pictures/stabbystabby-profile_image-1c2ef7de2c68e389-300x300.png'
-	user_id3, new_user = db.twitch_user_logged_in(streamer3_twitch_id,
-			streamer3_name, streamer3_display_name, streamer3_indexed_name, streamer3_logo, None)
-
-	return user_id1, user_id2, user_id3
+def _add_streamers():
+	streamer_ids = []
+	for twitch_id, name, display_name, logo in _TWITCH_TF2_STREAMERS:
+		indexed_name = views._get_indexed_name(display_name)
+		streamer_id, new_user = db.twitch_user_logged_in(
+				twitch_id, name, display_name, indexed_name, logo, None)
+		db.toggle_can_stream_by_twitch_id(twitch_id, True)
+		streamer_ids.append(streamer_id)
+	return streamer_ids
 
 def run():
 	_recreate_tables()
 
-	xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id, bp_id = _add_teams()
-	print 'Team IDs: %s, %s, %s, %s' % (
-			xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id)
+	team_ids = _add_teams()
+	print 'Team IDs: %s' % team_ids
 
+	"""
 	match_id1, match_id2, match_id3 = _add_matches(
-			xensity_id, classic_mixup_id, laser_beams_id, apocalypse_gaming_id)
+			xensity_id, classic_mixup_id, fully_torqued_id, apocalypse_gaming_id)
 	print 'Match IDs: %s, %s, %s' % (match_id1, match_id2, match_id3)
+	"""
 
-	user_id1, user_id2, user_id3 = _add_streamers(match_id1, match_id2, match_id3)
-	print 'User IDs: %s, %s, %s' % (user_id1, user_id2, user_id3)
+	streamer_ids = _add_streamers()
+	print 'Streamer IDs: %s' % streamer_ids
 
 if __name__ == '__main__':
 	run()

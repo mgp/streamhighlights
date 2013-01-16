@@ -1999,12 +1999,42 @@ def get_displayed_streamer_by_twitch_name(client_id, twitch_name,
 			prev_time, prev_match_id, next_time, next_match_id, page_limit, now)
 
 
+@close_session
+def _toggle_can_stream_by_filter(filter_adder, can_stream):
+	try:
+		query = session.query(User)
+		query = filter_adder(query)
+		streamer = query.one()
+	except sa_orm.exc.NoResultFound:
+		session.rollback()
+		raise common_db.DbException._chain()
+	
+	streamer.can_stream = True
+	session.commit()
+
+def toggle_can_stream(streamer_id, can_stream):
+	def _filter_adder(query):
+		return query.filter(User.id == streamer_id)
+	_toggle_can_stream_by_filter(_filter_adder, can_stream)
+
+def toggle_can_stream_by_twitch_id(twitch_id, can_stream):
+	url_by_id = common_db._get_twitch_url_by_id(twitch_id)
+	def _filter_adder(query):
+		return query.filter(User.url_by_id == url_by_id)
+	_toggle_can_stream_by_filter(_filter_adder, can_stream)
+
+def toggle_can_stream_by_twitch_name(twitch_name, can_stream):
+	url_by_name = common_db._get_twitch_url_by_name(twitch_name)
+	def _filter_adder(query):
+		return query.filter(User.url_by_name == url_by_name)
+	_toggle_can_stream_by_filter(_filter_adder, can_stream)
+
+
 def twitch_user_logged_in(twitch_id, name, display_name, indexed_name, logo,
 		now=None):
-	user_class_extra_kwargs = {'can_stream': True}
 	return common_db.twitch_user_logged_in(
 			User, Users, twitch_id, name, display_name, indexed_name, logo,
-			user_class_extra_kwargs=user_class_extra_kwargs, now=now)
+			now=now)
 
 def steam_user_logged_in(
 		steam_id, personaname, indexed_name, profile_url, avatar, avatar_full,
