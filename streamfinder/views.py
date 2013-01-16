@@ -338,7 +338,7 @@ def _render_calendar(db_getter, template_name):
 	return flask.render_template(template_name, calendar=calendar)
 
 @app.route('/calendar/viewer')
-@login_required
+@login_optional
 def viewer_calendar():
 	return _render_calendar(db.get_displayed_viewer_calendar, 'calendar_viewer.html')
 

@@ -10,8 +10,8 @@
 	{{ super() }}
 
 	{% call macros.write_star_explanation("matches", g.logged_in) %}
-		<li>Browse <a href="{{ url_for('all_matches') }}">all matches</a> and star any upcoming matches that you don't want to miss.</li>
-		<li>If a upcoming match you starred is being streamed, then that match appears on <a href="{{ url_for('viewer_calendar') }}">your calendar</a>.</li>
+		<li>{{ macros.write_star_matches_reason() }}</li>
+		<li>{{ macros.write_star_matches_effect() }}, then that match appears on <a href="{{ url_for('viewer_calendar') }}">your calendar</a>.</li>
 	{% endcall %}
 {% endblock missing %}
 

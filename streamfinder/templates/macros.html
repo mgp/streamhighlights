@@ -154,13 +154,44 @@
 {%- endmacro %}
 
 
+{% macro write_sign_in_instructions() -%}
+	Sign in <a href="{{ url_for('log_in_steam') }}">through Steam</a> or <a href="{{ url_for('log_in_twitch') }}">through Twitch</a>.
+{%- endmacro %}
+
+
+{% macro write_star_matches_reason() -%}
+	Browse <a href="{{ url_for('all_matches') }}">all matches</a> and star any upcoming matches that you don't want to miss.
+{%- endmacro %}
+
+{% macro write_star_teams_reason() -%}
+	Browse <a href="{{ url_for('all_teams') }}">all teams</a> and star any teams whose upcoming matches you don't want to miss.
+{%- endmacro %}
+
+{% macro write_star_streamers_reason() -%}
+	Browse <a href="{{ url_for('all_streamers') }}">all streamers</a> and star any streamers whose upcoming streams you don't want to miss.
+{%- endmacro %}
+
+
+{% macro write_star_matches_effect() -%}
+	If a upcoming match you starred is being streamed
+{%- endmacro %}
+
+{% macro write_star_teams_effect() -%}
+	If a team you starred is playing in an upcoming match that is being streamed
+{%- endmacro %}
+
+{% macro write_star_streamers_effect() -%}
+	If a streamer you starred is streaming an upcoming match
+{%- endmacro %}
+
+
 {% macro write_star_explanation(starred_type, logged_in) -%}
 	<div class="explanation">
 		<h3>Why star {{ starred_type }}?</h3>
 		<p>Here's how it works:</p>
 		<ol>
 			{% if not logged_in %}
-				<li>Log in <a href="{{ url_for('log_in_steam') }}">using Steam</a> or <a href="{{ url_for('log_in_twitch') }}">using Twitch</a>.</li>
+				<li>{{ write_sign_in_instructions() }}</li>
 			{% endif %}
 			{{ caller() }}
 		</ol>

@@ -1,8 +1,13 @@
 {% extends "layout.html" %}
 {% import "macros.html" as macros %}
 
+{% set next_match = calendar.next_match %}
+
+{% block head %}
+	{{ macros.write_font_stylesheet() if not next_match }}
+{% endblock head %}
+
 {% block content %}
-	{% set next_match = calendar.next_match %}
 	{% if next_match %}
 		<h2 class="header">Next match {{ next_match.time|readable_timedelta }}:</h2>
 		<a id="next-match" class="main-data clearfix" href="{{ url_for('match_details', match_id=next_match|match_url_part) }}">
@@ -34,7 +39,9 @@
 		{% set next_query_params = ('next_time', calendar.next_time, 'next_match_id', calendar.next_match_id) %}
 		{{ macros.write_earlier_later_pagination(prev_query_params, next_query_params) }}
 	{% else %}
-		<h3 class="header">No upcoming streamed matches found :(</h3>
+		{% block missing %}
+			<h3 class="header">No upcoming streamed matches found :(</h3>
+		{% endblock missing %}
 	{% endif %}
 {% endblock content %}
 

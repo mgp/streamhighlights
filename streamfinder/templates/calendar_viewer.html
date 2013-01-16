@@ -2,3 +2,30 @@
 
 {% block page_name %}Viewing Calendar{% endblock page_name %}
 
+{% block missing %}
+	{{ super() }}
+
+	<div class="explanation">
+		<h3>U mad bro?</h3>
+		<p>You should be. But a calendar filled with upcoming streamed matches will bring you eternal happiness. Here's how to do that:</p>
+		{% if not g.logged_in %}
+			<h3>Sign in</h3>
+			<p>{{ macros.write_sign_in_instructions() }}</p>
+		{% endif %}
+		<h3>Go star-crazy</h3>
+		<ul>
+			<li>{{ macros.write_star_matches_reason() }}</li>
+			<li>{{ macros.write_star_teams_reason() }}</li>
+			<li>{{ macros.write_star_streamers_reason() }}</li>
+		</ul>
+		<h3>Magic</h3>
+		<p>Then come back here. Your calendar should now be filled with streamed matches. Why?</p>
+		<ul>
+			<li>{{ macros.write_star_matches_effect() }}, then it's here.</li>
+			<li>{{ macros.write_star_teams_effect() }}, then it's here.</li>
+			<li>{{ macros.write_star_streamers_effect() }}, then it's here.</li>
+		</ul>
+		<p>But if an upcoming match ain't streamed, then it ain't here.</p>
+	</div>
+{% endblock missing %}
+
