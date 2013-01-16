@@ -1,7 +1,15 @@
 {% extends "layout.html" %}
 
+{% block head %}
+	{{ macros.write_font_stylesheet() if not next_match }}
+{% endblock head %}
 {% block title %}Match Stream Guide{% endblock title %}
 
 {% block content %}
+	<div class="explanation">
+		<h3>Welcome</h3>
+		<p>Match Stream Guide allows you to create a personalized guide of upcoming streamed matches that you don't want to miss. Right now you can only chose from <a href="http://www.teamfortress.com/">Team Fortress 2</a> matches played in <a href="http://play.esea.net/">ESEA</a> and from a handful of streamers, but support for more leagues and divisions, more games, and more streamers will be added.</p>
+		<p>To get started, go to <a href="{{ url_for('viewer_guide') }}">your guide</a>.</p>
+	</div>
 {% endblock content %}
 
