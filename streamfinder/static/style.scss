@@ -45,11 +45,13 @@ body {
 
 	h1 {
 		font-size: $medium-font-size;
+		color: $dark-gray;
 
-		a {
-			@extend %links;
-			color: $dark-gray;
-		}
+		// TODO: Make a proper homepage.
+		// a {
+		// 	@extend %links;
+		// 	color: $dark-gray;
+		// }
 	}
 }
 #login {

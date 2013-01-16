@@ -302,7 +302,9 @@ def login_optional(f):
 @app.route('/')
 @login_optional
 def home():
-	return flask.render_template('home.html')
+	# TODO: Make a proper homepage.
+	# return flask.render_template('home.html')
+	return flask.redirect(flask.url_for('viewer_guide'))
 
 def _get_int(args, key):
 	"""Returns the value under the given key as an integer.
