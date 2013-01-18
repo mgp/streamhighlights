@@ -1,4 +1,4 @@
-from streamfinder import app
+from matchstreamguide import app
 
 from collections import defaultdict
 import common_db

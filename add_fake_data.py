@@ -1,6 +1,6 @@
 import collections
 from datetime import datetime, timedelta
-from streamfinder import db, views
+from matchstreamguide import db, views
 import pytz
 
 def _recreate_tables():

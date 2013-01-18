@@ -1,4 +1,4 @@
-from streamfinder import app
+from matchstreamguide import app
 from flask.ext.assets import Environment, Bundle
 
 # Remove some whitespace from the HTML.
@@ -16,9 +16,9 @@ env.register('app_js', app_js)
 env.register('settings_js', settings_js)
 
 # Configure the database.
-import streamfinder.db
-streamfinder.db.create_all()
+import matchstreamguide.db
+matchstreamguide.db.create_all()
 @app.teardown_request
 def shutdown_session(exception=None):
-		streamfinder.db.session.remove()
+		matchstreamguide.db.session.remove()
 
