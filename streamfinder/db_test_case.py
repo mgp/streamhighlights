@@ -38,5 +38,6 @@ class DbTestCase(unittest.TestCase):
 		name = display_name
 		user_id, new_user = db.twitch_user_logged_in(
 				twitch_id, name, display_name, indexed_name, None)
+		db.toggle_can_stream(user_id, True)
 		return twitch_id, user_id, new_user
 
