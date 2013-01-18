@@ -117,8 +117,8 @@ class Match(common_db._Base):
 class MatchOpponent(common_db._Base):
 	__tablename__ = 'MatchOpponents'
 
-	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
 	match_id = sa.Column(sa.Integer, sa.ForeignKey('Matches.id'), primary_key=True)
+	team_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), primary_key=True)
 	is_streamed = sa.Column(sa.Boolean, default=False, nullable=False)
 	time = sa.Column(sa.DateTime, nullable=False)
 	opponent_id = sa.Column(sa.Integer, sa.ForeignKey('Teams.id'), nullable=False)
@@ -246,33 +246,40 @@ class CalendarEntry(common_db._Base):
 				self.num_user_stars)
 
 
-# Used by method add_match.
-sa_schema.Index('TeamsByFingerprint', Team.fingerprint, unique=True)
-# Used by method add_team.
+# Indexes for adding teams and matches.
 sa_schema.Index('MatchesByFingerprint', Match.fingerprint, unique=True)
-# Used by methods _add_star_team, _remove_star_team.
+sa_schema.Index('TeamsByFingerprint', Team.fingerprint, unique=True)
+# Indexes for building and displaying the calendar.
 sa_schema.Index('MatchOpponentsByTeamIdAndIsStreamed',
 		MatchOpponent.team_id, MatchOpponent.is_streamed)
-# Used by method _add_first_stream_calendar_entries.
-sa_schema.Index('MatchOpponentsByMatchId', MatchOpponent.match_id)
 sa_schema.Index('StarredMatchesByMatchId', StarredMatch.match_id)
 sa_schema.Index('StarredTeamsByTeamId', StarredTeam.team_id)
 sa_schema.Index('StarredStreamersByStreamerId', StarredStreamer.streamer_id)
-# Used by method _remove_last_stream_calendar_entries.
 sa_schema.Index('CalendarEntriesByMatchId', CalendarEntry.match_id)
-
-# Used by method get_displayed_calendar.
 sa_schema.Index('CalendarEntriesByUserIdAndTimeAndMatchId',
 		CalendarEntry.user_id, CalendarEntry.time, CalendarEntry.match_id)
-# Used by method get_displayed_match.
+# Indexes for displaying matches.
+sa_schema.Index('StarredMatchesByUserIdAndTimeAndMatchId',
+		StarredMatch.user_id, StarredMatch.time, StarredMatch.match_id)
+sa_schema.Index('MatchesByTimeAndMatchId', Match.time, Match.id)
 sa_schema.Index('StreamedMatchesByMatchIdAndAddedAndStreamerId',
 		StreamedMatch.match_id, StreamedMatch.added, StreamedMatch.streamer_id)
-# Used by method get_displayed_team.
+# Indexes for displaying teams.
+sa_schema.Index('StarredTeamsByUserIdAndIndexedNameAndTeamId',
+		StarredTeam.user_id, StarredTeam.indexed_name, StarredTeam.team_id)
+sa_schema.Index('TeamsByIndexedNameAndTeamId', Team.indexed_name, Team.id)
 sa_schema.Index('MatchOpponentsByTeamIdAndTimeAndMatchId',
 		MatchOpponent.team_id, MatchOpponent.time, MatchOpponent.match_id)
-# Used by method get_displayed_streamer.
+# Indexes for displaying streamers.
+sa_schema.Index('StarredStreamersByUserIdAndIndexedNameAndStreamerId',
+		StarredStreamer.user_id, StarredStreamer.indexed_name, StarredStreamer.streamer_id)
+sa_schema.Index('UsersByCanStreamAndIndexedNameAndUserId',
+		User.can_stream, User.indexed_name, User.id)
 sa_schema.Index('StreamedMatchesByStreamerIdAndTimeAndMatchId',
 		StreamedMatch.streamer_id, StreamedMatch.time, StreamedMatch.match_id)
+# Indexes for finding users.
+sa_schema.Index('UsersByUrlById', User.url_by_id, unique=True)
+sa_schema.Index('UsersByUrlByName', User.url_by_name, unique=True)
 
 
 def create_all():
@@ -389,14 +396,13 @@ def add_star_match(client_id, match_id, now=None):
 
 	try:
 		# Get the time of the match.
-		match_time = session.query(Match.time)\
+		match = session.query(Match)\
 				.filter(Match.id == match_id)\
-				.one()\
-				.time
+				.one()
 		# Add the client's star for the match.
 		starred_match = StarredMatch(user_id=client_id,
 				match_id=match_id,
-				time=match_time,
+				time=match.time,
 				added=now)
 		session.add(starred_match)
 		session.flush()
@@ -409,7 +415,6 @@ def add_star_match(client_id, match_id, now=None):
 		raise common_db.DbException._chain()
 
 	# Increment the count of stars for the match.
-	match = session.query(Match).filter(Match.id == match_id).one()
 	match.num_stars += 1
 
 	# If needed, add a CalendarEntry for the streamed match.
