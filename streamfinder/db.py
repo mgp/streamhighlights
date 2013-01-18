@@ -1256,8 +1256,8 @@ def _get_streamed_match_query(streamer_id, client_id, team_alias1, team_alias2, 
 		query = session\
 				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2, StarredMatch)\
 				.outerjoin(StarredMatch, sa.and_(
-					StarredMatch.match_id == StreamedMatch.match_id,
-					StarredMatch.user_id == client_id))
+					StarredMatch.user_id == client_id,
+					StarredMatch.match_id == StreamedMatch.match_id))
 	else:
 		query = session\
 				.query(StreamedMatch.match_id, Match, team_alias1, team_alias2)
@@ -1393,8 +1393,8 @@ class AllMatchesPaginator(_MatchesPaginator):
 					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
 					.join(self.team_alias2, Match.team2_id == self.team_alias2.id)\
 					.outerjoin(StarredMatch, sa.and_(
-						StarredMatch.match_id == Match.id,
-						StarredMatch.user_id == self.client_id))
+						StarredMatch.user_id == self.client_id,
+						StarredMatch.match_id == Match.id))
 		else:
 			query = session.query(Match, self.team_alias1, self.team_alias2)\
 					.join(self.team_alias1, Match.team1_id == self.team_alias1.id)\
@@ -1463,8 +1463,8 @@ class AllTeamsPaginator(_TeamsPaginator):
 		if self.client_id:
 			query = session.query(Team, StarredTeam)\
 					.outerjoin(StarredTeam, sa.and_(
-						StarredTeam.team_id == Team.id,
-						StarredTeam.user_id == self.client_id))
+						StarredTeam.user_id == self.client_id,
+						StarredTeam.team_id == Team.id))
 		else:
 			query = session.query(Team)
 		return query
@@ -1529,8 +1529,8 @@ class AllStreamersPaginator(_StreamersPaginator):
 		if self.client_id:
 			query = session.query(User, StarredStreamer)\
 					.outerjoin(StarredStreamer, sa.and_(
-						StarredStreamer.streamer_id == User.id,
-						StarredStreamer.user_id == self.client_id))
+						StarredStreamer.user_id == self.client_id,
+						StarredStreamer.streamer_id == User.id))
 		else:
 			query = session.query(User)
 		return query.filter(User.can_stream == True)
@@ -1681,8 +1681,8 @@ class MatchStreamersPaginator(_Paginator):
 					.query(StreamedMatch.streamer_id, StreamedMatch.added, User, StarredStreamer)\
 					.join(User, StreamedMatch.streamer_id == User.id)\
 					.outerjoin(StarredStreamer, sa.and_(
-						StarredStreamer.streamer_id == User.id,
-						StarredStreamer.user_id == self.client_id))
+						StarredStreamer.user_id == self.client_id,
+						StarredStreamer.streamer_id == User.id))
 		else:
 			query = session.query(StreamedMatch.streamer_id, StreamedMatch.added, User)\
 					.join(User, StreamedMatch.streamer_id == User.id)
@@ -1722,8 +1722,8 @@ def get_displayed_match(client_id, match_id,
 				.join(team_alias1, Match.team1_id == team_alias1.id)\
 				.join(team_alias2, Match.team2_id == team_alias2.id)\
 				.outerjoin(StarredMatch, sa.and_(
-					StarredMatch.match_id == match_id,
-					StarredMatch.user_id == client_id))\
+					StarredMatch.user_id == client_id,
+					StarredMatch.match_id == match_id))\
 				.filter(Match.id == match_id)\
 				.one()
 		displayed_team1 = _get_displayed_match_team(team1)
@@ -1805,8 +1805,8 @@ class MatchOpponentsPaginator(_Paginator):
 			query = session\
 					.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team, StarredMatch)\
 					.outerjoin(StarredMatch, sa.and_(
-						StarredMatch.match_id == MatchOpponent.match_id,
-						StarredMatch.user_id == self.client_id))
+						StarredMatch.user_id == self.client_id,
+						StarredMatch.match_id == MatchOpponent.match_id))
 		else:
 			query = session\
 					.query(MatchOpponent.match_id, MatchOpponent.team_id, Match, Team)
@@ -1847,8 +1847,8 @@ def get_displayed_team(client_id, team_id,
 		# Get the team.
 		team, starred_team = session.query(Team, StarredTeam)\
 				.outerjoin(StarredTeam, sa.and_(
-					StarredTeam.team_id == team_id,
-					StarredTeam.user_id == client_id))\
+					StarredTeam.user_id == client_id,
+					StarredTeam.team_id == team_id))\
 				.filter(Team.id == team_id)\
 				.one()
 	except sa_orm.exc.NoResultFound:
@@ -1934,8 +1934,8 @@ def _get_displayed_streamer_by_filter(client_id, filter_adder,
 		# Get the streamer.
 		query = session.query(User, StarredStreamer)\
 				.outerjoin(StarredStreamer, sa.and_(
-					StarredStreamer.streamer_id == User.id,
-					StarredStreamer.user_id == client_id))
+					StarredStreamer.user_id == client_id,
+					StarredStreamer.streamer_id == User.id))
 		query = filter_adder(query)
 		streamer, starred_streamer = query.one()
 	except sa_orm.exc.NoResultFound:
