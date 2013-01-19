@@ -45,8 +45,8 @@
 		</div>
 	{% endif %}
 
-	<form method="POST">
-		<div id="time-format" class="setting">
+	<form method="POST" id="settings">
+		<div id="time-format">
 			<h2>Time Format:</h2>
 			<select name="time_format">
 			{% for time_format_name, time_format in time_formats_map|dictsort %}
@@ -71,7 +71,7 @@
 			{% endif %}
 		</div>
 
-		<div id="country" class="setting">
+		<div id="country">
 			<h2>Country:</h2>
 			<select name="country">
 				<option value=""></option>
@@ -97,7 +97,7 @@
 			{% endif %}
 		</div>
 
-		<div id="time-zone" class="setting">
+		<div id="time-zone">
 			<h2>Time Zone:</h2>
 			<select name="time_zone">
 				<option value=""></option>

@@ -491,27 +491,47 @@ div.save-settings-failure {
 	background-color: $save-settings-failure-background-color;
 }
 
-div.setting {
-	text-transform: uppercase;
+#settings {
+	$setting-spacing: 2 * $spacing;
 
-	h2 {
-		color: $dark-gray;
+	& > div {
+		text-transform: uppercase;
+
+		h2 {
+			color: $dark-gray;
+			font-size: $medium-font-size;
+		}
+		select {
+			width: $settings-width;
+		}
+		& + div {
+			margin-top: $setting-spacing;
+		}
+		ul.errors {
+			@extend %settings-block;
+			font-size: $small-font-size;
+
+			li {
+				@extend %settings-message;
+				background-color: $save-settings-failure-background-color;
+				margin-top: $spacing / 2;
+			}
+		}
+	}
+
+	input[type="submit"] {
+		font-family: 'LeagueGothic', arial, sans-serif;
 		font-size: $medium-font-size;
-	}
-	select {
-		width: $settings-width;
-	}
-	& + div.setting {
-		margin-top: (2 * $spacing);
-	}
-	ul.errors {
-		@extend %settings-block;
-		font-size: $small-font-size;
+		text-transform: uppercase;
+		background-color: $light-gray;
+		color: $medium-gray;
+		margin-top: $setting-spacing;
+		padding: 0 $spacing;
+		border: 1px solid $medium-gray;
 
-		li {
-			@extend %settings-message;
-			background-color: $save-settings-failure-background-color;
-			margin-top: $spacing / 2;
+		&:hover {
+			cursor: pointer;
+			color: $dark-gray;
 		}
 	}
 }
