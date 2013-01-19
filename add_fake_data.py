@@ -1,11 +1,11 @@
 import collections
 from datetime import datetime, timedelta
-from matchstreamguide import db, views
+from matchstreamguide import configure, db, views
 import pytz
 
 def _recreate_tables():
-	db.drop_all()
-	db.create_all()
+	db.drop_all_tables()
+	db.create_all_tables()
 
 _TF2_GAME = 'tf2'
 _TF2_INVITE_DIVISION = 'esea-s13-invite'
