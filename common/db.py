@@ -33,27 +33,6 @@ class DbException(Exception):
 		raise DbException(exception_value), None, traceback
 
 
-_engine = None
-session = None
-def create_session(database, database_uri):
-	global _engine
-	global session
-
-	if database == 'sqlite':
-		# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
-		@sa.event.listens_for(sa_engine.Engine, "connect")
-		def set_sqlite_pragma(dbapi_connection, connection_record):
-			cursor = dbapi_connection.cursor()
-			cursor.execute("PRAGMA foreign_keys=ON")
-			cursor.close()
-	_engine = sa.create_engine(database_uri, convert_unicode=True, echo=False)
-
-	# Use scoped_session with Flask: http://flask.pocoo.org/docs/patterns/sqlalchemy/
-	session = sa_orm.scoped_session(sa_orm.sessionmaker(
-			autocommit=False, autoflush=False, bind=_engine))
-	return session
-
-
 _Base = sa_ext_declarative.declarative_base()
 
 """A user of the site.
@@ -298,8 +277,25 @@ def optional_one(query):
 	return None
 
 
-def set_table_aliases():
-	"""Creates the aliases for each table."""
+_engine = None
+session = None
+def create_session(database, database_uri):
+	global _engine
+	global session
+
+	if database == 'sqlite':
+		# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
+		@sa.event.listens_for(sa_engine.Engine, "connect")
+		def set_sqlite_pragma(dbapi_connection, connection_record):
+			cursor = dbapi_connection.cursor()
+			cursor.execute("PRAGMA foreign_keys=ON")
+			cursor.close()
+	_engine = sa.create_engine(database_uri, convert_unicode=True, echo=False)
+
+	# Use scoped_session with Flask: http://flask.pocoo.org/docs/patterns/sqlalchemy/
+	session = sa_orm.scoped_session(sa_orm.sessionmaker(
+			autocommit=False, autoflush=False, bind=_engine))
+
 	global SteamUsers
 	global TwitchUsers
 
@@ -307,14 +303,7 @@ def set_table_aliases():
 	SteamUsers = SteamUser.__table__
 	TwitchUsers = TwitchUser.__table__
 
-def clear_table_aliases():
-	"""Clears the aliases for each table."""
-	global SteamUsers
-	global TwitchUsers
-	
-	# Clear aliases for each table.
-	del SteamUsers
-	del TwitchUsers
+	return session
 
 
 def create_all_tables():

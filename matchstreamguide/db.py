@@ -286,11 +286,6 @@ def create_session(database, database_uri):
 	global session
 	session = common_db.create_session(database, database_uri)
 
-
-def set_table_aliases():
-	"""Creates the aliases for each table."""
-	common_db.set_table_aliases()
-
 	global Users
 	global SettingsTable
 	global Teams
@@ -315,35 +310,6 @@ def set_table_aliases():
 	StarredStreamers = StarredStreamer.__table__
 	StreamedMatches = StreamedMatch.__table__
 	CalendarEntries = CalendarEntry.__table__
-
-def clear_table_aliases():
-	"""Clears the aliases for each table."""
-	common_db.clear_table_aliases()
-
-	global Users
-	global SettingsTable
-	global Teams
-	global Matches
-	global MatchOpponents
-	global MatchEdits
-	global StarredMatches
-	global StarredTeams
-	global StarredStreamers
-	global StreamedMatches
-	global CalendarEntries
-
-	# Clear aliases for each table.
-	del Users
-	del SettingsTable
-	del Teams
-	del Matches
-	del MatchOpponents
-	del MatchEdits
-	del StarredMatches
-	del StarredTeams
-	del StarredStreamers
-	del StreamedMatches
-	del CalendarEntries
 
 
 def create_all_tables():

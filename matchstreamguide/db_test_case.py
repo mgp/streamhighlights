@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 import db
 import unittest
 
-import common_db
-
 """Base class for test cases that use the database.
 """
 class DbTestCase(unittest.TestCase):
@@ -14,11 +12,9 @@ class DbTestCase(unittest.TestCase):
 		self._next_steam_id = 0
 		self._next_twitch_id = 0
 		db.create_all_tables()
-		db.set_table_aliases()
-		self.session = common_db.session
+		self.session = db.session
 
 	def tearDown(self):
-		db.clear_table_aliases()
 		db.drop_all_tables()
 		unittest.TestCase.tearDown(self)
 
