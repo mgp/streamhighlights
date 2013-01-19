@@ -33,26 +33,26 @@ class DbException(Exception):
 		raise DbException(exception_value), None, traceback
 
 
-def get_engine(testing=False):
-	if testing:
+_engine = None
+session = None
+def create_session(database, database_uri):
+	global _engine
+	global session
+
+	if database == 'sqlite':
 		# http://docs.sqlalchemy.org/en/rel_0_7/dialects/sqlite.html#foreign-key-support
 		@sa.event.listens_for(sa_engine.Engine, "connect")
 		def set_sqlite_pragma(dbapi_connection, connection_record):
 			cursor = dbapi_connection.cursor()
 			cursor.execute("PRAGMA foreign_keys=ON")
 			cursor.close()
+	_engine = sa.create_engine(database_uri, convert_unicode=True, echo=False)
 
-		return sa.create_engine(
-				'sqlite:///:memory:', convert_unicode=True, echo=False)
-	else:
-		return sa.create_engine(
-				'postgresql+psycopg2://streamcalendar:streamcalendar@localhost/streamcalendar',
-				echo=False)
+	# Use scoped_session with Flask: http://flask.pocoo.org/docs/patterns/sqlalchemy/
+	session = sa_orm.scoped_session(sa_orm.sessionmaker(
+			autocommit=False, autoflush=False, bind=_engine))
+	return session
 
-_engine = get_engine()
-# Use scoped_session with Flask: http://flask.pocoo.org/docs/patterns/sqlalchemy/
-session = sa_orm.scoped_session(sa_orm.sessionmaker(
-		autocommit=False, autoflush=False, bind=_engine))
 
 _Base = sa_ext_declarative.declarative_base()
 
@@ -297,9 +297,9 @@ def optional_one(query):
 		return results[0] 
 	return None
 
-def create_all():
-	_Base.metadata.create_all(_engine)
 
+def set_table_aliases():
+	"""Creates the aliases for each table."""
 	global SteamUsers
 	global TwitchUsers
 
@@ -307,13 +307,21 @@ def create_all():
 	SteamUsers = SteamUser.__table__
 	TwitchUsers = TwitchUser.__table__
 
-def drop_all():
+def clear_table_aliases():
+	"""Clears the aliases for each table."""
 	global SteamUsers
 	global TwitchUsers
 	
 	# Clear aliases for each table.
-	SteamUsers = None
-	TwitchUsers = None
+	del SteamUsers
+	del TwitchUsers
 
+
+def create_all_tables():
+	"""Creates all tables and indexes in the database."""
+	_Base.metadata.create_all(_engine)
+
+def drop_all_tables():
+	"""Drops all tables and indexes in the database."""
 	_Base.metadata.drop_all(_engine)
 

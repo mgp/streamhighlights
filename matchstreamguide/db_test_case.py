@@ -1,3 +1,4 @@
+import configure
 from datetime import datetime, timedelta
 import db
 import unittest
@@ -12,11 +13,13 @@ class DbTestCase(unittest.TestCase):
 		self.now = datetime(2012, 10, 15, 12, 30, 45)
 		self._next_steam_id = 0
 		self._next_twitch_id = 0
-		db.create_all()
+		db.create_all_tables()
+		db.set_table_aliases()
 		self.session = common_db.session
-	
+
 	def tearDown(self):
-		db.drop_all()
+		db.clear_table_aliases()
+		db.drop_all_tables()
 		unittest.TestCase.tearDown(self)
 
 	def _get_profile_url(self, display_name):

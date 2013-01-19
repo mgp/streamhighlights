@@ -8,7 +8,7 @@ import sqlalchemy.schema as sa_schema
 import sys
 
 import common_db
-from common_db import _get_now, session, close_session
+from common_db import _get_now, close_session
 
 """A user of the site.
 """
@@ -282,8 +282,14 @@ sa_schema.Index('UsersByUrlById', User.url_by_id, unique=True)
 sa_schema.Index('UsersByUrlByName', User.url_by_name, unique=True)
 
 
-def create_all():
-	common_db.create_all()
+def create_session(database, database_uri):
+	global session
+	session = common_db.create_session(database, database_uri)
+
+
+def set_table_aliases():
+	"""Creates the aliases for each table."""
+	common_db.set_table_aliases()
 
 	global Users
 	global SettingsTable
@@ -310,7 +316,10 @@ def create_all():
 	StreamedMatches = StreamedMatch.__table__
 	CalendarEntries = CalendarEntry.__table__
 
-def drop_all():
+def clear_table_aliases():
+	"""Clears the aliases for each table."""
+	common_db.clear_table_aliases()
+
 	global Users
 	global SettingsTable
 	global Teams
@@ -321,21 +330,29 @@ def drop_all():
 	global StarredTeams
 	global StarredStreamers
 	global StreamedMatches
+	global CalendarEntries
 
 	# Clear aliases for each table.
-	Users = None
-	SettingsTable = None
-	Teams = None
-	Matches = None
-	MatchOpponents = None
-	MatchEdits = None
-	StarredMatches = None
-	StarredTeams = None
-	StarredStreamers = None
-	StreamedMatches = None
-	CalendarEntries = None
+	del Users
+	del SettingsTable
+	del Teams
+	del Matches
+	del MatchOpponents
+	del MatchEdits
+	del StarredMatches
+	del StarredTeams
+	del StarredStreamers
+	del StreamedMatches
+	del CalendarEntries
 
-	common_db.drop_all()
+
+def create_all_tables():
+	"""Creates all tables and indexes in the database."""
+	common_db.create_all_tables()
+
+def drop_all_tables():
+	"""Drops all tables and indexes in the database."""
+	common_db.drop_all_tables()
 
 
 @close_session
