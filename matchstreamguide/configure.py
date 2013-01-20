@@ -14,27 +14,25 @@ class Configuration:
 class DevelopmentConfiguration(Configuration):
 	"""Configuration used in a local development environment."""
 
-	SERVER_NAME = 'localhost:5000'
 	DEBUG = True
 	TESTING = False
 	DATABASE = 'postgresql'
 	DATABASE_URI = (
 			'postgresql+psycopg2://matchstreamguide:matchstreamguide@localhost/matchstreamguide')
+	SECRET_KEY = 'secret_key'
 	SCSS_FILTERS = 'scss'
 	COFFEESCRIPT_FILTERS = 'coffeescript'
-	SECRET_KEY = 'secret_key'
 
 class TestingConfiguration(Configuration):
 	"""Configuration used in a unit testing environment."""
 
-	SERVER_NAME = 'localhost:5000'
 	DEBUG = True
 	TESTING = True
 	DATABASE = 'sqlite'
 	DATABASE_URI = 'sqlite:///:memory:'
+	SECRET_KEY = 'secret_key'
 	SCSS_FILTERS = 'scss'
 	COFFEESCRIPT_FILTERS = 'coffeescript'
-	SECRET_KEY = 'secret_key'
 
 def _get_qualified_name(config):
 	return __name__ + '.' + config.__name__
