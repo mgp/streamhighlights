@@ -1010,9 +1010,10 @@ def complete_log_in_steam(response):
 	response = requests.get(user_url)
 	if response.status_code != requests.codes.ok:
 		flask.abort(requests.codes.server_error)
-	elif ('response' not in response.json) or not response.json['response']['players']:
+	response_json = response.json()
+	if ('response' not in response_json) or not response_json['response']['players']:
 		flask.abort(requests.codes.server_error)
-	player = response.json['response']['players'][0]
+	player = response_json['response']['players'][0]
 	personaname = player['personaname']
 	indexed_name = _get_indexed_name(personaname)
 	profile_url = player.get('profileurl', None)
@@ -1069,7 +1070,8 @@ def complete_log_in_twitch():
 	response = requests.post(_TWITCH_OAUTH_ACCESS_TOKEN_URL, params)
 	if response.status_code != requests.codes.ok:
 		flask.abort(requests.codes.server_error)
-	access_token = response.json['access_token']
+	response_json = response.json()
+	access_token = response_json['access_token']
 
 	# Given the access code for this user, get the user's information.
 	headers = {
@@ -1079,13 +1081,14 @@ def complete_log_in_twitch():
 	response = requests.get(_TWITCH_AUTHENTICATED_USER_URL, headers=headers)
 	if response.status_code != requests.codes.ok:
 		flask.abort(requests.codes.server_error)
-	elif 'error' in response.json:
+	response_json = response.json()
+	if 'error' in response_json:
 		flask.abort(requests.codes.server_error)
-	twitch_id = response.json['_id']
-	name = response.json['name']
-	display_name = response.json['display_name']
+	twitch_id = response_json['_id']
+	name = response_json['name']
+	display_name = response_json['display_name']
 	indexed_name = _get_indexed_name(display_name)
-	logo = response.json['logo']
+	logo = response_json['logo']
 	
 	# Get the user's identifier and update the session so logged in.
 	user_id, new_user = db.twitch_user_logged_in(
