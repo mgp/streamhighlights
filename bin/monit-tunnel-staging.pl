@@ -32,7 +32,7 @@ foreach $pid (@pids)
 
 if (lc($a) eq "start")
 {
- if ($_[0]) { print "CouchDB tunnel already running.\n"; exit 1; }
+ if ($_[0]) { print "Monit tunnel already running.\n"; exit 1; }
  else
  {
   system "ssh -p $sshd_port -f -L $local_ip:$local_port:$remote_ip:$remote_port $remote_user\@$remote_host -N";
